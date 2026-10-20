@@ -80,7 +80,7 @@ final class CorrespondenceAutonomyPg
         });
     }
 
-    public function tick(callable $requestModel): array
+    public function tick(?callable $requestModel): array
     {
         $started = hrtime(true);
         $modelCalls = 0;
@@ -99,7 +99,7 @@ final class CorrespondenceAutonomyPg
         if (!$this->policyReady()) return $finish('idle', 'policy_unavailable');
 
         try {
-            $work = $this->store->transaction(function() {
+            $work = $this->store->transaction(function() use ($requestModel) {
                 $clock = $this->clock();
                 $scope = $clock['playthrough_id'];
                 $setting = $this->settingRow($scope);
@@ -109,6 +109,8 @@ final class CorrespondenceAutonomyPg
 
                 $flush = $this->flushDue($scope, $clock, $setting);
                 if ($flush !== null) return $flush;
+
+                if ($requestModel === null) return ['kind'=>'idle','status'=>'idle','reason'=>'model_unavailable'];
 
                 $globalCooldown = $this->globalCooldownUntil($scope, $clock['gamets']);
                 if ($globalCooldown > $clock['gamets']) return ['kind'=>'idle','status'=>'idle','reason'=>'cooldown'];

@@ -6,7 +6,7 @@ Part of the World of Drama-Llama.
 
 Skyrim has one courier, and he is VERY good at his job. Let's reward him with love letters, forged apologies, and forwarded insults. I call it 'emergent storytelling' because 'I have made this man's working conditions worse' looks dreadful on a feature list.
 
-**0.1.0-dev.15 — PRE-ALPHA.** Sealed Fates adds physical letters and optional item or gold transfers to CHIM, plus private written context and bounded NPC correspondence. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
+**0.1.0-dev.16 — PRE-ALPHA.** Sealed Fates adds physical letters and optional item or gold transfers to CHIM, plus private written context and bounded NPC correspondence. This maintenance release defers autonomy work when its Background Life connector is unavailable while preserving queued delivery. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
 
 ## Pick your interface
 
@@ -14,11 +14,13 @@ Skyrim has one courier, and he is VERY good at his job. Let's reward him with lo
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
+Exact compatibility pins for the optional Department-owned interface are awaiting owner confirmation. No dev.16 sibling bundle is included. Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
+
 ## Download
 
-Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/CHIM-Sealed-Fates-0.1.0-dev.15.zip) for the main install path. It contains the matching bridge PEX and server package.
+See the [release notes](docs/RELEASE.md) for the dev.16 asset SHA-256 digests and matching checksum list.
 
-The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/correspondence-0.1.0-dev.15.dwpkg) is for CHIM's package manager. A server-catalog-only [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/correspondence.tar.gz) and [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/SHA256SUMS.txt) are also attached. The tar archive is not automatically listed by CHIM.
+Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.16/CHIM-Sealed-Fates-0.1.0-dev.16.zip) for the main install path; it contains the matching bridge PEX and server package. The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.16/correspondence-0.1.0-dev.16.dwpkg) is for CHIM's package manager. The server-catalog-only [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.16/correspondence.tar.gz) is not automatically listed by CHIM.
 
 ## The web page
 
@@ -32,7 +34,9 @@ Claimed sender, actual author, and inventory payer are separate values. The prin
 
 When compatible Mind Poisoning or Sworn & Scorned integrations are enabled, recipient exposure may be interpreted under those mods' normal rules and affect opinions, grievances, gratitude, or evidence-backed obligations. Neutral outcomes remain valid; there is no fixed gratitude bonus, and a signature does not prove authorship.
 
-Global autonomous correspondence is off by default. For an NPC to make a decision, enable the global control and that NPC's Background Life and Send letters settings. Decisions run on eligible ordinary native dialogue postrequests, using the in-game clock; opening a browser page does not trigger one. Each source gets one model attempt, with a two-game-hour wait after exposure, at most one scope decision per game-hour, a six-game-hour per-NPC cooldown, and at most three generated letters in a thread.
+Global autonomous correspondence is off by default. For an NPC to make a decision, enable the global control and that NPC's Background Life and Send letters settings. Decisions run on eligible ordinary native dialogue postrequests, using the in-game clock; opening a browser page does not trigger one. Each source gets at most one model-callback attempt, with a two-game-hour wait after exposure, at most one scope decision per game-hour, a six-game-hour per-NPC cooldown, and at most three generated letters in a thread.
+
+When the connector is missing, disabled or invalid, due queued letters can still dispatch, while a new source remains eligible without a decision or cooldown. A later valid connector can process that source once. Exceptions after entering a valid model callback remain terminal. Older `failed/model_unavailable` rows are not retried automatically because their reason and `model_calls` value cannot establish that no callback ran; `model_calls` records callback attempts, not provider billing or receipt.
 
 Offscreen NPC mail is a separate text-only service. After opt-in, a fresh native bored or location observation can start or resume its bounded worker, so an NPC may process mail while the player is elsewhere. It waits for fresh native clock observations, pauses when those stop or scope checks fail, and its supervisor has a 30-minute lifetime cap; each child makes at most one bounded decision tick. It does not deliver physical notes or items.
 
@@ -42,9 +46,9 @@ Recipient context contains up to the three newest valid exposed letters found in
 
 The server and bridge manifests list source-level compatibility references. They describe APIs and versions targeted by this build; they do not verify an installed CHIM, Skyrim, or mod setup. The bridge supports base-form item quantities, not selection of exact enchanted or renamed instances.
 
-The dev.14 transaction and identity safeguards remain in dev.15, but eventlog MAX(ts) freshness work and writer-lock cost remain. SQL savepoints protect database staging only; they do not roll back rendered files, co-save state, or Skyrim inventory. Removing the code does not automatically remove retained database rows, eventlog evidence, books, PNGs, co-save data, notes, or items. See [installation and removal](docs/INSTALL.md) and [verification limits](docs/VERIFICATION.md).
+The dev.14 transaction and identity safeguards remain in dev.16. F-05 work narrows prompt reads to empty, queued, and already-exposed paths; first exposure still revalidates the complete body and references. Synthetic PostgreSQL timings show that `MAX(ts)` and a no-hit `EXISTS` query do not scale away the scan cost, and the faster synthetic `ts` index is not shipped. One read-only prompt fixture completed in about 46 ms while a peer insert was uncommitted; this is a single fixture, not a campaign-scale performance claim. First-exposure and effect writes remain serialized, and `MAX(ts)` and `observeManaged` costs remain. SQL savepoints protect database staging only; they do not roll back rendered files, co-save state, or Skyrim inventory. Removing the code does not automatically remove retained database rows, eventlog evidence, books, PNGs, co-save data, notes, or items. See [installation and removal](docs/INSTALL.md) and [verification limits](docs/VERIFICATION.md).
 
-This release does not add romance or debt collection mechanics, authenticate signatures, or establish that a model can reliably detect forgery. It has no verified Skyrim gameplay result.
+This release does not add romance or debt collection mechanics, authenticate signatures, or establish that a model can reliably detect forgery. It makes no new provider-evaluation or Skyrim-gameplay claim. The dev.14 recovery kit remains historical evidence for its exact older pairing only, not dev.16 integration proof.
 
 ## Project documents
 

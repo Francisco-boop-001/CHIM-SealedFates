@@ -1,4 +1,4 @@
-"""Reproduce the pinned dev.14 release and current dev.15 package assets."""
+"""Reproduce the pinned dev.14 release and current dev.15/dev.16 package assets."""
 from pathlib import Path
 from zipfile import ZipFile
 import gzip
@@ -27,34 +27,35 @@ def save(path, data):
         raise ValueError('Refusing to overwrite different release bytes: ' + path.name)
     path.write_bytes(data)
 
-def preflight_dev15_output(out, expected):
+def preflight_current_output(out, expected, release_label):
     if out.is_symlink():
-        raise ValueError('Dev15 output directory cannot be a symlink')
+        raise ValueError(f'{release_label.capitalize()} output directory cannot be a symlink')
     if out.exists() and not out.is_dir():
-        raise ValueError('Dev15 output path must be a directory')
+        raise ValueError(f'{release_label.capitalize()} output path must be a directory')
     if not out.exists():
         return
     existing = list(out.iterdir())
     unexpected = {path.name for path in existing} - expected
     if unexpected:
-        raise ValueError('Unexpected dev15 output: ' + ', '.join(sorted(unexpected)))
+        raise ValueError(f'Unexpected {release_label} output: ' + ', '.join(sorted(unexpected)))
     for path in existing:
         if path.is_symlink() or not path.is_file():
-            raise ValueError('Unsafe dev15 output: ' + path.name)
+            raise ValueError(f'Unsafe {release_label} output: ' + path.name)
 
-def build_dev15():
+def build_current_release(release_version):
     out = ROOT / 'dist'
     manifest, _ = pkg.entries(ROOT)
-    if manifest['version'] != '0.1.0-dev.15':
+    if manifest['version'] != release_version:
         raise ValueError('Release identity differs')
+    release_label = 'dev' + release_version.rsplit('.', 1)[-1]
     names = {
         'correspondence-' + manifest['version'] + '.dwpkg',
         'CHIM-Sealed-Fates-' + manifest['version'] + '.zip',
         'correspondence.tar.gz',
         'SHA256SUMS.txt',
     }
-    preflight_dev15_output(out, names)
-    with tempfile.TemporaryDirectory(prefix='.dev15-release-', dir=ROOT) as temporary:
+    preflight_current_output(out, names, release_label)
+    with tempfile.TemporaryDirectory(prefix=f'.{release_label}-release-', dir=ROOT) as temporary:
         staging = Path(temporary)
         result = pkg.build(ROOT, None, staging)
         stream = io.BytesIO()
@@ -81,12 +82,12 @@ def build_dev15():
         save(staging / 'SHA256SUMS.txt', checksums)
         staged = {name: (staging / name).read_bytes() for name in sorted(names)}
         if {path.name for path in staging.iterdir()} != names:
-            raise ValueError('Dev15 staging output differs')
+            raise ValueError(f'{release_label.capitalize()} staging output differs')
 
-    preflight_dev15_output(out, names)
+    preflight_current_output(out, names, release_label)
     if not out.exists():
         out.mkdir()
-    preflight_dev15_output(out, names)
+    preflight_current_output(out, names, release_label)
     for name, data in staged.items():
         target = out / name
         if target.exists() and target.read_bytes() != data:
@@ -100,8 +101,8 @@ def build_dev15():
 
 def build():
     version = json.loads((ROOT / 'server/manifest.json').read_text(encoding='utf-8')).get('version')
-    if version == '0.1.0-dev.15':
-        return build_dev15()
+    if version in {'0.1.0-dev.15', '0.1.0-dev.16'}:
+        return build_current_release(version)
     if version != '0.1.0-dev.14':
         raise ValueError('Unsupported release identity')
     out = ROOT / 'dist'

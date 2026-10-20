@@ -1,6 +1,7 @@
 import hashlib
 import importlib.util
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -10,7 +11,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
-TEST_TMP_ROOT = ROOT.parent
+TEST_TMP_ROOT = Path(os.environ.get('CHIM_PACKAGE_TEST_TMP', ROOT.parent))
 spec = importlib.util.spec_from_file_location('package', ROOT / 'scripts' / 'build-package.py')
 pkg = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pkg)
@@ -245,10 +246,70 @@ class PackageTest(unittest.TestCase):
         finally:
             release.ROOT = original_root
 
-    def test_release_rejects_unsupported_version(self):
+    def test_dev16_release_has_only_current_four_assets_deterministically(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
         manifest['version'] = '0.1.0-dev.16'
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+        original_root = release.ROOT
+        release.ROOT = self.root
+        try:
+            first = release.build()
+            first_bytes = {name: (self.root / 'dist' / name).read_bytes() for name in first}
+            second = release.build()
+            second_bytes = {name: (self.root / 'dist' / name).read_bytes() for name in second}
+        finally:
+            release.ROOT = original_root
+        expected = {
+            'correspondence-0.1.0-dev.16.dwpkg',
+            'CHIM-Sealed-Fates-0.1.0-dev.16.zip',
+            'correspondence.tar.gz',
+            'SHA256SUMS.txt',
+        }
+        out = self.root / 'dist'
+        self.assertEqual({path.name for path in out.iterdir()}, expected)
+        self.assertEqual(set(first), expected)
+        self.assertEqual(set(second), expected)
+        self.assertEqual(first_bytes, second_bytes)
+        checksum_names = [line.split('  ', 1)[1] for line in (out / 'SHA256SUMS.txt').read_text(encoding='ascii').splitlines()]
+        self.assertEqual(checksum_names, sorted(expected - {'SHA256SUMS.txt'}))
+
+    def test_dev16_preflight_preserves_dev15_and_conflicting_outputs(self):
+        manifest_path = self.root / 'server/manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['version'] = '0.1.0-dev.16'
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+        original_root = release.ROOT
+        release.ROOT = self.root
+        out = self.root / 'dist'
+        out.mkdir()
+        legacy = {
+            out / 'correspondence-0.1.0-dev.15.dwpkg': b'old dev15 package',
+            out / 'CHIM-Sealed-Fates-0.1.0-dev.15.zip': b'old dev15 bundle',
+        }
+        try:
+            for path, data in legacy.items():
+                path.write_bytes(data)
+            with self.assertRaisesRegex(ValueError, 'Unexpected dev16 output'):
+                release.build()
+            self.assertEqual({path.name for path in out.iterdir()}, {path.name for path in legacy})
+            self.assertEqual({path: path.read_bytes() for path in legacy}, legacy)
+
+            for path in legacy:
+                path.unlink()
+            stale_catalog = out / 'correspondence.tar.gz'
+            stale_catalog.write_bytes(b'stale catalog bytes')
+            with self.assertRaisesRegex(ValueError, 'different release bytes'):
+                release.build()
+            self.assertEqual([path.name for path in out.iterdir()], [stale_catalog.name])
+            self.assertEqual(stale_catalog.read_bytes(), b'stale catalog bytes')
+        finally:
+            release.ROOT = original_root
+
+    def test_release_rejects_unsupported_version(self):
+        manifest_path = self.root / 'server/manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['version'] = '0.1.0-dev.17'
         manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
         original_root = release.ROOT
         release.ROOT = self.root

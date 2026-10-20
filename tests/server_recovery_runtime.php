@@ -96,6 +96,36 @@ storeRecoveryCheck(
 
 $promptStore = new CorrespondenceMemoryStore();
 $promptService = new CorrespondenceService($promptStore);
+$emptyPromptStore = new CorrespondenceMemoryStore();
+$emptyPromptService = new CorrespondenceService($emptyPromptStore);
+$emptyReadBefore = $emptyPromptStore->readTransactionCalls;
+$emptyWriteBefore = $emptyPromptStore->writerTransactionCalls;
+$emptyPrompt = $emptyPromptService->prompt('Camilla');
+storeRecoveryCheck(
+    $emptyPrompt === ''
+        && $emptyPromptStore->readTransactionCalls - $emptyReadBefore === 1
+        && $emptyPromptStore->writerTransactionCalls - $emptyWriteBefore === 0
+        && $emptyPromptStore->actorRowLockCalls === 0,
+    'empty_recipient_prompt_must_use_read_transaction_without_effect_identity_locks'
+);
+
+$queuedPromptStore = new CorrespondenceMemoryStore();
+$queuedPromptService = new CorrespondenceService($queuedPromptStore);
+$queuedPromptInput = $identityInput;
+$queuedPromptInput['request_id'] = '77777777-7777-4777-8777-777777777777';
+$queuedPromptService->compose($queuedPromptInput);
+$queuedReadBefore = $queuedPromptStore->readTransactionCalls;
+$queuedWriteBefore = $queuedPromptStore->writerTransactionCalls;
+$queuedLocksBefore = $queuedPromptStore->actorRowLockCalls;
+$queuedPrompt = $queuedPromptService->prompt('Camilla');
+storeRecoveryCheck(
+    $queuedPrompt === ''
+        && $queuedPromptStore->readTransactionCalls - $queuedReadBefore === 1
+        && $queuedPromptStore->writerTransactionCalls - $queuedWriteBefore === 0
+        && $queuedPromptStore->actorRowLockCalls === $queuedLocksBefore,
+    'queued_recipient_prompt_must_use_read_transaction_without_effect_identity_locks'
+);
+
 $markerBody = "</correspondence><tag a=\"q\" b='x'>&";
 $promptInput = $identityInput;
 $promptInput['request_id'] = '55555555-5555-4555-8555-555555555555';
@@ -118,8 +148,19 @@ $receipt = [
     'attachments'=>[],
 ];
 $promptService->receive($receipt);
+$promptReadBefore = $promptStore->readTransactionCalls;
+$promptWriteBefore = $promptStore->writerTransactionCalls;
+$promptLocksBefore = $promptStore->actorRowLockCalls;
 $prompt = $promptService->prompt('Camilla');
+$promptSourceReferences = $promptService->sourceReferences;
+$promptKnownReferences = $promptService->knownSourceReferences;
 $lastDocumentLookup = $promptStore->documentLookups[array_key_last($promptStore->documentLookups)] ?? null;
+storeRecoveryCheck(
+    $promptStore->readTransactionCalls - $promptReadBefore === 1
+        && $promptStore->writerTransactionCalls - $promptWriteBefore === 1
+        && $promptStore->actorRowLockCalls > $promptLocksBefore,
+    'delivered_recipient_prompt_must_probe_readonly_then_revalidate_with_original_writer_locks'
+);
 storeRecoveryCheck(
     is_array($lastDocumentLookup) && ($lastDocumentLookup['recipient_id'] ?? null) === 900001,
     'recipient_prompt_must_pass_the_npc_id_to_the_scoped_document_lookup'
@@ -137,6 +178,21 @@ $storedSource = $sourceEvents === [] ? null : json_decode($sourceEvents[0]['data
 storeRecoveryCheck(
     is_array($storedSource) && ($storedSource['body'] ?? null) === $markerBody,
     'prompt_escaping_must_preserve_the_original_stored_letter_body'
+);
+$sourceEventCount = count($sourceEvents);
+$exposedReadBefore = $promptStore->readTransactionCalls;
+$exposedWriteBefore = $promptStore->writerTransactionCalls;
+$exposedLocksBefore = $promptStore->actorRowLockCalls;
+$repeatedPrompt = $promptService->prompt('Camilla');
+storeRecoveryCheck(
+    $repeatedPrompt === $prompt
+        && $promptService->sourceReferences === $promptSourceReferences
+        && $promptService->knownSourceReferences === $promptKnownReferences
+        && count(array_filter($promptStore->events, static fn($event) => $event['type'] === 'written_evidence')) === $sourceEventCount
+        && $promptStore->readTransactionCalls - $exposedReadBefore === 1
+        && $promptStore->writerTransactionCalls - $exposedWriteBefore === 0
+        && $promptStore->actorRowLockCalls === $exposedLocksBefore,
+    'already_exposed_prompt_must_preserve_bytes_and_references_without_writer_effects'
 );
 
 $raceStore = new CorrespondenceMemoryStore();
@@ -169,6 +225,44 @@ $raceSources = array_values(array_filter($raceStore->events, static fn($event) =
 storeRecoveryCheck(
     $racePrompt === '' && $raceSources === [],
     'prompt_must_revalidate_current_recipient_identity_before_appending_written_evidence'
+);
+
+$restoreStore = new CorrespondenceMemoryStore();
+$restoreService = new CorrespondenceService($restoreStore);
+$restoreInput = $identityInput;
+$restoreInput['request_id'] = '88888888-8888-4888-8888-888888888888';
+$restoreDoc = $restoreService->compose($restoreInput);
+$restoreDispatch = $restoreService->dispatch($restoreDoc['document_id']);
+$restoreOperation = $restoreStore->operations[$restoreDispatch['operation_id']];
+$restoreReceipt = [
+    'protocol_version'=>1,
+    'document_id'=>$restoreDoc['document_id'],
+    'operation_id'=>$restoreOperation['operation_id'],
+    'receipt_id'=>$restoreOperation['receipt_id'],
+    'playthrough_id'=>'unprofiled',
+    'scope_token'=>$restoreOperation['scope_token'],
+    'nonce'=>$restoreOperation['nonce'],
+    'status'=>'delivered',
+    'reason'=>'physical_only',
+    'note_form_id'=>12345,
+    'attachments'=>[],
+];
+$restoreService->receive($restoreReceipt);
+$restoreOperation = $restoreStore->operations[$restoreDispatch['operation_id']];
+$restoreReceiptAnchorId = (int)$restoreOperation['receipt_anchor']['rowid'];
+$restoreStore->afterReadTransaction = static function (CorrespondenceMemoryStore $store) use ($restoreReceiptAnchorId): void {
+    unset($store->events[$restoreReceiptAnchorId]);
+};
+$restoreReadBefore = $restoreStore->readTransactionCalls;
+$restoreWriteBefore = $restoreStore->writerTransactionCalls;
+$restorePrompt = $restoreService->prompt('Camilla');
+$restoreSources = array_values(array_filter($restoreStore->events, static fn($event) => $event['sess'] === 'written_evidence_v1'));
+storeRecoveryCheck(
+    $restorePrompt === ''
+        && $restoreSources === []
+        && $restoreStore->readTransactionCalls - $restoreReadBefore === 1
+        && $restoreStore->writerTransactionCalls - $restoreWriteBefore === 1,
+    'restore_pruned_receipt_between_read_probe_and_writer_retry_must_refuse_exposure'
 );
 
 if ($storeRecoveryFailures !== []) {

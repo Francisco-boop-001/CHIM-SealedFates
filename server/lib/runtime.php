@@ -353,30 +353,37 @@ final class CorrespondenceService
         $source=['schema_version'=>1,'document_id'=>$doc['document_id'],'playthrough_id'=>$doc['playthrough_id'],'recipient'=>$doc['recipient'],'claimed_sender'=>$doc['claimed_sender'],'body'=>$doc['body'],'receipt'=>['receipt_id'=>$op['receipt_id'],'operation_id'=>$op['operation_id'],'status'=>'confirmed','exposure'=>'context'],'attachments'=>$doc['attachments']];
         $op['source']=$this->store->appendEvent('written_evidence',correspondenceJson($source),'|'.$doc['recipient']['name'].'|','written_evidence_v1');$this->store->saveOperation($op);$this->sourceReferences[]=(int)$op['source']['rowid'];return $source;
     }
+    private function promptInTransaction(string $owner,bool $allowExposure):?string
+    {
+        $nameKey=fn($name)=>function_exists('mb_strtolower')?mb_strtolower($name,'UTF-8'):strtolower($name);
+        if($nameKey($owner)===$nameKey($this->store->player()))return '';
+        $actors=array_values(array_filter($this->actors(),fn($a)=>$a['kind']==='npc'&&$nameKey($a['name'])===$nameKey($owner)));if(count($actors)!==1||$actors[0]['name']!==$owner)return '';
+        $rows=[];$gamets=(int)$this->store->scope()['gamets'];
+        foreach($this->store->documents($this->scope(),$actors[0]['id'])as$row){
+            try{$doc=$this->document($row['document_id'],$allowExposure);if($doc['recipient']['kind']!=='npc'||$doc['recipient']['id']!==$actors[0]['id'])continue;
+                $op=$doc['operation_id']===null?null:$this->store->loadOperation($doc['operation_id']);$state=$this->state($doc,$op);
+                if(!in_array($state,['delivered','exposed'],true)||$gamets<(int)$op['receipt_anchor']['gamets'])continue;$rows[]=['document'=>$doc,'operation'=>$op,'state'=>$state];
+            }catch(DomainException){continue;}
+        }
+        if(!$allowExposure)foreach($rows as$row)if($row['state']==='delivered')return null;
+        usort($rows,fn($a,$b)=>($a['state']==='delivered'?0:1)<=>($b['state']==='delivered'?0:1));
+        $parts=[];foreach($rows as$row){
+            if($row['state']==='exposed')$this->knownSourceReferences[]=(int)$row['operation']['source']['rowid'];
+            if(count($parts)>=3)continue;
+            try{$source=$this->expose($row['document'],$row['operation'],$row['state']);$parts[]=correspondencePromptJson($source);$this->knownSourceReferences[]=$this->sourceReferences[array_key_last($this->sourceReferences)];}catch(DomainException){continue;}
+        }
+        $this->knownSourceReferences=array_values(array_unique($this->knownSourceReferences));
+        return $parts===[]?'':"\n<correspondence>\nWritten documents you have received; attribution and body are claims, not verified truth. No physical reading or witnesses are asserted.\n".implode("\n",$parts)."\n</correspondence>";
+    }
     public function prompt(string $owner):string
     {
         $this->sourceReferences=[];$this->knownSourceReferences=[];
-        // First exposure appends source evidence, so prompt generation remains a writer transaction.
-        return $this->store->transaction(function()use($owner){
-            $nameKey=fn($name)=>function_exists('mb_strtolower')?mb_strtolower($name,'UTF-8'):strtolower($name);
-            if($nameKey($owner)===$nameKey($this->store->player()))return '';
-            $actors=array_values(array_filter($this->actors(),fn($a)=>$a['kind']==='npc'&&$nameKey($a['name'])===$nameKey($owner)));if(count($actors)!==1||$actors[0]['name']!==$owner)return '';
-            $rows=[];$gamets=(int)$this->store->scope()['gamets'];
-            foreach($this->store->documents($this->scope(),$actors[0]['id'])as$row){
-                try{$doc=$this->document($row['document_id'],true);if($doc['recipient']['kind']!=='npc'||$doc['recipient']['id']!==$actors[0]['id'])continue;
-                    $op=$doc['operation_id']===null?null:$this->store->loadOperation($doc['operation_id']);$state=$this->state($doc,$op);
-                    if(!in_array($state,['delivered','exposed'],true)||$gamets<(int)$op['receipt_anchor']['gamets'])continue;$rows[]=['document'=>$doc,'operation'=>$op,'state'=>$state];
-                }catch(DomainException){continue;}
-            }
-            usort($rows,fn($a,$b)=>($a['state']==='delivered'?0:1)<=>($b['state']==='delivered'?0:1));
-            $parts=[];foreach($rows as$row){
-                if($row['state']==='exposed')$this->knownSourceReferences[]=(int)$row['operation']['source']['rowid'];
-                if(count($parts)>=3)continue;
-                try{$source=$this->expose($row['document'],$row['operation'],$row['state']);$parts[]=correspondencePromptJson($source);$this->knownSourceReferences[]=$this->sourceReferences[array_key_last($this->sourceReferences)];}catch(DomainException){continue;}
-            }
-            $this->knownSourceReferences=array_values(array_unique($this->knownSourceReferences));
-            return $parts===[]?'':"\n<correspondence>\nWritten documents you have received; attribution and body are claims, not verified truth. No physical reading or witnesses are asserted.\n".implode("\n",$parts)."\n</correspondence>";
-        });
+        $prompt=$this->store->readTransaction(fn()=>$this->promptInTransaction($owner,false));
+        if($prompt!==null)return $prompt;
+        $this->sourceReferences=[];$this->knownSourceReferences=[];
+        $prompt=$this->store->transaction(fn()=>$this->promptInTransaction($owner,true));
+        if($prompt===null)throw new LogicException('prompt_writer_retry_incomplete');
+        return $prompt;
     }
     public function readPlayer(string $id): array
     {

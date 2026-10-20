@@ -88,28 +88,30 @@ function correspondenceAutonomyRunNativePostrequest(array $request, callable $ru
             return correspondenceAutonomyHostResult('paused', 'disabled');
         }
 
-        $modelResolved = false;
         $model = null;
-        $guardedModel = static function (array $messages) use (&$modelResolved, &$model, $modelFactory): string {
-            if (!$modelResolved) {
-                $modelResolved = true;
-                $model = correspondenceAutonomyPreserveNativeGlobals(static fn() => $modelFactory());
-            }
-            if (!is_callable($model)) throw new DomainException('model_unavailable');
-            return correspondenceAutonomyPreserveNativeGlobals(static function () use ($model, $messages): string {
-                $raw = $model($messages);
-                if (!is_string($raw)) throw new DomainException('model_response_unavailable');
-                return $raw;
-            });
-        };
-        $result = $autonomy->tick($guardedModel);
+        try {
+            $model = correspondenceAutonomyPreserveNativeGlobals(static fn() => $modelFactory());
+        } catch (Throwable) {
+            $model = null;
+        }
+        $requestModel = null;
+        if (is_callable($model)) {
+            $requestModel = static function (array $messages) use ($model): string {
+                return correspondenceAutonomyPreserveNativeGlobals(static function () use ($model, $messages): string {
+                    $raw = $model($messages);
+                    if (!is_string($raw)) throw new DomainException('model_response_unavailable');
+                    return $raw;
+                });
+            };
+        }
+        $result = $autonomy->tick($requestModel);
         return is_array($result) ? $result : correspondenceAutonomyHostResult('failed', 'host_unavailable');
     } catch (Throwable) {
         return correspondenceAutonomyHostResult('failed', 'host_unavailable');
     }
 }
 
-/** Return a lazy request-model callback after a non-secret core configuration check. */
+/** Return a preflighted request-model callback after a non-secret core configuration check. */
 function correspondenceAutonomyCoreModelFactory(): ?callable
 {
     try {
@@ -142,10 +144,16 @@ function correspondenceAutonomyCoreModelFactory(): ?callable
         $driverFile = $root.'/connector/'.$data['driver'].'.php';
         if (!is_file($driverFile)) return null;
 
+        $manager->setOldGlobals($data);
+        $connector = $manager->getConnector($data);
+        if (!is_object($connector) || !is_callable([$connector, 'fast_request'])) return null;
+
         return static function (array $messages) use ($manager, $data): string {
             $manager->setOldGlobals($data);
             $connector = $manager->getConnector($data);
-            if (!is_object($connector) || !method_exists($connector, 'fast_request')) throw new DomainException('model_connector_unavailable');
+            if (!is_object($connector) || !is_callable([$connector, 'fast_request'])) {
+                throw new DomainException('model_unavailable');
+            }
             $raw = $connector->fast_request($messages, ['MAX_TOKENS' => 1024], 'backgroundlife');
             if (!is_string($raw)) throw new DomainException('model_response_unavailable');
             return $raw;

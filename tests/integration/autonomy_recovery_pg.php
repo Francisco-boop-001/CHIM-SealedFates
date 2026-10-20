@@ -218,6 +218,7 @@ $insertNative = static function (int $ts, int $gamets) use ($connection): void {
     autonomyRecoverySql($connection, "INSERT INTO public.eventlog(ts,gamets,type,data,sess,localts,people,location,party) VALUES($1,$2,'inputtext',$3,'',$4,'','','')", [$ts,$gamets,'synthetic fresh native request',$ts]);
 };
 $runtimeFactory = static fn(): array => ['store'=>$store,'autonomy'=>$autonomy];
+// The native host may resolve one model factory during preflight; model_calls tracks callback attempts.
 $runNative = static function (int $ts, int $gamets, callable $modelFactory) use ($insertNative, $runtimeFactory): array {
     $insertNative($ts, $gamets);
     return correspondenceAutonomyRunNativePostrequest(['inputtext',(string)$ts,(string)$gamets,'synthetic native recovery request'], $runtimeFactory, $modelFactory);
@@ -338,7 +339,9 @@ try {
         return null;
     });
     $dispatched = autonomyRecoverySql($connection, 'SELECT status,child_document_id::text child_id FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', [AUTONOMY_RECOVERY_SCOPE_MODELLESS,$modellessSource])[0] ?? [];
-    autonomyRecoveryCheck(($dispatched['status'] ?? null) === 'dispatched' && $modelFactoryCalls === 0 && ($modelless['status'] ?? null) === 'dispatched', 'R3_due_child_must_dispatch_without_configured_model');
+    autonomyRecoveryCheck(($dispatched['status'] ?? null) === 'dispatched' && $modelFactoryCalls <= 1
+        && ($modelless['status'] ?? null) === 'dispatched' && ($modelless['model_calls'] ?? null) === 0,
+        'R3_due_child_must_dispatch_without_configured_model');
 } catch (Throwable $error) {
     autonomyRecoveryCheck(false, 'R3_case_setup_or_execution_failed:'.$error->getMessage());
 }
@@ -464,10 +467,11 @@ try {
     $sqlChild = $store->loadDocument($sqlDecision['child_id']);
     autonomyRecoveryCheck(is_array($sqlChild) && ($sqlChild['operation_id'] ?? null) === null, 'R4_SQL_error_must_rollback_child_operation_link');
     autonomyRecoveryCheck(autonomyRecoveryCounts($connection) === $beforeSqlDispatch && autonomyRecoverySql($connection, "SELECT count(*)::text n FROM public.eventlog WHERE sess='correspondence_v1'") === $beforeSqlAnchors, 'R4_SQL_error_must_rollback_books_operations_commands_and_dispatch_anchor');
-    autonomyRecoveryCheck($sqlFactoryCalls === 0 && ($sqlResult['model_calls'] ?? null) === 0, 'R4_SQL_error_dispatch_must_not_construct_or_call_model');
+    autonomyRecoveryCheck($sqlFactoryCalls <= 1 && ($sqlResult['model_calls'] ?? null) === 0, 'R4_SQL_error_dispatch_must_not_call_model');
+    $sqlFactoryCallsBeforeRepeat = $sqlFactoryCalls;
     $sqlRepeat = $runNative(223, (int)$sqlDecision['due']+1, $sqlUnavailableModel);
     $sqlRepeated = autonomyRecoverySql($connection, "SELECT claim_id::text,status,payload->>'reason_code' reason FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2", [AUTONOMY_RECOVERY_SCOPE_SQL_ERROR,$sqlSource])[0] ?? [];
-    autonomyRecoveryCheck($sqlRepeated === $sqlAfter && $sqlFactoryCalls === 0 && ($sqlRepeat['model_calls'] ?? null) === 0
+    autonomyRecoveryCheck($sqlRepeated === $sqlAfter && ($sqlFactoryCalls - $sqlFactoryCallsBeforeRepeat) <= 1 && ($sqlRepeat['model_calls'] ?? null) === 0
         && autonomyRecoveryCounts($connection) === $beforeSqlDispatch
         && autonomyRecoverySql($connection, 'SELECT last_value::text,is_called::text FROM public.recovery_autonomy_sql_fault_hits') === $sqlFaultHits
         && autonomyRecoverySql($connection, "SELECT count(*)::text n FROM public.eventlog WHERE sess='correspondence_v1'") === $beforeSqlAnchors, 'R4_SQL_unknown_must_not_retry_or_dispatch_on_next_fresh_request');
@@ -514,7 +518,9 @@ foreach (['pruned'=>'700006','malformed'=>'700007','restored'=>'700008'] as $edg
         $otherClaims = autonomyRecoverySql($connection, 'SELECT playthrough_id,source_document_id::text,status,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id<>$1 ORDER BY playthrough_id,source_document_id', [$edgeScope]);
         $edgeFactoryCalls = 0;
         $edgeUnavailableModel = static function () use (&$edgeFactoryCalls): ?callable { $edgeFactoryCalls++; return null; };
+        $edgeFactoryCallsBeforeRecovery = $edgeFactoryCalls;
         $edgeResult = $runNative($baseTs+3, $freshGamets, $edgeUnavailableModel);
+        $edgeRecoveryFactoryCalls = $edgeFactoryCalls - $edgeFactoryCallsBeforeRecovery;
         $edgeAfter = autonomyRecoverySql($connection, 'SELECT claim_id::text,status,action,child_document_id::text,due_gamets::text,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', [$edgeScope,$edgeSource])[0] ?? [];
         $edgeAfterPayload = json_decode((string)($edgeAfter['payload'] ?? '{}'), true, 64, JSON_THROW_ON_ERROR);
         autonomyRecoveryCheck(($edgeResult['reason'] ?? null) === 'abandoned_claim_retired' && ($edgeAfter['status'] ?? null) === 'stale'
@@ -522,11 +528,12 @@ foreach (['pruned'=>'700006','malformed'=>'700007','restored'=>'700008'] as $edg
             && ($edgeAfter['action'] ?? null) === null && ($edgeAfter['child_document_id'] ?? null) === null && ($edgeAfter['due_gamets'] ?? null) === null, 'F02_'.$edge.'_anchor_must_terminally_stale_same_claim');
         autonomyRecoveryCheck(!array_key_exists('completion_anchor', $edgeAfterPayload) && !array_key_exists('completed_gamets', $edgeAfterPayload)
             && autonomyRecoverySql($connection, "SELECT count(*)::text n FROM public.eventlog WHERE type='info'") === $beforeEdgeAnchors, 'F02_'.$edge.'_anchor_must_not_fabricate_completion_event');
-        autonomyRecoveryCheck($edgeFactoryCalls === 0 && ($edgeResult['model_calls'] ?? null) === 0 && autonomyRecoveryCounts($connection) === $beforeEdgeEffects, 'F02_'.$edge.'_recovery_must_not_call_model_or_create_effect');
+        autonomyRecoveryCheck($edgeRecoveryFactoryCalls <= 1 && ($edgeResult['model_calls'] ?? null) === 0 && autonomyRecoveryCounts($connection) === $beforeEdgeEffects, 'F02_'.$edge.'_recovery_must_not_call_model_or_create_effect');
         autonomyRecoveryCheck(autonomyRecoverySql($connection, 'SELECT playthrough_id,source_document_id::text,status,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id<>$1 ORDER BY playthrough_id,source_document_id', [$edgeScope]) === $otherClaims, 'F02_'.$edge.'_recovery_must_preserve_other_scope_claims');
+        $edgeFactoryCallsBeforeRepeat = $edgeFactoryCalls;
         $edgeRepeat = $runNative($baseTs+4, $freshGamets+1, $edgeUnavailableModel);
         autonomyRecoveryCheck(autonomyRecoverySql($connection, 'SELECT claim_id::text,status,action,child_document_id::text,due_gamets::text,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', [$edgeScope,$edgeSource]) === [$edgeAfter]
-            && $edgeFactoryCalls === 0 && ($edgeRepeat['model_calls'] ?? null) === 0 && autonomyRecoveryCounts($connection) === $beforeEdgeEffects
+            && ($edgeFactoryCalls - $edgeFactoryCallsBeforeRepeat) <= 1 && ($edgeRepeat['model_calls'] ?? null) === 0 && autonomyRecoveryCounts($connection) === $beforeEdgeEffects
             && autonomyRecoverySql($connection, "SELECT count(*)::text n FROM public.eventlog WHERE type='info'") === $beforeEdgeAnchors, 'F02_'.$edge.'_terminal_recovery_must_be_idempotent');
     } catch (Throwable $error) {
         autonomyRecoveryCheck(false, 'F02_'.$edge.'_case_setup_or_execution_failed:'.$error->getMessage());

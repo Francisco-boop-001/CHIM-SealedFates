@@ -27,6 +27,11 @@ final class AutonomyHostConfiguredConnectorFixture
     public function fast_request(array $messages, array $options, string $service): string
     {
         $GLOBALS['autonomyHostFastRequests'][] = [$messages, $options, $service];
+        $GLOBALS['autonomyHostConnectorGlobalsSeen'][] = $GLOBALS['CONNECTOR']['fakeconnector']['API_KEY'] ?? null;
+        $GLOBALS['autonomyHostRequestFlagsSeen'][] = [
+            $GLOBALS['PATCH_PROMPT_ENFORCE_ACTIONS'] ?? null,
+            $GLOBALS['COMMAND_PROMPT_ENFORCE_ACTIONS'] ?? null,
+        ];
         $GLOBALS['CONNECTOR']['fakeconnector']['API_KEY'] = 'test-secret';
         $GLOBALS['HERIKA_PERS'] = 'mutated persona';
         $GLOBALS['DEBUG_DATA']['full'] = ['messages' => $messages];
@@ -46,26 +51,26 @@ final class LLMConnector
     public static int $getByIdCalls = 0;
     public static int $setOldGlobalsCalls = 0;
     public static int $getConnectorCalls = 0;
+    public static string $driver = 'fakeconnector';
+    public static bool $invalidConnector = false;
     public function getById(int $id): array
     {
         self::$getByIdCalls++;
         if ($id !== 77) throw new RuntimeException('unexpected connector id');
-        return ['id' => 77, 'driver' => 'fakeconnector', 'model' => 'fixture-dialogue-model', 'api_badge_id' => 9];
+        return ['id' => 77, 'driver' => self::$driver, 'model' => 'fixture-dialogue-model', 'api_badge_id' => 9];
     }
     public function setOldGlobals(array $data): void
     {
         self::$setOldGlobalsCalls++;
-        $GLOBALS['CONNECTOR']['fakeconnector']['API_KEY'] = 'test-secret';
-        $GLOBALS['PATCH_PROMPT_ENFORCE_ACTIONS'] = false;
-        $GLOBALS['COMMAND_PROMPT_ENFORCE_ACTIONS'] = '';
+        $GLOBALS['CONNECTOR']['fakeconnector']['API_KEY'] = 'configured-key';
         $GLOBALS['PLAYER_NAME'] = 'mutated player';
     }
-    public function getConnector(array $data): AutonomyHostConfiguredConnectorFixture
+    public function getConnector(array $data): object
     {
         self::$getConnectorCalls++;
         $GLOBALS['PATCH_PROMPT_ENFORCE_ACTIONS'] = false;
         $GLOBALS['COMMAND_PROMPT_ENFORCE_ACTIONS'] = '';
-        return new AutonomyHostConfiguredConnectorFixture();
+        return self::$invalidConnector ? new stdClass() : new AutonomyHostConfiguredConnectorFixture();
     }
 }
 
@@ -84,18 +89,21 @@ final class AutonomyHostWorkerFixture
 {
     public int $tickCalls = 0;
     public int $modelCalls = 0;
+    public bool $requestModelWasNull = false;
     public array $messages = [];
     public function __construct(private AutonomyHostClockFixture $store, private bool $enabled, private bool $dispatchDue = false) {}
     public function settings(): array { return ['enabled' => $this->enabled]; }
-    public function tick(callable $requestModel): array
+    public function tick(?callable $requestModel): array
     {
         $this->tickCalls++;
         if ($this->store->clock !== ['ts' => '100', 'gamets' => '416667']) throw new RuntimeException('clock was not bound before tick');
+        $this->requestModelWasNull = $requestModel === null;
         if ($this->dispatchDue) return ['status' => 'dispatched', 'reason' => 'dispatch_queued', 'model_calls' => 0, 'input_chars' => 0, 'output_chars' => 0, 'elapsed_ms' => 1];
+        if ($requestModel === null) return ['status' => 'probe', 'reason' => 'null_model_received', 'model_calls' => 0, 'input_chars' => 0, 'output_chars' => 0, 'elapsed_ms' => 1];
         $this->messages = [['role' => 'system', 'content' => 'bounded test message']];
+        $this->modelCalls++;
         try {
             $raw = $requestModel($this->messages);
-            $this->modelCalls++;
             return ['status' => 'silent', 'reason' => 'no_response', 'model_calls' => 1, 'input_chars' => 23, 'output_chars' => strlen($raw), 'elapsed_ms' => 1];
         } catch (Throwable) {
             return ['status' => 'failed', 'reason' => 'model_unavailable', 'model_calls' => 1, 'input_chars' => 23, 'output_chars' => 0, 'elapsed_ms' => 1];
@@ -138,7 +146,7 @@ function autonomyHostSeedGlobals(array $request): void
     $GLOBALS['CHIM_JSON_RESPONSE_EXT_LOADED'] = false;
 }
 
-function autonomyHostCase(array $request, bool $enabled, bool $throwModel = false, bool $missingModel = false, bool $dispatchDue = false): array
+function autonomyHostCase(array $request, bool $enabled, bool $throwModel = false, bool $missingModel = false, bool $dispatchDue = false, bool $throwFactory = false): array
 {
     $store = new AutonomyHostClockFixture();
     $worker = new AutonomyHostWorkerFixture($store, $enabled, $dispatchDue);
@@ -149,8 +157,12 @@ function autonomyHostCase(array $request, bool $enabled, bool $throwModel = fals
         $runtimeCalls++;
         return ['store' => $store, 'autonomy' => $worker];
     };
-    $modelFactory = static function () use (&$factoryCalls, &$modelCalls, $throwModel, $missingModel): ?callable {
+    $modelFactory = static function () use (&$factoryCalls, &$modelCalls, $throwModel, $missingModel, $throwFactory): ?callable {
         $factoryCalls++;
+        if ($throwFactory) {
+            $GLOBALS['HERIKA_PERS'] = 'mutated during connector configuration';
+            throw new RuntimeException('synthetic connector configuration failure');
+        }
         if ($missingModel) return null;
         return static function (array $messages) use (&$modelCalls, $throwModel): string {
             $modelCalls++;
@@ -200,6 +212,20 @@ autonomyHostSeedGlobals($normal);
 autonomyHostCheck($store->clock === ['ts' => '100', 'gamets' => '416667'], 'the actual request clock must bind before decision work');
 autonomyHostCheck($worker->tickCalls === 1 && $worker->modelCalls === 1 && $factoryCalls === 1 && $modelCalls === 1, 'one native request may perform at most one model call');
 
+autonomyHostSeedGlobals($normal);
+[$missingResult, , $missingWorker, , $missingFactoryCalls, $missingModelCalls] = autonomyHostCase($normal, true, false, true);
+autonomyHostCheck($missingWorker->requestModelWasNull && $missingWorker->tickCalls === 1 && $missingWorker->modelCalls === 0
+    && $missingFactoryCalls === 1 && $missingModelCalls === 0 && ($missingResult['model_calls'] ?? null) === 0,
+    'unavailable connector must reach the scheduler as null without entering a model request');
+
+autonomyHostSeedGlobals($normal);
+$beforeUnavailableFactory = autonomyHostProtectedGlobals();
+[$factoryErrorResult, , $factoryErrorWorker, , $factoryErrorCalls, $factoryErrorModelCalls] = autonomyHostCase($normal, true, false, false, false, true);
+autonomyHostCheck($factoryErrorWorker->requestModelWasNull && $factoryErrorWorker->modelCalls === 0
+    && $factoryErrorCalls === 1 && $factoryErrorModelCalls === 0 && ($factoryErrorResult['model_calls'] ?? null) === 0
+    && autonomyHostProtectedGlobals() === $beforeUnavailableFactory,
+    'connector configuration exception must become unavailable and restore native globals before tick');
+
 foreach ([
     ['info', '100', '416667', 'arbitrary info'],
     ['init', '100', '416667', 'init payload'],
@@ -219,7 +245,7 @@ autonomyHostCheck($disabledRuntimeCalls === 1 && $disabledWorker->tickCalls === 
 
 autonomyHostSeedGlobals($normal);
 [$dispatchResult, , $dispatchWorker, , $dispatchFactoryCalls, $dispatchModelCalls] = autonomyHostCase($normal, true, false, false, true);
-autonomyHostCheck(($dispatchResult['status'] ?? null) === 'dispatched' && $dispatchWorker->tickCalls === 1 && $dispatchFactoryCalls === 0 && $dispatchModelCalls === 0, 'due queued dispatch must reach tick without constructing a model');
+autonomyHostCheck(($dispatchResult['status'] ?? null) === 'dispatched' && $dispatchWorker->tickCalls === 1 && $dispatchFactoryCalls === 1 && $dispatchModelCalls === 0, 'due queued dispatch must reach tick after one connector preflight and without a model request');
 
 $connectorConfig = ['driver' => 'openai'];
 $enabled = static fn(string $field): bool => $field === 'CORE_CONNECTOR_BGL';
@@ -244,6 +270,8 @@ $GLOBALS['autonomyHostDecisionOnly'] = false;
 $GLOBALS['autonomyHostEnableFields'] = [];
 $GLOBALS['autonomyHostDecisionRows'] = [];
 $GLOBALS['autonomyHostFastRequests'] = [];
+$GLOBALS['autonomyHostConnectorGlobalsSeen'] = [];
+$GLOBALS['autonomyHostRequestFlagsSeen'] = [];
 LLMConnector::$getByIdCalls = 0;
 LLMConnector::$setOldGlobalsCalls = 0;
 LLMConnector::$getConnectorCalls = 0;
@@ -257,21 +285,40 @@ autonomyHostCheck(correspondenceAutonomyCoreModelFactory() === null, 'production
 autonomyHostCheck(LLMConnector::$getByIdCalls === 1 && LLMConnector::$setOldGlobalsCalls === 0 && $GLOBALS['autonomyHostFastRequests'] === [], 'decision-only rejection must happen before credential setup or provider call');
 
 $GLOBALS['autonomyHostDecisionOnly'] = false;
-$configuredModel = correspondenceAutonomyCoreModelFactory();
-autonomyHostCheck(is_callable($configuredModel) && LLMConnector::$getByIdCalls === 2 && LLMConnector::$setOldGlobalsCalls === 0, 'ordinary configured model factory must remain lazy before a tick requests output');
+$beforeInvalidId = LLMConnector::$getByIdCalls;
+$GLOBALS['CORE_CONNECTOR_BGL'] = 'invalid';
+$invalidIdModel = correspondenceAutonomyPreserveNativeGlobals(static fn() => correspondenceAutonomyCoreModelFactory());
+autonomyHostCheck($invalidIdModel === null && LLMConnector::$getByIdCalls === $beforeInvalidId && LLMConnector::$setOldGlobalsCalls === 0, 'invalid BGL connector identity must stop before connector setup');
+$GLOBALS['CORE_CONNECTOR_BGL'] = 77;
+
+LLMConnector::$driver = 'missingconnector';
+$missingDriverModel = correspondenceAutonomyPreserveNativeGlobals(static fn() => correspondenceAutonomyCoreModelFactory());
+autonomyHostCheck($missingDriverModel === null && LLMConnector::$setOldGlobalsCalls === 0 && LLMConnector::$getConnectorCalls === 0, 'missing connector driver must be rejected before request setup');
+LLMConnector::$driver = 'fakeconnector';
+
+LLMConnector::$invalidConnector = true;
+$beforeInvalidConnector = autonomyHostProtectedGlobals();
+$invalidConnectorModel = correspondenceAutonomyPreserveNativeGlobals(static fn() => correspondenceAutonomyCoreModelFactory());
+autonomyHostCheck($invalidConnectorModel === null && LLMConnector::$setOldGlobalsCalls === 1 && LLMConnector::$getConnectorCalls === 1
+    && $GLOBALS['autonomyHostFastRequests'] === [] && autonomyHostProtectedGlobals() === $beforeInvalidConnector,
+    'connector without fast_request must be rejected during configuration without a model request or global leakage');
+LLMConnector::$invalidConnector = false;
+
+$beforeConfiguredFactory = autonomyHostProtectedGlobals();
+$configuredModel = correspondenceAutonomyPreserveNativeGlobals(static fn() => correspondenceAutonomyCoreModelFactory());
+autonomyHostCheck(is_callable($configuredModel) && LLMConnector::$getByIdCalls === 4 && LLMConnector::$setOldGlobalsCalls === 2 && LLMConnector::$getConnectorCalls === 2,
+    'ordinary connector must be validated once during preflight before the scheduler can claim a source');
+autonomyHostCheck(autonomyHostProtectedGlobals() === $beforeConfiguredFactory, 'connector preflight must restore core and routing globals');
 $beforeConfiguredCall = autonomyHostProtectedGlobals();
 $configuredRaw = correspondenceAutonomyPreserveNativeGlobals(static fn() => $configuredModel([['role' => 'user', 'content' => 'bounded payload']]));
-autonomyHostCheck(is_string($configuredRaw) && LLMConnector::$setOldGlobalsCalls === 1 && LLMConnector::$getConnectorCalls === 1, 'configured adapter must call the public core connector methods once on demand');
+autonomyHostCheck(is_string($configuredRaw) && LLMConnector::$setOldGlobalsCalls === 3 && LLMConnector::$getConnectorCalls === 3, 'configured adapter must restore the full core connector setup for one bounded request');
 autonomyHostCheck($GLOBALS['autonomyHostFastRequests'] === [[[['role' => 'user', 'content' => 'bounded payload']], ['MAX_TOKENS' => 1024], 'backgroundlife']], 'configured adapter must use the standard bounded dialogue request');
+autonomyHostCheck($GLOBALS['autonomyHostConnectorGlobalsSeen'] === ['configured-key'], 'validated connector settings must be installed when its request callback runs');
+autonomyHostCheck($GLOBALS['autonomyHostRequestFlagsSeen'] === [[false, '']], 'core connector action flags must be installed when its request callback runs');
 autonomyHostCheck(autonomyHostProtectedGlobals() === $beforeConfiguredCall, 'configured adapter must restore connector and character/routing globals after the call');
 @unlink($driverDirectory . DIRECTORY_SEPARATOR . 'fakeconnector.php');
 @rmdir($driverDirectory);
 @rmdir($engineFixtureRoot);
-
-autonomyHostSeedGlobals($normal);
-[$missingResult, , $missingWorker, , $missingFactoryCalls] = autonomyHostCase($normal, true, false, true);
-autonomyHostCheck(($missingResult['status'] ?? null) === 'failed' && ($missingResult['reason'] ?? null) === 'model_unavailable'
-    && $missingWorker->tickCalls === 1 && $missingFactoryCalls === 1, 'missing configured connector must fail the selected model job after tick');
 
 foreach (['before', 'after'] as $siblingOrder) {
     autonomyHostSeedGlobals($normal);
@@ -292,4 +339,4 @@ foreach ([false, true] as $throwModel) {
     autonomyHostCheck(autonomyHostProtectedGlobals() === $before, 'absent provider/core JSON globals must remain absent after ' . ($throwModel ? 'a thrown' : 'a successful') . ' call');
 }
 
-echo "PASS server autonomy host: native request gating, clock-before-tick, lazy model factory, paused/missing connector gate, sibling hook order\n";
+echo "PASS server autonomy host: native request gating, clock-before-tick, connector preflight, unavailable-model deferral, native global restoration, sibling hook order\n";

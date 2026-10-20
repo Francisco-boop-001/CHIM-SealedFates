@@ -216,6 +216,18 @@ $promptNpcQueries = storeRecoveryPgCatalogQueryCount($promptQueries, 'public.cor
 $promptPlayerQueries = storeRecoveryPgCatalogQueryCount($promptQueries, 'public.core_player');
 $promptNpcLockQueries = storeRecoveryPgEffectLockQueries($promptQueries, 'public.core_npc_master');
 $promptPlayerLockQueries = storeRecoveryPgEffectLockQueries($promptQueries, 'public.core_player');
+$promptReadOnlyBegins = array_values(array_filter(
+    $promptQueries,
+    static fn($sql) => stripos($sql, 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY') !== false
+));
+$promptEventlogWriterLocks = array_values(array_filter(
+    $promptQueries,
+    static fn($sql) => stripos($sql, 'LOCK TABLE public.eventlog IN SHARE ROW EXCLUSIVE MODE') !== false
+));
+$promptAdvisoryWriterLocks = array_values(array_filter(
+    $promptQueries,
+    static fn($sql) => stripos($sql, 'pg_advisory_xact_lock(18459814, 1)') !== false
+));
 $promptDocumentQueries = array_values(array_filter(
     $promptQueries,
     static fn($sql) => stripos($sql, 'FROM plugins.correspondence_documents') !== false
@@ -233,6 +245,9 @@ echo 'PROMPT_QUERY_COUNTS_50_DOCS_2000_NPCS='.json_encode([
     'player_name'=>$promptPlayerQueries,
     'targeted_actor_locks'=>count($promptNpcLockQueries),
     'targeted_player_locks'=>count($promptPlayerLockQueries),
+    'read_only_begins'=>count($promptReadOnlyBegins),
+    'eventlog_writer_locks'=>count($promptEventlogWriterLocks),
+    'advisory_writer_locks'=>count($promptAdvisoryWriterLocks),
     'document_selects'=>count($promptDocumentQueries),
     'document_collection_selects'=>count($promptCollectionQueries),
     'recipient_filter'=>$filterSql,
@@ -240,18 +255,166 @@ echo 'PROMPT_QUERY_COUNTS_50_DOCS_2000_NPCS='.json_encode([
 storeRecoveryPgCheck($prompt === '', 'queued_letters_must_not_be_exposed_by_prompt');
 storeRecoveryPgCheck($promptNpcQueries === 1, 'npc_catalog_must_be_read_once_per_transaction');
 storeRecoveryPgCheck($promptPlayerQueries === 1, 'player_name_must_be_read_once_per_transaction');
-storeRecoveryPgCheck(count($promptNpcLockQueries) === 1, 'effect_identity_must_use_one_targeted_actor_row_lock');
-storeRecoveryPgCheck(
-    stripos($promptNpcLockQueries[0] ?? '', 'WHERE id=ANY(') !== false
-        && stripos($promptNpcLockQueries[0] ?? '', '::bigint[]') !== false
-        && stripos($promptNpcLockQueries[0] ?? '', 'ORDER BY id FOR SHARE') !== false,
-    'effect_actor_lock_must_remain_bounded_to_selected_ids'
-);
-storeRecoveryPgCheck(count($promptPlayerLockQueries) === 1, 'effect_identity_must_lock_the_selected_player_row_once');
+storeRecoveryPgCheck(count($promptNpcLockQueries) === 0, 'queued_prompt_must_not_take_actor_effect_locks');
+storeRecoveryPgCheck(count($promptPlayerLockQueries) === 0, 'queued_prompt_must_not_take_player_effect_locks');
+storeRecoveryPgCheck(count($promptReadOnlyBegins) === 1, 'queued_prompt_must_run_in_one_repeatable_read_read_only_transaction');
+storeRecoveryPgCheck(count($promptEventlogWriterLocks) === 0, 'queued_prompt_must_not_take_the_eventlog_writer_table_lock');
+storeRecoveryPgCheck(count($promptAdvisoryWriterLocks) === 0, 'queued_prompt_must_not_take_the_writer_advisory_lock');
 storeRecoveryPgCheck($filterSql, 'recipient_prompt_document_select_must_filter_before_validating_other_letters');
 storeRecoveryPgCheck(count($promptQueries) <= 20, 'prompt_query_count_must_remain_bounded_for_50_letters_and_2000_npcs');
 
-$peerLogStart = storeRecoveryPgLogOffset($connection, $logFile);
+$deliveredBody = 'Synthetic delivered body for the real PostgreSQL prompt path.';
+$deliveredSummary = $service->compose([
+    'request_id'=>correspondenceUuid(),
+    'author'=>'player',
+    'payer'=>'player',
+    'recipient'=>'npc:900001',
+    'claimed_sender'=>'npc:900002',
+    'body'=>$deliveredBody,
+    'attachments'=>[],
+]);
+$serviceOperationId = correspondenceUuid();
+$serviceReceiptId = correspondenceUuid();
+$serviceScopeToken = correspondenceUuid();
+$serviceNonce = bin2hex(random_bytes(32));
+$store->transaction(static function () use ($store, $deliveredSummary, $serviceOperationId, $serviceReceiptId, $serviceScopeToken, $serviceNonce): void {
+    $document = $store->loadDocument($deliveredSummary['document_id']);
+    if (!is_array($document)) throw new RuntimeException('delivered_prompt_document_missing');
+    $dispatchAnchor = $store->appendEvent(
+        'correspondence_dispatch',
+        correspondenceJson(['document_id'=>$document['document_id'],'operation_id'=>$serviceOperationId]),
+        '',
+        'correspondence_v1'
+    );
+    $receipt = [
+        'protocol_version'=>1,
+        'document_id'=>$document['document_id'],
+        'operation_id'=>$serviceOperationId,
+        'receipt_id'=>$serviceReceiptId,
+        'playthrough_id'=>$document['playthrough_id'],
+        'scope_token'=>$serviceScopeToken,
+        'nonce'=>$serviceNonce,
+        'status'=>'delivered',
+        'reason'=>'physical_only',
+        'note_form_id'=>12345,
+        'attachments'=>[],
+    ];
+    $receiptAnchor = $store->appendEvent(
+        'correspondence_receipt_confirmed',
+        correspondenceJson([
+            'document_id'=>$document['document_id'],
+            'operation_id'=>$serviceOperationId,
+            'receipt_hash'=>hash('sha256', correspondenceJson($receipt)),
+        ]),
+        '',
+        'correspondence_v1'
+    );
+    $store->saveOperation([
+        'protocol_version'=>1,
+        'document_id'=>$document['document_id'],
+        'operation_id'=>$serviceOperationId,
+        'receipt_id'=>$serviceReceiptId,
+        'playthrough_id'=>$document['playthrough_id'],
+        'scope_token'=>$serviceScopeToken,
+        'nonce'=>$serviceNonce,
+        'receipt'=>$receipt,
+        'receipt_anchor'=>$receiptAnchor,
+        'dispatch_anchor'=>$dispatchAnchor,
+        'source'=>null,
+    ]);
+    $document['operation_id']=$serviceOperationId;
+    $store->saveDocument($document);
+});
+
+$deliveredLogStart = storeRecoveryPgLogOffset($connection, $logFile);
+$deliveredPrompt = $service->prompt($targetName);
+$deliveredPromptQueries = storeRecoveryPgLoggedQueries(
+    storeRecoveryPgReadLogSince($connection, ['file'=>$logFile,'offset'=>$deliveredLogStart]),
+    $logContext['marker']
+);
+$deliveredNpcLockQueries = storeRecoveryPgEffectLockQueries($deliveredPromptQueries, 'public.core_npc_master');
+$deliveredPlayerLockQueries = storeRecoveryPgEffectLockQueries($deliveredPromptQueries, 'public.core_player');
+$deliveredEventlogWriterLocks = array_values(array_filter(
+    $deliveredPromptQueries,
+    static fn($sql) => stripos($sql, 'LOCK TABLE public.eventlog IN SHARE ROW EXCLUSIVE MODE') !== false
+));
+$deliveredAdvisoryWriterLocks = array_values(array_filter(
+    $deliveredPromptQueries,
+    static fn($sql) => stripos($sql, 'pg_advisory_xact_lock(18459814, 1)') !== false
+));
+$deliveredReadOnlyBegins = array_values(array_filter(
+    $deliveredPromptQueries,
+    static fn($sql) => stripos($sql, 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY') !== false
+));
+$deliveredNpcLockShapes = array_values(array_filter(
+    $deliveredNpcLockQueries,
+    static fn($sql) => stripos($sql, 'WHERE id=ANY(') !== false
+        && stripos($sql, '::bigint[]') !== false
+        && stripos($sql, 'ORDER BY id FOR SHARE') !== false
+));
+$deliveredPlayerLockShapes = array_values(array_filter(
+    $deliveredPlayerLockQueries,
+    static fn($sql) => stripos($sql, 'WHERE id=$1 FOR SHARE') !== false
+));
+$deliveredSourceRows = storeRecoveryPgSql(
+    $connection,
+    "SELECT count(*)::int AS n FROM public.eventlog WHERE sess='written_evidence_v1' AND position($1 in data)>0",
+    [$deliveredSummary['document_id']]
+);
+$deliveredSourceCount = (int)($deliveredSourceRows[0]['n'] ?? -1);
+$deliveredPromptReferences = $service->sourceReferences;
+$deliveredKnownReferences = $service->knownSourceReferences;
+echo 'DELIVERED_PROMPT_LOCK_COUNTS='.json_encode([
+    'npc_targeted_locks'=>count($deliveredNpcLockQueries),
+    'npc_targeted_lock_shapes'=>count($deliveredNpcLockShapes),
+    'player_targeted_locks'=>count($deliveredPlayerLockQueries),
+    'player_targeted_lock_shapes'=>count($deliveredPlayerLockShapes),
+    'eventlog_writer_locks'=>count($deliveredEventlogWriterLocks),
+    'advisory_writer_locks'=>count($deliveredAdvisoryWriterLocks),
+], JSON_UNESCAPED_SLASHES).PHP_EOL;
+storeRecoveryPgCheck(str_contains($deliveredPrompt, $deliveredBody), 'delivered_prompt_must_preserve_the_original_body');
+storeRecoveryPgCheck($deliveredSourceCount === 1, 'delivered_prompt_must_append_exactly_one_written_source');
+storeRecoveryPgCheck(count($deliveredReadOnlyBegins) === 1, 'delivered_prompt_must_probe_once_in_read_only_transaction');
+storeRecoveryPgCheck(count($deliveredEventlogWriterLocks) === 1, 'first_exposure_must_reenter_the_original_eventlog_writer_lock');
+storeRecoveryPgCheck(count($deliveredAdvisoryWriterLocks) === 1, 'first_exposure_must_reenter_the_original_advisory_writer_lock');
+storeRecoveryPgCheck(count($deliveredNpcLockQueries) === 2, 'first_exposure_must_revalidate_each_eligible_document_npc_identity');
+storeRecoveryPgCheck(count($deliveredNpcLockShapes) === 2, 'writer_retry_must_keep_each_npc_lock_bounded_to_selected_ids');
+storeRecoveryPgCheck(count($deliveredPlayerLockQueries) === 2, 'first_exposure_must_revalidate_each_eligible_document_player_identity');
+storeRecoveryPgCheck(count($deliveredPlayerLockShapes) === 2, 'writer_retry_must_keep_each_player_lock_bounded_to_player_name_row');
+
+$exposedLogStart = storeRecoveryPgLogOffset($connection, $logFile);
+$exposedPrompt = $service->prompt($targetName);
+$exposedPromptQueries = storeRecoveryPgLoggedQueries(
+    storeRecoveryPgReadLogSince($connection, ['file'=>$logFile,'offset'=>$exposedLogStart]),
+    $logContext['marker']
+);
+$exposedNpcLockQueries = storeRecoveryPgEffectLockQueries($exposedPromptQueries, 'public.core_npc_master');
+$exposedPlayerLockQueries = storeRecoveryPgEffectLockQueries($exposedPromptQueries, 'public.core_player');
+$exposedEventlogWriterLocks = array_values(array_filter(
+    $exposedPromptQueries,
+    static fn($sql) => stripos($sql, 'LOCK TABLE public.eventlog IN SHARE ROW EXCLUSIVE MODE') !== false
+));
+$exposedAdvisoryWriterLocks = array_values(array_filter(
+    $exposedPromptQueries,
+    static fn($sql) => stripos($sql, 'pg_advisory_xact_lock(18459814, 1)') !== false
+));
+$exposedSourceRows = storeRecoveryPgSql(
+    $connection,
+    "SELECT count(*)::int AS n FROM public.eventlog WHERE sess='written_evidence_v1' AND position($1 in data)>0",
+    [$deliveredSummary['document_id']]
+);
+storeRecoveryPgCheck(
+    $exposedPrompt === $deliveredPrompt
+        && $service->sourceReferences === $deliveredPromptReferences
+        && $service->knownSourceReferences === $deliveredKnownReferences
+        && (int)($exposedSourceRows[0]['n'] ?? -1) === 1,
+    'already_exposed_postgres_prompt_must_preserve_prompt_and_reference_arrays_without_duplicate_source'
+);
+storeRecoveryPgCheck(count($exposedNpcLockQueries) === 0, 'already_exposed_prompt_must_not_lock_npc_rows');
+storeRecoveryPgCheck(count($exposedPlayerLockQueries) === 0, 'already_exposed_prompt_must_not_lock_player_rows');
+storeRecoveryPgCheck(count($exposedEventlogWriterLocks) === 0, 'already_exposed_prompt_must_not_take_eventlog_writer_lock');
+storeRecoveryPgCheck(count($exposedAdvisoryWriterLocks) === 0, 'already_exposed_prompt_must_not_take_advisory_writer_lock');
+
 storeRecoveryPgRequire(@pg_query($peer, 'BEGIN') !== false, 'peer_transaction_begin_failed');
 storeRecoveryPgRequire(
     storeRecoveryPgSql(
@@ -261,6 +424,51 @@ storeRecoveryPgRequire(
     'peer_uncommitted_eventlog_insert_failed'
 );
 
+$promptsDuringPeerLogStart = storeRecoveryPgLogOffset($connection, $logFile);
+$promptsDuringPeerStarted = microtime(true);
+$queuedPromptDuringPeer = $service->prompt('NPC 0002');
+$exposedPromptDuringPeer = $service->prompt($targetName);
+$promptsDuringPeerElapsed = microtime(true) - $promptsDuringPeerStarted;
+$promptsDuringPeerQueries = storeRecoveryPgLoggedQueries(
+    storeRecoveryPgReadLogSince($connection, ['file'=>$logFile,'offset'=>$promptsDuringPeerLogStart]),
+    $logContext['marker']
+);
+$promptsDuringPeerReadOnlyBegins = array_values(array_filter(
+    $promptsDuringPeerQueries,
+    static fn($sql) => stripos($sql, 'BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY') !== false
+));
+$promptsDuringPeerNpcLocks = storeRecoveryPgEffectLockQueries($promptsDuringPeerQueries, 'public.core_npc_master');
+$promptsDuringPeerPlayerLocks = storeRecoveryPgEffectLockQueries($promptsDuringPeerQueries, 'public.core_player');
+$promptsDuringPeerEventlogLocks = array_values(array_filter(
+    $promptsDuringPeerQueries,
+    static fn($sql) => stripos($sql, 'LOCK TABLE public.eventlog IN SHARE ROW EXCLUSIVE MODE') !== false
+));
+$promptsDuringPeerAdvisoryLocks = array_values(array_filter(
+    $promptsDuringPeerQueries,
+    static fn($sql) => stripos($sql, 'pg_advisory_xact_lock(18459814, 1)') !== false
+));
+echo 'PROMPT_READS_PEER_UNCOMMITTED_INSERT='.json_encode([
+    'elapsed_seconds'=>$promptsDuringPeerElapsed,
+    'queued_prompt_empty'=>$queuedPromptDuringPeer === '',
+    'exposed_prompt_unchanged'=>$exposedPromptDuringPeer === $deliveredPrompt,
+    'read_only_begins'=>count($promptsDuringPeerReadOnlyBegins),
+    'npc_effect_locks'=>count($promptsDuringPeerNpcLocks),
+    'player_effect_locks'=>count($promptsDuringPeerPlayerLocks),
+    'eventlog_writer_locks'=>count($promptsDuringPeerEventlogLocks),
+    'advisory_writer_locks'=>count($promptsDuringPeerAdvisoryLocks),
+], JSON_UNESCAPED_SLASHES).PHP_EOL;
+storeRecoveryPgCheck(
+    $queuedPromptDuringPeer === '' && $exposedPromptDuringPeer === $deliveredPrompt,
+    'queued_and_exposed_prompts_must_remain_available_during_peer_uncommitted_event_insert'
+);
+storeRecoveryPgCheck(count($promptsDuringPeerReadOnlyBegins) === 2, 'queued_and_exposed_prompts_must_use_repeatable_read_snapshots_during_peer_insert');
+storeRecoveryPgCheck($promptsDuringPeerElapsed < 1.5, 'queued_and_exposed_prompts_must_not_wait_for_peer_eventlog_insert');
+storeRecoveryPgCheck(count($promptsDuringPeerNpcLocks) === 0, 'read_only_prompts_must_not_take_actor_effect_locks_during_peer_insert');
+storeRecoveryPgCheck(count($promptsDuringPeerPlayerLocks) === 0, 'read_only_prompts_must_not_take_player_effect_locks_during_peer_insert');
+storeRecoveryPgCheck(count($promptsDuringPeerEventlogLocks) === 0, 'read_only_prompts_must_not_take_eventlog_writer_lock_during_peer_insert');
+storeRecoveryPgCheck(count($promptsDuringPeerAdvisoryLocks) === 0, 'read_only_prompts_must_not_take_advisory_writer_lock_during_peer_insert');
+
+$listLogStart = storeRecoveryPgLogOffset($connection, $logFile);
 $listStarted = microtime(true);
 $listResult = null;
 $listFailure = null;
@@ -270,7 +478,7 @@ try {
     $listFailure = $error->getMessage();
 }
 $listElapsed = microtime(true) - $listStarted;
-$listQueries = storeRecoveryPgLoggedQueries(storeRecoveryPgReadLogSince($connection, ['file'=>$logFile,'offset'=>$peerLogStart]), $logContext['marker']);
+$listQueries = storeRecoveryPgLoggedQueries(storeRecoveryPgReadLogSince($connection, ['file'=>$logFile,'offset'=>$listLogStart]), $logContext['marker']);
 $listNpcQueries = storeRecoveryPgQueryCount($listQueries, 'public.core_npc_master');
 $listPlayerQueries = storeRecoveryPgQueryCount($listQueries, 'public.core_player');
 echo 'READ_LIST_PEER_INSERT='.json_encode([
@@ -280,12 +488,19 @@ echo 'READ_LIST_PEER_INSERT='.json_encode([
     'npc_catalog_queries'=>$listNpcQueries,
     'player_name_queries'=>$listPlayerQueries,
 ], JSON_UNESCAPED_SLASHES).PHP_EOL;
-storeRecoveryPgCheck(is_array($listResult) && count($listResult) === 50, 'read_only_list_must_not_wait_for_peer_eventlog_insert');
+storeRecoveryPgCheck(is_array($listResult) && count($listResult) === 51, 'read_only_list_must_not_wait_for_peer_eventlog_insert');
 storeRecoveryPgCheck($listElapsed < 1.5, 'read_only_list_must_not_take_the_eventlog_writer_lock_timeout');
 storeRecoveryPgCheck($listNpcQueries === 1, 'npc_cache_must_reset_and_load_once_in_the_next_transaction');
 storeRecoveryPgCheck($listPlayerQueries === 1, 'player_cache_must_reset_and_load_once_in_the_next_transaction');
 
 storeRecoveryPgRequire(@pg_query($peer, 'COMMIT') !== false, 'peer_transaction_commit_failed');
+$documentCountBeforeStale = (int)(storeRecoveryPgSql($connection, 'SELECT count(*)::int AS n FROM plugins.correspondence_documents')[0]['n'] ?? -1);
+$peerEventsBeforeStale = (int)(storeRecoveryPgSql(
+    $connection,
+    "SELECT count(*)::int AS n FROM public.eventlog WHERE type='info' AND sess='correspondence_v1'"
+)[0]['n'] ?? -1);
+storeRecoveryPgCheck($documentCountBeforeStale === 51, 'fixture_must_contain_fifty_queued_letters_and_one_delivered_letter');
+storeRecoveryPgCheck($peerEventsBeforeStale === 53, 'fixture_must_retain_all_fifty_queued_and_three_delivered_anchors');
 $staleReadRejected = false;
 try {
     $service->list();
@@ -310,13 +525,13 @@ try {
 }
 storeRecoveryPgCheck($staleWriteRejected, 'writer_must_retain_request_clock_max_ts_guard_after_read_lock_split');
 $documentCount = storeRecoveryPgSql($connection, 'SELECT count(*)::int AS n FROM plugins.correspondence_documents')[0]['n'] ?? null;
-storeRecoveryPgCheck((int)$documentCount === 50, 'stale_request_must_not_persist_a_new_document');
+storeRecoveryPgCheck((int)$documentCount === $documentCountBeforeStale, 'stale_request_must_not_persist_a_new_document');
 
 $peerEvents = storeRecoveryPgSql(
     $connection,
     "SELECT count(*)::int AS n FROM public.eventlog WHERE type='info' AND sess='correspondence_v1'"
 )[0]['n'] ?? null;
-storeRecoveryPgCheck((int)$peerEvents === 50, 'read_only_paths_must_not_append_correspondence_events');
+storeRecoveryPgCheck((int)$peerEvents === $peerEventsBeforeStale, 'stale_read_and_write_paths_must_not_append_correspondence_events');
 
 $raceStore = new CorrespondencePgStore(
     $connection,

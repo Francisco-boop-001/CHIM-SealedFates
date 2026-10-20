@@ -1,36 +1,40 @@
-## CHIM Sealed Fates 0.1.0-dev.15 — PRE-ALPHA
+# CHIM Sealed Fates 0.1.0-dev.16 -- PRE-ALPHA
 
-Skyrim has one courier, and he is VERY good at his job. Let's reward him with love letters, forged apologies, and forwarded insults. I call it 'emergent storytelling' because 'I have made this man's working conditions worse' looks dreadful on a feature list.
+Skyrim still has one courier, and he is VERY good at his job. I continue to reward him with love letters, forged apologies, and forwarded insults; the maintenance work is intended to keep that tiny bureaucracy from eating its own paperwork.
 
-The courier now has a proper illustrated web page. Still no assistant. Apparently I spent the staffing budget on an emo llama.
+## What changed
 
-![The Sealed Fates courier, two very different letters, and the emo llama.](https://raw.githubusercontent.com/Francisco-boop-001/CHIM-SealedFates/correspondence-v0.1.0-dev.15/assets/dashboard-art-source.png)
+- Preflighted the Background Life connector before source claim. Due queued letters still dispatch when the connector is unavailable; a new source remains unclaimed and eligible until a valid connector can process it.
+- Reapplied the full core connector setup inside the guarded request callback, so `fast_request` sees the connector's own action flags while native dialogue globals are restored afterward.
+- Kept request exceptions terminal after entering the model callback. Existing `failed/model_unavailable` decisions remain terminal audit records because their historical reason and `model_calls` value cannot establish whether a callback ran. `model_calls` records callback attempts, not provider billing or receipt.
+- Narrowed prompt reads to empty, queued, and already-exposed paths. First exposure still revalidates the complete body and references; effect writes remain serialized. F-05 measurements and their limits are in the [verification notes](VERIFICATION.md).
+- Built deterministic dev.16 assets and passed the fresh-fixture package suite. This does not add a provider evaluation or Skyrim gameplay result.
 
-### What changed
+## Interface and pairing
 
-Sealed Fates now shares its siblings' parchment panels, serif headings, rust-red controls and slate-blue accents. The new Nordic woodcut stays uncropped, including the tiny emo llama, and the page follows your system light/dark preference. Forms adapt to narrow screens and wide mail tables scroll within their own panels.
+The in-game Department-owned interface is optional; the existing Sealed Fates web plugin page remains usable. Exact dev.16 compatibility pins await owner confirmation, and no dev.16 sibling bundle is included. The matching Papyrus bridge remains required for physical notes and item/gold transfers.
 
-The existing composer, inbox/outbox, delivery-status checks and autonomous-correspondence controls remain available. Authorization, CSRF validation, escaped output, mail actions and delivery/interpretation rules are preserved. This is a web presentation release; it does not change NPC reasoning, transfers or the database contract.
+Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Do not stack old and new routes. The [dev.15 web presentation release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.15) is historical dev.15 evidence only; the [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains evidence for its exact older pairing only.
 
-### Pick your interface
+## Assets
 
-**The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** You can use the web controls without installing the new Skyrim interface. The matching Sealed Fates Papyrus bridge is a separate requirement for physical notes and item/gold transfers; this release reuses its unchanged verified PEX.
+Verify downloaded files against these SHA-256 digests and SHA256SUMS.txt.
 
-### Install
+| Candidate asset | SHA-256 | Bytes |
+| --- | --- | ---: |
+| [Paired MO2 bridge and CHIM server package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.16/CHIM-Sealed-Fates-0.1.0-dev.16.zip) | `53cd53f25825e06731d4f56427490f84400a1b4dbc43210a582f2affbad3d74d` | 2,718,035 |
+| [Server package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.16/correspondence-0.1.0-dev.16.dwpkg) | `4bce754c04e4285d9d02fe02db5eae10406197ceffc67ccf6b97b47236d1b4d1` | 2,699,157 |
+| [Server-only catalog archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.16/correspondence.tar.gz) | `652d939f28b820cdf5883dddf52b04d436cda906c21a992b840aefa2658db1aa` | 2,407,616 |
+| [Checksum list](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.16/SHA256SUMS.txt) | `087ab06825cf30073dde25e7cb0e8ab6574fec43c37529376deb3487e33a5810` | 289 |
 
-Use the paired dev.15 MO2 ZIP and its included server package together. It includes the new web artwork and stylesheet. Existing dev.14 archives and the historical recovery kit remain unchanged; no old kit is relabeled as a dev.15 integration test. See the [installation guide](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/correspondence-v0.1.0-dev.15/docs/INSTALL.md).
+The paired ZIP reuses the unchanged, hash-verified bridge PEX pinned in [game/bridge-manifest.json](../game/bridge-manifest.json): SHA-256 `7020f4d7dca2c5d94628102540add58227d93b106ef619ae65a33c00ccc8fd8a`, 18,496 bytes. The package builder verifies the manifest, sanitized metadata, and preserved compiled body. No new Caprica build is part of dev.16.
 
-### Assets
+## Verification and limits
 
-- [Paired MO2 bridge and CHIM server package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/CHIM-Sealed-Fates-0.1.0-dev.15.zip) — SHA-256 **d8ed9a0bc1eebf1084cc951c1a5c2fcabc9f47472f1eeaf6ce3bbd0af40d7888**
-- [Server package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/correspondence-0.1.0-dev.15.dwpkg) — SHA-256 **ed4c5bccd8bf2eb067304eb92d843faba15fe53e50767fb242a6b48977d9437b**
-- [Server-only catalog archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/correspondence.tar.gz) — SHA-256 **d852da6170bce1625e5a104880d257b486358b5a42d30b1f75cb3a952c34df49**
-- [Checksums](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/SHA256SUMS.txt) — SHA-256 **f1ad6d68c1faff7ed1b1945196af8aa85f1d55e27e31c5911d3c8e96590ea3ed**
+The fresh-fixture Windows package suite passed 20 tests. Nine integrated PostgreSQL suites passed on owned disposable socket databases, including 41 autonomy-recovery checks and the F-05 store fixture. The pure host regression passed. The pure PHP batch's one environment issue and the complete F-05 measurements are described in [verification notes](VERIFICATION.md).
 
-### Verification and limits
+The isolated test cluster was stopped and its runtime lease returned. Protected live-VHD size and modification time matched the preflight metadata; this is not a whole-volume content hash. No provider or gameplay session was run. The measurements are synthetic and single-fixture: they do not establish campaign-scale performance, live mod compatibility, note display, inventory/co-save atomicity, or NPC interpretation quality.
 
-Fresh checks passed: **18 package tests**, deterministic builds of the four assets, **three pure PHP suites and four PHP lints** on the registered disposable server, and **12 browser scenarios** covering light/dark desktop, tablet and phone layouts, empty and opened mail, error views, long Unicode names, keyboard navigation and horizontal table panning. A synthetic composer submission was intercepted before any backend call. The browser caught a long-name heading overflow; wrapping was fixed and the full scenario set rerun. Final PHP source stayed unchanged during that CSS-only correction.
+---
 
-The approved PNG and packaged lossless WebP have identical decoded pixels. Native checks used synthetic data without database, core or provider calls; the disposable distro was stopped and handed back, with protected live VHD size and modification time unchanged. These are rendering and package results, not a deployed live-site or Skyrim gameplay result.
-
-PRE-ALPHA. No new provider/model or Skyrim gameplay test is claimed. This release does not establish native note display, inventory/co-save atomicity, or reliable detection of forged authorship. The existing performance and recovery limits remain; see the [verification notes](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/correspondence-v0.1.0-dev.15/docs/VERIFICATION.md).
+PRE-ALPHA. No automatic retry of historical ambiguous failures, no provider receipt/billing claim, and no new Skyrim gameplay claim.

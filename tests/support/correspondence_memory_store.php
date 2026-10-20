@@ -3,10 +3,12 @@ declare(strict_types=1);
 final class CorrespondenceMemoryStore implements CorrespondenceStore
 {
     public array $events=[],$docs=[],$operations=[],$commands=[],$notes=[],$documentLookups=[];
+    public int $writerTransactionCalls=0,$readTransactionCalls=0,$actorRowLockCalls=0;
     public ?string $executor='Lydia';
     public array $clock=['ts'=>100,'gamets'=>100];
     public array $actors=[900001=>['id'=>900001,'npc_name'=>'Camilla','refid'=>'00013488'],900002=>['id'=>900002,'npc_name'=>'Jarl Balgruuf','refid'=>'0001A677']];
     public ?Closure $beforeDocuments=null;
+    public ?Closure $afterReadTransaction=null;
     private bool $active=false;
     private bool $readOnly=false;
     private ?array $actorCatalogCache=null;
@@ -20,8 +22,15 @@ final class CorrespondenceMemoryStore implements CorrespondenceStore
         catch(Throwable $e){[$this->events,$this->docs,$this->operations,$this->commands,$this->notes]=$before;throw $e;}
         finally{$this->active=false;$this->readOnly=false;$this->actorCatalogCache=null;}
     }
-    public function transaction(callable $work): mixed { return $this->runTransaction($work,false); }
-    public function readTransaction(callable $work): mixed { return $this->runTransaction($work,true); }
+    public function transaction(callable $work): mixed { $this->writerTransactionCalls++;return $this->runTransaction($work,false); }
+    public function readTransaction(callable $work): mixed
+    {
+        $this->readTransactionCalls++;
+        $result=$this->runTransaction($work,true);
+        $callback=$this->afterReadTransaction;$this->afterReadTransaction=null;
+        if($callback!==null)$callback($this);
+        return $result;
+    }
     public function scope():array{return ['playthrough_id'=>'unprofiled']+$this->clock;}
     public function actors():array
     {
@@ -33,6 +42,7 @@ final class CorrespondenceMemoryStore implements CorrespondenceStore
     public function lockActorRows(array $npcIds,bool $includePlayer=false):array
     {
         if(!$this->active||$this->readOnly)throw new LogicException('effect_identity_lock_requires_writer');
+        $this->actorRowLockCalls++;
         $rows=[];
         foreach(array_unique($npcIds)as$id)if(is_int($id)&&isset($this->actors[$id]))$rows[$id]=$this->actors[$id];
         return ['actors'=>$rows,'player_name'=>$includePlayer?'Dragonborn':null];
