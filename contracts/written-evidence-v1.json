@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "document_id": "6c4dd05e-909c-4e93-8a11-7f72181a2df4",
+  "playthrough_id": "unprofiled",
+  "recipient": {"kind":"npc","id":900001,"name":"Camilla"},
+  "claimed_sender": {"kind":"npc","id":900002,"name":"Jarl Balgruuf"},
+  "body": "Camilla, I enclose 50 septims. Please hear Faendal fairly.\nSigned, Jarl Balgruuf",
+  "receipt": {
+    "receipt_id":"914c2b35-7147-44f8-8c91-ae8745b11755",
+    "operation_id":"b98aec36-775d-4f41-aa71-90a753cff653",
+    "status":"confirmed",
+    "exposure":"context"
+  },
+  "attachments": [{"kind":"gold","form_id":"Skyrim.esm|0000000F","quantity":50}]
+}

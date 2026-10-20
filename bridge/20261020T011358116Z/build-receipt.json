@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "evidence_kind": "real Caprica compilation; format-aware header anonymization; no native Papyrus/gameplay execution",
+  "exit_code": 0,
+  "compiler": {
+    "version": "Caprica v0.3.0, local patched build",
+    "path": "provenance/compiler/Caprica.exe",
+    "sha256": "c8013baf3350bf9b313a633f74997ce6a9a47c343e489f886bcde359369126f0"
+  },
+  "source": {
+    "path": "game/Source/Scripts/CHIMCorrespondenceBridge.psc",
+    "sha256": "260f03bf18402b020664f83e997ca028ed894cd0f151df6beb62cd9085e3def0"
+  },
+  "source_argument": "CHIMCorrespondenceBridge.psc",
+  "arguments": [
+    "--game=skyrim",
+    "--flags=provenance/flags/TESV_Papyrus_Flags.flg",
+    "--output=bridge/20261020T011358116Z/compiler-output",
+    "--ignorecwd",
+    "--async-write=0",
+    "--anonymize",
+    "--diagnostics-json=bridge/20261020T011358116Z/diagnostics.json",
+    "--import=provenance/import-roots/01",
+    "--import=provenance/import-roots/02",
+    "--import=provenance/import-roots/03",
+    "--import=provenance/import-roots/04",
+    "CHIMCorrespondenceBridge.psc"
+  ],
+  "inputs": [
+    {
+      "role": "compiler",
+      "path": "provenance/compiler/Caprica.exe",
+      "sha256": "c8013baf3350bf9b313a633f74997ce6a9a47c343e489f886bcde359369126f0"
+    },
+    {
+      "role": "flags",
+      "path": "provenance/flags/TESV_Papyrus_Flags.flg",
+      "sha256": "ab61d098ef7a1402d8ee4d7bc77f26851d5380cd142ee4f3bf57ce41d0e7afa7"
+    },
+    {
+      "role": "source",
+      "path": "game/Source/Scripts/CHIMCorrespondenceBridge.psc",
+      "sha256": "260f03bf18402b020664f83e997ca028ed894cd0f151df6beb62cd9085e3def0"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/d386258117a56402.psc",
+      "sha256": "d386258117a5640232062e9a3910c7246367bc56477f0561d9dc28df464cbc9a"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/62e5f68123c8874c.psc",
+      "sha256": "62e5f68123c8874c49153b5d0bc032cecfe8de9c082fc7d56f3f28bc5be09cee"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/5932af73316ddce1.psc",
+      "sha256": "5932af73316ddce149b94c05cf611da169e3b6fb7cf0d2fcd396806bd7660397"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/5c13a8e4c4eda137.psc",
+      "sha256": "5c13a8e4c4eda13787dc62dc602a11c67e82a99691d1c707c7230dc707dd44b8"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/998e6eca3dd1d1c3.psc",
+      "sha256": "998e6eca3dd1d1c32c1c9691e37fe05bff7affe11118c9a2b0359f748a50ebe4"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/faafbed615ddfe6d.psc",
+      "sha256": "faafbed615ddfe6dfb6db37ced7deb9a9b1b3a0a1ab392de04621e49ae6579e7"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/f797381ed0277184.psc",
+      "sha256": "f797381ed02771847507b5ddab2775d6c7a6eb995c4717c3dae4ace590865d3b"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/0cdb83f02ff4ea95.psc",
+      "sha256": "0cdb83f02ff4ea95dac9efca7230c7a50014fe3d30aac2d4eaa2bdf9feebcf5b"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/1464c4bd75f87d3e.psc",
+      "sha256": "1464c4bd75f87d3e98d9a866e413a400399db63b1d9c21c4a2b11165eff9da62"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/8ece97b7d9792620.psc",
+      "sha256": "8ece97b7d9792620688a2e3d5f7e2e4f89ee90b4c5ba890415540d5ad144da27"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/299660a3a6892c4d.psc",
+      "sha256": "299660a3a6892c4df55c6ecb48ac36d70a95f342643cc922b7159d86b0f8bf0c"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/0125c0e1b5723b2f.psc",
+      "sha256": "0125c0e1b5723b2f6ed87160228a128e6c9c68794e2a76bd4db51c96b2a383a8"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/06532036b8e8a5bb.psc",
+      "sha256": "06532036b8e8a5bb0d760fbaaace23c2e7fc74b69901bd27dab40cc35087405e"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/4d3a319b2c913d34.psc",
+      "sha256": "4d3a319b2c913d34d5630ff7930d2295de770fd2761b1c4e1a406d0ff44d409f"
+    },
+    {
+      "role": "import",
+      "path": "provenance/imports/8076560c6f35d19c.psc",
+      "sha256": "8076560c6f35d19cf67ee242abeafacf0002be832d2231f2760eacc2ba52e0ab"
+    }
+  ],
+  "anonymization": {
+    "requested": true,
+    "caprica_header_clean": false,
+    "header_only": true,
+    "method": "Caprica --anonymize plus bounded Papyrus PEX header rewrite",
+    "raw_pex_removed": true
+  },
+  "raw_pex": {
+    "sha256": "38be17ac8d9371e7b7b60166d13d5e655651c7ff87ad6121e3a697d4d340544d",
+    "bytes": 18608,
+    "body_sha256": "00dd97448d5d3c59d800478fcf9fa8d78a2381719e1f0a32f689814cf654f294"
+  },
+  "pex": {
+    "path": "bridge/20261020T011358116Z/Data/Scripts/CHIMCorrespondenceBridge.pex",
+    "sha256": "7020f4d7dca2c5d94628102540add58227d93b106ef619ae65a33c00ccc8fd8a",
+    "bytes": 18496,
+    "body_sha256": "00dd97448d5d3c59d800478fcf9fa8d78a2381719e1f0a32f689814cf654f294",
+    "header": {
+      "source": "CHIMCorrespondenceBridge.psc",
+      "user": "anonymous",
+      "computer": "anonymous"
+    }
+  },
+  "native_interface": "compile-only exact declaration, not a runtime substitute",
+  "public_projection": {
+    "kind": "sanitized projection of private Caprica build receipt",
+    "source_receipt_sha256": "f0721129c768263526375a8e65097d41b1ed81a1650b9368d5d00e2ccb720378",
+    "path_values": "Replaced with relative provenance labels",
+    "pex_header_values": "The source basename is retained; user and computer are anonymous",
+    "arguments": "Path-bearing arguments are relative labels; original local paths are redacted"
+  }
+}

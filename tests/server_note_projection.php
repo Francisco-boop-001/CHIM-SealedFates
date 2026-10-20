@@ -1,0 +1,14 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__).'/server/lib/runtime.php';require_once dirname(__DIR__).'/server/lib/boundaries.php';require_once __DIR__.'/support/correspondence_memory_store.php';
+function noteCheck(bool $ok,string $why):void{if(!$ok)throw new RuntimeException($why);}
+$store=new CorrespondenceMemoryStore();$store->actors[900004]=['id'=>900004,'npc_name'=>'Hidden Payer','refid'=>'00013489'];$service=new CorrespondenceService($store);
+$body="Hello\nExact body  ";$input=['request_id'=>correspondenceUuid(),'author'=>'player','payer'=>'npc:900004','recipient'=>'npc:900001','claimed_sender'=>'npc:900002','body'=>$body,'attachments'=>[]];$doc=$service->compose($input);$dispatch=$service->dispatch($doc['document_id']);$expected="From: Jarl Balgruuf\nTo: Camilla\n\n".$body;
+noteCheck(count($store->notes)===1&&$store->notes[0]===['title'=>'letter '.$doc['document_id'],'text'=>$expected],'RED: physical note must show selected claimed sender/recipient above exact original body');
+noteCheck(!str_contains($store->notes[0]['text'],'Dragonborn')&&!str_contains($store->notes[0]['text'],'Hidden Payer'),'physical header must never identify private actual author/payer');
+noteCheck($store->docs[$doc['document_id']]['body']===$body,'header projection must not mutate private immutable body');
+$op=$store->operations[$dispatch['operation_id']];$service->receive(['protocol_version'=>1,'document_id'=>$doc['document_id'],'operation_id'=>$op['operation_id'],'receipt_id'=>$op['receipt_id'],'playthrough_id'=>'unprofiled','scope_token'=>$op['scope_token'],'nonce'=>$op['nonce'],'status'=>'delivered','reason'=>'physical_only','note_form_id'=>12345,'attachments'=>[]]);$service->prompt('Camilla');$source=json_decode($store->events[$service->sourceReferences[0]]['data'],true,512,JSON_THROW_ON_ERROR);
+noteCheck($source['body']===$body&&$source['claimed_sender']['name']==='Jarl Balgruuf'&&!str_contains($source['body'],'From:'),'neutral source preserves exact author-entered body and separate claimed attribution');
+$measure=fn(int $size,string $text)=>[0,-$size,0,0,strlen($text)*$size/2,0,0,0];$layout=correspondenceNoteLayout($store->notes[0]['text'],400,500,$measure);noteCheck($layout!==null&&array_column($layout['lines'],'text')===['From: Jarl Balgruuf','To: Camilla','', 'Hello','Exact body  '],'complete renderer layout must retain visible public header and original paragraphs');
+noteCheck(correspondenceNoteFits('Hello',400,90,$measure)&&!correspondenceNoteFits("From: Jarl Balgruuf\nTo: Camilla\n\nHello",400,90,$measure),'header geometry must count toward overflow and reject rather than clip');
+echo "PASS physical note projection: selected public From/To, exact immutable/neutral body, hidden author/payer exclusion and complete header geometry failclosed\n";

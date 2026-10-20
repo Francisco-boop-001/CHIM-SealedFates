@@ -1,0 +1,4 @@
+/dist/
+/bridge/package-tests/
+__pycache__/
+*.pyc

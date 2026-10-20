@@ -1,0 +1,21 @@
+# Sealed Fates game bridge
+
+`Source/Scripts/CHIMCorrespondenceBridge.psc` is a separate global Papyrus extension. Install only the paired `Scripts/CHIMCorrespondenceBridge.pex`; it does not replace a CHIM built-in.
+
+The repository includes the exact anonymous compiled bridge used for the dev.14 server checks. [The bridge manifest](bridge-manifest.json) binds the script, compiler and PEX hashes. The public receipt under `bridge/` at the repository root is an explicitly redacted projection of the actual compiler receipt: it retains hashes and compilation facts, removes private paths/identifying pre-sanitization metadata, and records the original receipt hash. It is not a new compilation.
+
+## Wire and receipts
+
+A currently managed CHIM actor transports `ExtCmdCHIMCorrespondenceBridge_Deliver` or `ExtCmdCHIMCorrespondenceBridge_Reconcile` with JSON. Inventory owners are explicit stable plugin/local identities checked against signed runtime FormIDs. Body text and hidden author/payer provenance do not enter receipt JSON. Reconcile requires the original dispatch JSON unchanged.
+
+The bridge claims the scoped operation before physical work, checks all attachments, creates a note, then verifies both sides of every transfer. Partial or ambiguous results become `unknown`; they do not trigger automatic redelivery. Reconcile moves no inventory and replays a cached completion when available. A physical receipt does not establish that the NPC read the letter: recipient exposure is the separate server context boundary.
+
+A delivered receipt is emitted in this member order: `protocol_version, document_id, operation_id, receipt_id, playthrough_id, scope_token, nonce, status, reason, note_form_id, attachments`. Each attachment uses `form_id, quantity, before_source, after_source, before_recipient, after_recipient`; array order is retained. Dev.14 hashes the decoded PHP receipt in its input order before JSONB storage. Custom read adapters must preserve full anchored-hash validation; JSONB member order is not a safe substitute for the producer order.
+
+## Build and verification
+
+From the repository root, `python scripts/release-assets.py` reproduces the release using the included verified PEX. See [build instructions](../docs/BUILD.md). `python tests/bridge-parser.py` and `python tests/bridge-state.py` mechanically translate production validation/control flow and use deliberately fake native boundaries. They do not run the Papyrus VM or Skyrim.
+
+Fresh Papyrus compilation requires Caprica plus compatible CHIM, SKSE, JContainers and Papyrus Extender declarations. These third-party SDKs and the private development compiler wrapper are not redistributed. The manifest/receipt record the retained build identities and dependencies; shipping the tested PEX avoids presenting an untested recompilation as the same binary.
+
+Native gameplay, note rendering, co-save restore, real inventory atomicity/concurrency and installed dependency compatibility remain unverified. Attachments address base forms and quantities; selecting a particular enchanted/renamed instance and dynamic FF identities is unsupported.
