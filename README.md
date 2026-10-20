@@ -1,8 +1,14 @@
 # CHIM Sealed Fates
 
-Skyrim's inbox finally has consequences. The developer may lose a plot thread; the SHA-256 list will not.
+Skyrim has one courier, and he is VERY good at his job. Let's reward him with love letters, forged apologies, and forwarded insults. I call it 'emergent storytelling' because 'I have made this man's working conditions worse' looks dreadful on a feature list.
 
 **0.1.0-dev.14 — PRE-ALPHA.** Sealed Fates adds physical letters and optional item or gold transfers to CHIM, plus private written context and bounded NPC correspondence. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
+
+## Pick your interface
+
+**The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** Keep using CHIM's web page to compose letters, browse your inbox and outbox, check delivery status, and enable or pause autonomous correspondence. You do not need the new Skyrim interface to use those controls. Your browser has not been fired; I lack the qualifications to conduct that meeting.
+
+The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
 ## Download
 

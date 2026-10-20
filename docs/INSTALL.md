@@ -2,6 +2,12 @@
 
 **PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The checked package is a matched pair: the server package and Papyrus bridge must stay on the same version.
 
+## Pick your interface
+
+**The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** Keep using CHIM's web page to compose letters, browse your inbox and outbox, check delivery status, and enable or pause autonomous correspondence. You do not need the new Skyrim interface to use those controls. Your browser has not been fired; I lack the qualifications to conduct that meeting.
+
+The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
+
 ## Main paired install
 
 1. Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.14.zip**, and verify it against **SHA256SUMS.txt**.

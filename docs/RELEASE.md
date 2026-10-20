@@ -1,12 +1,18 @@
 ## CHIM Sealed Fates 0.1.0-dev.14 — PRE-ALPHA
 
-Skyrim's inbox has acquired consequences. The developer is still capable of forgetting a plot thread; the package checksums are less sentimental.
+Skyrim has one courier, and he is VERY good at his job. Let's reward him with love letters, forged apologies, and forwarded insults. I call it 'emergent storytelling' because 'I have made this man's working conditions worse' looks dreadful on a feature list.
 
 This release pairs the CHIM Correspondence server package with its compiled Papyrus bridge. Letters can carry selected items or gold. A delivery receipt records the bridge's observed transfer; it does not prove the recipient read the note. NPC exposure happens only through that recipient's context render.
 
 With compatible Mind Poisoning or Sworn & Scorned integrations enabled, NPCs may interpret exposed letters under those mods' normal rules, affecting opinions, grievances, gratitude, or evidence-backed obligations. Neutral outcomes remain valid; there is no fixed gratitude bonus, and a signature does not prove authorship.
 
 Autonomous correspondence is off by default. Native decision ticks require global opt-in and Background Life plus Send letters for each NPC, and run on eligible native dialogue postrequests. A separate, opt-in, bounded offscreen text-mail worker can resume on fresh native observations so NPC mail can progress while the player is away.
+
+### Pick your interface
+
+**The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** Keep using CHIM's web page to compose letters, browse your inbox and outbox, check delivery status, and enable or pause autonomous correspondence. You do not need the new Skyrim interface to use those controls. Your browser has not been fired; I lack the qualifications to conduct that meeting.
+
+The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
 ### Assets
 
