@@ -15,6 +15,7 @@ SERVER_FILES = (
     'lib/autonomy_host.php', 'migrations/002_autonomy.sql',
     'offscreen-worker.php', 'offscreen-service.php', 'lib/offscreen_host.php',
     'lib/offscreen.php', 'lib/offscreen_policy.php', 'migrations/003_offscreen.sql',
+    'dashboard-art.webp', 'assets/style.css',
 )
 PEX_MAGIC = bytes.fromhex('FA57C0DE')
 BRIDGE_SOURCE = 'game/Source/Scripts/CHIMCorrespondenceBridge.psc'

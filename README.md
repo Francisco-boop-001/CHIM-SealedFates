@@ -1,8 +1,12 @@
 # CHIM Sealed Fates
 
+Part of the World of Drama-Llama.
+
+![A Nordic courier carries sealed letters past an affectionate reader and an outraged reader, watched by an emo llama above a doorway.](assets/dashboard-art-source.png)
+
 Skyrim has one courier, and he is VERY good at his job. Let's reward him with love letters, forged apologies, and forwarded insults. I call it 'emergent storytelling' because 'I have made this man's working conditions worse' looks dreadful on a feature list.
 
-**0.1.0-dev.14 — PRE-ALPHA.** Sealed Fates adds physical letters and optional item or gold transfers to CHIM, plus private written context and bounded NPC correspondence. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
+**0.1.0-dev.15 — PRE-ALPHA.** Sealed Fates adds physical letters and optional item or gold transfers to CHIM, plus private written context and bounded NPC correspondence. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
 
 ## Pick your interface
 
@@ -12,9 +16,13 @@ The interface is separate from the **matching Sealed Fates Papyrus bridge**, whi
 
 ## Download
 
-Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.14/CHIM-Sealed-Fates-0.1.0-dev.14.zip) for the main install path. It contains the matching bridge PEX and server package.
+Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/CHIM-Sealed-Fates-0.1.0-dev.15.zip) for the main install path. It contains the matching bridge PEX and server package.
 
-The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.14/correspondence-0.1.0-dev.14.dwpkg) is for CHIM's package manager. The optional [recovery playtest kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.14/CHIM-Sealed-Fates-Recovery-Playtest-20261019-v1.zip) carries the exact tested bridge and consumer package pairing. A server-catalog-only [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.14/correspondence.tar.gz) and [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.14/SHA256SUMS.txt) are also attached. The tar archive is not automatically listed by CHIM.
+The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/correspondence-0.1.0-dev.15.dwpkg) is for CHIM's package manager. A server-catalog-only [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/correspondence.tar.gz) and [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.15/SHA256SUMS.txt) are also attached. The tar archive is not automatically listed by CHIM.
+
+## The web page
+
+The existing web plugin page now wears the same parchment, serif type, rust-red controls and slate-blue accents as its siblings, with the full emo-llama illustration. It follows your system light/dark preference, keeps the artwork uncropped, and gives wide mail tables their own scroll area on small screens. Your letters, form actions and delivery rules are unchanged. The courier has acquired branding. He has not acquired an assistant.
 
 ## What it does
 
@@ -34,7 +42,7 @@ Recipient context contains up to the three newest valid exposed letters found in
 
 The server and bridge manifests list source-level compatibility references. They describe APIs and versions targeted by this build; they do not verify an installed CHIM, Skyrim, or mod setup. The bridge supports base-form item quantities, not selection of exact enchanted or renamed instances.
 
-Dev.14 adds read-only transaction snapshots and identity checks, but eventlog MAX(ts) freshness work and writer-lock cost remain. SQL savepoints protect database staging only; they do not roll back rendered files, co-save state, or Skyrim inventory. Removing the code does not automatically remove retained database rows, eventlog evidence, books, PNGs, co-save data, notes, or items. See [installation and removal](docs/INSTALL.md) and [verification limits](docs/VERIFICATION.md).
+The dev.14 transaction and identity safeguards remain in dev.15, but eventlog MAX(ts) freshness work and writer-lock cost remain. SQL savepoints protect database staging only; they do not roll back rendered files, co-save state, or Skyrim inventory. Removing the code does not automatically remove retained database rows, eventlog evidence, books, PNGs, co-save data, notes, or items. See [installation and removal](docs/INSTALL.md) and [verification limits](docs/VERIFICATION.md).
 
 This release does not add romance or debt collection mechanics, authenticate signatures, or establish that a model can reliably detect forgery. It has no verified Skyrim gameplay result.
 

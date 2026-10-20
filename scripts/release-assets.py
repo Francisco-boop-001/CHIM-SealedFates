@@ -1,4 +1,4 @@
-"""Reproduce the exact tested dev.14 assets and the server-only catalog archive."""
+"""Reproduce the pinned dev.14 release and current dev.15 package assets."""
 from pathlib import Path
 from zipfile import ZipFile
 import gzip
@@ -7,6 +7,7 @@ import importlib.util
 import io
 import json
 import tarfile
+import tempfile
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('package', ROOT / 'scripts/build-package.py')
@@ -26,7 +27,83 @@ def save(path, data):
         raise ValueError('Refusing to overwrite different release bytes: ' + path.name)
     path.write_bytes(data)
 
+def preflight_dev15_output(out, expected):
+    if out.is_symlink():
+        raise ValueError('Dev15 output directory cannot be a symlink')
+    if out.exists() and not out.is_dir():
+        raise ValueError('Dev15 output path must be a directory')
+    if not out.exists():
+        return
+    existing = list(out.iterdir())
+    unexpected = {path.name for path in existing} - expected
+    if unexpected:
+        raise ValueError('Unexpected dev15 output: ' + ', '.join(sorted(unexpected)))
+    for path in existing:
+        if path.is_symlink() or not path.is_file():
+            raise ValueError('Unsafe dev15 output: ' + path.name)
+
+def build_dev15():
+    out = ROOT / 'dist'
+    manifest, _ = pkg.entries(ROOT)
+    if manifest['version'] != '0.1.0-dev.15':
+        raise ValueError('Release identity differs')
+    names = {
+        'correspondence-' + manifest['version'] + '.dwpkg',
+        'CHIM-Sealed-Fates-' + manifest['version'] + '.zip',
+        'correspondence.tar.gz',
+        'SHA256SUMS.txt',
+    }
+    preflight_dev15_output(out, names)
+    with tempfile.TemporaryDirectory(prefix='.dev15-release-', dir=ROOT) as temporary:
+        staging = Path(temporary)
+        result = pkg.build(ROOT, None, staging)
+        stream = io.BytesIO()
+        with tarfile.open(fileobj=stream, mode='w', format=tarfile.USTAR_FORMAT) as archive:
+            for name in sorted(pkg.SERVER_FILES):
+                data = (ROOT / 'server' / name).read_bytes()
+                entry = tarfile.TarInfo('correspondence/' + name)
+                entry.size = len(data)
+                entry.mode = 0o644
+                entry.mtime = 0
+                archive.addfile(entry, io.BytesIO(data))
+        compressed = io.BytesIO()
+        with gzip.GzipFile(fileobj=compressed, mode='wb', filename='', mtime=0, compresslevel=9) as archive:
+            archive.write(stream.getvalue())
+        save(staging / 'correspondence.tar.gz', compressed.getvalue())
+        with tarfile.open(staging / 'correspondence.tar.gz', 'r:gz') as archive:
+            if archive.getnames() != ['correspondence/' + n for n in sorted(pkg.SERVER_FILES)]:
+                raise ValueError('Catalog root layout differs')
+            for member in archive.getmembers():
+                if not member.isfile() or archive.extractfile(member).read() != (ROOT / 'server' / member.name.removeprefix('correspondence/')).read_bytes():
+                    raise ValueError('Catalog source bytes differ')
+        package_names = sorted([Path(result['server']).name, Path(result['bundle']).name, 'correspondence.tar.gz'])
+        checksums = ''.join(sha((staging / n).read_bytes()) + '  ' + n + '\n' for n in package_names).encode('ascii')
+        save(staging / 'SHA256SUMS.txt', checksums)
+        staged = {name: (staging / name).read_bytes() for name in sorted(names)}
+        if {path.name for path in staging.iterdir()} != names:
+            raise ValueError('Dev15 staging output differs')
+
+    preflight_dev15_output(out, names)
+    if not out.exists():
+        out.mkdir()
+    preflight_dev15_output(out, names)
+    for name, data in staged.items():
+        target = out / name
+        if target.exists() and target.read_bytes() != data:
+            raise ValueError('Refusing to overwrite different release bytes: ' + target.name)
+    for name, data in staged.items():
+        target = out / name
+        if not target.exists():
+            with target.open('xb') as stream:
+                stream.write(data)
+    return {name: {'sha256': sha(data), 'bytes': len(data)} for name, data in staged.items()}
+
 def build():
+    version = json.loads((ROOT / 'server/manifest.json').read_text(encoding='utf-8')).get('version')
+    if version == '0.1.0-dev.15':
+        return build_dev15()
+    if version != '0.1.0-dev.14':
+        raise ValueError('Unsupported release identity')
     out = ROOT / 'dist'
     source_kit = ROOT / 'release-inputs/CHIM-Sealed-Fates-Recovery-Playtest-20261019-v1.zip'
     kit = source_kit.read_bytes()

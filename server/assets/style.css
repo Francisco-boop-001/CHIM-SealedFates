@@ -1,0 +1,340 @@
+:root {
+    color-scheme: light;
+    --ground: #ded6c4;
+    --paper: #f2e8d1;
+    --paper-light: #fff9eb;
+    --ink: #2b2925;
+    --muted: #5f615d;
+    --rule: #b7aa8f;
+    --rust: #813a27;
+    --slate: #385669;
+    --field: #fffdf6;
+    --focus: #0b5c68;
+    --button-text: #fff9eb;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        color-scheme: dark;
+        --ground: #171b19;
+        --paper: #212522;
+        --paper-light: #282d29;
+        --ink: #eee4cd;
+        --muted: #c1bba9;
+        --rule: #62665d;
+        --rust: #e18460;
+        --slate: #a4c2cb;
+        --field: #191e1b;
+        --focus: #f0cb76;
+        --button-text: #211611;
+    }
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font: 1rem/1.5 Georgia, Cambria, "Times New Roman", serif;
+}
+
+a {
+    color: var(--slate);
+    text-underline-offset: 0.18em;
+}
+
+a:hover {
+    color: var(--rust);
+}
+
+.skip-link {
+    position: absolute;
+    top: 0.6rem;
+    left: 0.75rem;
+    z-index: 20;
+    padding: 0.55rem 0.8rem;
+    border: 1px solid var(--rule);
+    background: var(--paper-light);
+    color: var(--ink);
+    transform: translateY(-180%);
+}
+
+.skip-link:focus {
+    transform: translateY(0);
+}
+
+:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+}
+
+.page {
+    width: min(100% - 2rem, 70rem);
+    margin: 0 auto;
+    padding: 1.5rem 0 3rem;
+}
+
+.hero {
+    overflow: hidden;
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    box-shadow: 4px 4px 0 rgb(32 37 34 / 14%);
+}
+
+.hero-copy {
+    padding: clamp(1rem, 3vw, 2rem);
+}
+
+h1 {
+    margin: 0;
+    color: var(--rust);
+    font-size: clamp(2.5rem, 7vw, 4.75rem);
+    letter-spacing: 0.015em;
+    line-height: 1;
+}
+
+.subtitle {
+    margin: 0.4rem 0 0;
+    color: var(--slate);
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    font-style: italic;
+}
+
+.hero-note {
+    margin: 0.6rem 0 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+}
+
+.hero-art {
+    margin: 0;
+    border-top: 1px solid var(--rule);
+    background: var(--paper-light);
+}
+
+.hero-art img {
+    display: block;
+    width: 100%;
+    height: auto;
+}
+
+.status-message:empty {
+    display: none;
+}
+
+.status-message,
+.notice {
+    margin: 1rem 0 0;
+    padding: 0.65rem 0.85rem;
+    border-left: 4px solid var(--rust);
+    background: var(--paper-light);
+}
+
+main > section {
+    margin-top: 1rem;
+    padding: clamp(1rem, 2.5vw, 1.5rem);
+    border: 1px solid var(--rule);
+    background: var(--paper);
+    box-shadow: 3px 3px 0 rgb(32 37 34 / 10%);
+}
+
+h2 {
+    margin: 0 0 0.65rem;
+    color: var(--slate);
+    font-size: clamp(1.35rem, 3vw, 1.8rem);
+    line-height: 1.2;
+}
+
+.letter-read h2 {
+    overflow-wrap: anywhere;
+}
+
+h3 {
+    margin: 1.25rem 0 0.45rem;
+    color: var(--rust);
+    font-size: 1.15rem;
+}
+
+label {
+    display: block;
+    min-width: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+    font-weight: 700;
+}
+
+input,
+select,
+textarea,
+button {
+    min-height: 2.75rem;
+    border: 1px solid var(--rule);
+    border-radius: 0.18rem;
+    background: var(--field);
+    color: var(--ink);
+    font: inherit;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    margin-top: 0.25rem;
+    padding: 0.45rem 0.6rem;
+}
+
+textarea {
+    min-height: 11rem;
+    resize: vertical;
+}
+
+button {
+    padding: 0.4rem 0.85rem;
+    background: var(--rust);
+    color: var(--button-text);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+button:hover {
+    filter: brightness(0.92);
+}
+
+form > label {
+    margin: 0.85rem 0;
+}
+
+.identities {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.button-row,
+td:last-child form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+fieldset {
+    min-width: 0;
+    margin: 1rem 0;
+    padding: 0.75rem;
+    border: 1px solid var(--rule);
+}
+
+legend {
+    padding: 0 0.35rem;
+    color: var(--slate);
+    font-weight: 700;
+}
+
+.attachment-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+}
+
+.attachment {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(7rem, 0.38fr);
+    gap: 0.65rem;
+    min-width: 0;
+    padding: 0.6rem;
+    border: 1px solid var(--rule);
+    background: var(--paper-light);
+}
+
+.table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    border: 1px solid var(--rule);
+}
+
+table {
+    width: 100%;
+    min-width: 44rem;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+th,
+td {
+    padding: 0.6rem;
+    border-bottom: 1px solid var(--rule);
+    overflow-wrap: anywhere;
+    text-align: left;
+    vertical-align: top;
+}
+
+th {
+    white-space: nowrap;
+    background: var(--paper-light);
+    color: var(--slate);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    font-size: 0.78rem;
+}
+
+td:nth-child(3),
+table[aria-labelledby="autonomy-outcomes-title"] td:nth-child(4) {
+    white-space: nowrap;
+}
+
+tbody tr:last-child td {
+    border-bottom: 0;
+}
+
+.empty-state {
+    color: var(--muted);
+    font-style: italic;
+}
+
+.body {
+    overflow-wrap: anywhere;
+    white-space: pre-wrap;
+}
+
+small {
+    color: var(--muted);
+}
+
+.page-error {
+    max-width: 48rem;
+}
+
+@media (max-width: 58rem) {
+    .identities {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 38rem) {
+    .page {
+        width: calc(100% - 1.25rem);
+        padding-top: 0.65rem;
+    }
+
+    .hero-copy {
+        padding: 1rem;
+    }
+
+    .identities,
+    .attachment-grid {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .attachment {
+        grid-template-columns: minmax(0, 1fr) minmax(6.5rem, 0.4fr);
+    }
+
+    .button-row button {
+        flex: 1 1 9rem;
+    }
+}

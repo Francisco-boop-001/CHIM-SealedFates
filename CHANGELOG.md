@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-dev.15 — PRE-ALPHA
+
+- Added the Sealed Fates woodcut illustration, including the emo llama, to the web page and GitHub README.
+- Matched the sibling plugins with parchment panels, serif headings, rust-red controls and slate-blue accents, plus system light/dark styling and responsive forms and tables.
+- Kept the existing web composer, mailbox, autonomy controls and optional Skyrim-interface choice. Form actions, authorization, CSRF checks, delivery and social interpretation contracts are unchanged.
+- Included the local stylesheet and lossless WebP in the explicit server package payload; reused the unchanged verified bridge PEX.
+- This is a web presentation release, not a new NPC/model or Skyrim gameplay evaluation. Published dev.14 assets and tag remain unchanged.
+
 ## 0.1.0-dev.14 — PRE-ALPHA
 
 - Added bounded recovery for abandoned claims and terminal failed or expired NPC reactions. Recovery requires current scope and valid anchors, preserves the source body, and does not retry or expose it.

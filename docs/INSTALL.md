@@ -1,6 +1,6 @@
 # Installation and removal
 
-**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The checked package is a matched pair: the server package and Papyrus bridge must stay on the same version.
+**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The checked package is a matched pair: the server package and Papyrus bridge must stay on the same release package. Dev.15 reuses the verified, unchanged bridge PEX; use the matching dev.15 archive to avoid mixed server packages.
 
 ## Pick your interface
 
@@ -10,12 +10,12 @@ The interface is separate from the **matching Sealed Fates Papyrus bridge**, whi
 
 ## Main paired install
 
-1. Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.14.zip**, and verify it against **SHA256SUMS.txt**.
+1. Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.15.zip**, and verify it against **SHA256SUMS.txt**.
 2. Install that ZIP as an MO2 mod. Confirm that exactly one active mod supplies **Data/Scripts/CHIMCorrespondenceBridge.pex**; disable older bridge copies.
-3. From the same ZIP, install **correspondence-0.1.0-dev.14.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
-4. Keep the bridge and server package at dev.14. Do not pair the server package with a bridge from another release.
+3. From the same ZIP, install **correspondence-0.1.0-dev.15.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
+4. Keep the bridge and server package from the dev.15 paired archive. Do not pair the server package with a bridge from another release.
 
-The paired ZIP includes the MO2 PEX and the matching server package. It does not include the consumer packages. If you need the exact full test pairing, use the optional recovery kit and its unchanged Mind Poisoning 0.1.27-written-subject.dev.4 package (SHA-256 ff4fe782f2a7f4589174ff1f0bb6922b5fde9eba7384f73505e64e09d2bd3386) and Sworn & Scorned 0.1.11-cumulative.dev.1 package (SHA-256 b4451535824f87d26afbce40d39ddecef177586f0b0a46f35530bb60efcbd55b); do not substitute historical consumer versions.
+The paired ZIP includes the unchanged verified MO2 bridge PEX and the new dev.15 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations and contracts are unchanged. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.15 install bundle or a new integration test.
 
 ## Server catalog option
 

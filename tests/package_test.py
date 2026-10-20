@@ -14,6 +14,9 @@ TEST_TMP_ROOT = ROOT.parent
 spec = importlib.util.spec_from_file_location('package', ROOT / 'scripts' / 'build-package.py')
 pkg = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pkg)
+release_spec = importlib.util.spec_from_file_location('release_assets', ROOT / 'scripts' / 'release-assets.py')
+release = importlib.util.module_from_spec(release_spec)
+release_spec.loader.exec_module(release)
 
 class PackageTest(unittest.TestCase):
     def setUp(self):
@@ -120,8 +123,15 @@ class PackageTest(unittest.TestCase):
             cwd=checkout, capture_output=True, text=True, check=False)
         self.assertEqual(result.returncode, 0, result.stderr)
         artifacts = json.loads(result.stdout)
-        self.assertEqual(artifacts['server']['sha256'], '20d3da4117479957471491d502126154e054b4543fdf32b03d4fb3f35ab6bd8c')
-        self.assertEqual(artifacts['bundle']['sha256'], 'e6ef362295da9ffa1a22959f2ab7714ac18fc172f6404a4d930f458626937b1f')
+        server_version = json.loads((checkout / 'server/manifest.json').read_text(encoding='utf-8'))['version']
+        if server_version == '0.1.0-dev.14':
+            self.assertEqual(artifacts['server']['sha256'], '20d3da4117479957471491d502126154e054b4543fdf32b03d4fb3f35ab6bd8c')
+            self.assertEqual(artifacts['bundle']['sha256'], 'e6ef362295da9ffa1a22959f2ab7714ac18fc172f6404a4d930f458626937b1f')
+        else:
+            self.assertEqual(Path(artifacts['server']['path']).name, 'correspondence-' + server_version + '.dwpkg')
+            with ZipFile(artifacts['server']['path']) as archive:
+                for name in pkg.SERVER_FILES:
+                    self.assertEqual(archive.read('server/' + name), (checkout / 'server' / name).read_bytes())
     def test_pex_sanitizer_uses_explicit_evidence_root_after_relocation(self):
         clean = self.e8 / 'bridge' / 'test-run' / 'sanitized-copy.pex'
         result = subprocess.run(
@@ -166,6 +176,89 @@ class PackageTest(unittest.TestCase):
         self.assertNotRegex(metadata['source'],r'(?i)([a-z]:[\\/]|\\\\)')
         self.assertEqual(metadata['user'],'anonymous')
         self.assertEqual(metadata['computer'],'anonymous')
+    def test_art_and_style_are_packaged_byte_for_byte(self):
+        expected = {}
+        for name in ('dashboard-art.webp', 'assets/style.css'):
+            data = (ROOT / 'server' / name).read_bytes()
+            expected['server/' + name] = data
+            (self.root / 'server' / name).write_bytes(data)
+        result = pkg.build(self.root, self.pex, self.root / 'asset-out')
+        with ZipFile(result['server']) as archive:
+            for name, data in expected.items():
+                self.assertEqual(archive.read(name), data)
+        with ZipFile(result['bundle']) as archive:
+            nested = archive.read('CHIM/server-plugins/correspondence/' + Path(result['server']).name)
+        self.assertEqual(nested, Path(result['server']).read_bytes())
+
+    def test_dev15_release_has_only_current_four_assets(self):
+        manifest_path = self.root / 'server/manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['version'] = '0.1.0-dev.15'
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+        original_root = release.ROOT
+        release.ROOT = self.root
+        try:
+            artifacts = release.build()
+        finally:
+            release.ROOT = original_root
+        expected = {
+            'correspondence-0.1.0-dev.15.dwpkg',
+            'CHIM-Sealed-Fates-0.1.0-dev.15.zip',
+            'correspondence.tar.gz',
+            'SHA256SUMS.txt',
+        }
+        out = self.root / 'dist'
+        self.assertEqual({path.name for path in out.iterdir()}, expected)
+        self.assertEqual(set(artifacts), expected)
+        checksum_names = [line.split('  ', 1)[1] for line in (out / 'SHA256SUMS.txt').read_text(encoding='ascii').splitlines()]
+        self.assertEqual(checksum_names, sorted(expected - {'SHA256SUMS.txt'}))
+
+    def test_dev15_preflight_preserves_legacy_and_conflicting_outputs(self):
+        manifest_path = self.root / 'server/manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['version'] = '0.1.0-dev.15'
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+        original_root = release.ROOT
+        release.ROOT = self.root
+        out = self.root / 'dist'
+        out.mkdir()
+        legacy = {
+            out / 'CHIM-Sealed-Fates-Recovery-Playtest-20261019-v1.zip': b'old recovery kit',
+            out / 'correspondence-0.1.0-dev.14.dwpkg': b'old dev14 package',
+        }
+        try:
+            for path, data in legacy.items():
+                path.write_bytes(data)
+            with self.assertRaisesRegex(ValueError, 'Unexpected dev15 output'):
+                release.build()
+            self.assertEqual({path.name for path in out.iterdir()}, {path.name for path in legacy})
+            self.assertEqual({path: path.read_bytes() for path in legacy}, legacy)
+
+            for path in legacy:
+                path.unlink()
+            stale_catalog = out / 'correspondence.tar.gz'
+            stale_catalog.write_bytes(b'old dev14 catalog')
+            with self.assertRaisesRegex(ValueError, 'different release bytes'):
+                release.build()
+            self.assertEqual([path.name for path in out.iterdir()], [stale_catalog.name])
+            self.assertEqual(stale_catalog.read_bytes(), b'old dev14 catalog')
+        finally:
+            release.ROOT = original_root
+
+    def test_release_rejects_unsupported_version(self):
+        manifest_path = self.root / 'server/manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['version'] = '0.1.0-dev.16'
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+        original_root = release.ROOT
+        release.ROOT = self.root
+        try:
+            with self.assertRaisesRegex(ValueError, 'Unsupported release identity'):
+                release.build()
+        finally:
+            release.ROOT = original_root
+        self.assertFalse((self.root / 'dist').exists())
+
     def test_exact_deterministic_payload_and_tamper(self):
         a = pkg.build(self.root, self.pex, self.root/'out')
         first = {name:Path(path).read_bytes() for name,path in a.items()}

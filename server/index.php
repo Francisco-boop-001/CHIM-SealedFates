@@ -3,10 +3,10 @@ declare(strict_types=1);
 require_once __DIR__.'/lib/view.php';
 require_once __DIR__.'/lib/bootstrap.php';
 require_once __DIR__.'/lib/consumers.php';
-header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');header('Referrer-Policy: no-referrer');header("Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'self'");
+header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');header('Referrer-Policy: no-referrer');header("Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; form-action 'self'; frame-ancestors 'self'");
 if(!correspondenceAccess($_SERVER)){http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo 'Operator access required.';exit;}
 if(!in_array($_SERVER['REQUEST_METHOD']??'GET',['GET','POST'],true)){http_response_code(405);exit;}
-if(session_status()!==PHP_SESSION_ACTIVE&&!session_start(['cookie_httponly'=>true,'cookie_samesite'=>'Strict','use_strict_mode'=>true])){http_response_code(503);exit;}
+if(session_status()!==PHP_SESSION_ACTIVE&&!session_start(['cookie_httponly'=>true,'cookie_samesite'=>'Strict','use_strict_mode'=>true])){http_response_code(503);header('Content-Type: text/html; charset=UTF-8');echo correspondenceErrorPage('Sealed Fates is unavailable.');exit;}
 if(!is_string($_SESSION['correspondence_csrf']??null))$_SESSION['correspondence_csrf']=bin2hex(random_bytes(32));
 $csrf=$_SESSION['correspondence_csrf'];$message='';$opened=null;
 try{
@@ -33,12 +33,12 @@ try{
     try{$offscreenStatus=correspondenceOffscreenProduction()['offscreen']->status();}catch(Throwable){$offscreenStatus=[];}
     $panel=correspondenceOffscreenPanelHtml(($autonomySettings['enabled']??false)===true,correspondenceOffscreenServiceStatus(),$offscreenStatus);
     $html=correspondencePage($service->actors(),$choices,$letters,$csrf,$message,$opened,$autonomySettings,$autonomyRows,$managedChildren);
-    header('Content-Type: text/html; charset=UTF-8');echo str_replace('</body>',$panel.'</body>',$html);
+    header('Content-Type: text/html; charset=UTF-8');echo str_replace('</main>',$panel.'</main>',$html);
 }catch(DomainException|InvalidArgumentException $e){
     correspondenceDiagnostic('ui_rejected');http_response_code(400);header('Content-Type: text/html; charset=UTF-8');
     $known=['csrf_failed','invalid_body','invalid_attachments','invalid_quantity','invalid_enabled','item_unavailable','renderer_content_overflow','renderer_dependency_unavailable','document_unavailable','delivery_unconfirmed','scope_unavailable','actor_unavailable','autonomous_dispatch_owned','autonomy_status_unavailable'];
     $message=in_array($e->getMessage(),$known,true)?str_replace('_',' ',$e->getMessage()):'The request could not be accepted.';
-    echo '<!doctype html><meta charset="utf-8"><title>Sealed Fates</title><p>'.correspondenceHtml($message).'</p><p><a href="index.php">Return to Sealed Fates</a></p>';
-}catch(Throwable){correspondenceDiagnostic('runtime_unavailable');http_response_code(503);header('Content-Type: text/plain; charset=UTF-8');echo 'Sealed Fates is unavailable. Check installation, migrations and core compatibility.';}
+    echo correspondenceErrorPage($message);
+}catch(Throwable){correspondenceDiagnostic('runtime_unavailable');http_response_code(503);header('Content-Type: text/html; charset=UTF-8');echo correspondenceErrorPage('Sealed Fates is unavailable. Check installation, migrations and core compatibility.');}
 
 
