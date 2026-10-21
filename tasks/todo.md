@@ -118,8 +118,15 @@ These are synthetic server recovery and packaging results. Actual providers/mode
 ## Dev.19 publication follow-up (explicitly authorized)
 
 - [x] Reverify frozen runtime/receipt hashes and run fresh host checks; finalize release documentation.
-- [ ] Commit intended source, annotate dev.19 tag, export clean source and reproduce four verified assets.
-- [ ] Push tag, upload draft assets, verify downloads and publish PRE-ALPHA.
-- [ ] Advance main without force after publication; verify public assets, refs and historical preservation; record review.
+- [x] Commit intended source, annotate dev.19 tag, export clean source and reproduce four verified assets.
+- [x] Push tag, upload draft assets, verify downloads and publish PRE-ALPHA.
+- [x] Advance main without force after publication; verify public assets, refs and historical preservation; record review.
 
 Department holds TEST. This publication stays Windows-only and authorizes no live/game/core/provider change.
+
+
+### Dev.19 publication review
+
+Published `correspondence-v0.1.0-dev.19` as PRE-ALPHA from source commit `04830d8298da9e2356dc96df4b2b6632cc23930c`. All 132 clean-tag source files match the precommit snapshot; 29 package checks passed on the export, and all four assets reproduce the frozen disposable-tested candidate byte-for-byte. Fresh Windows checks passed 90 PHP lints, 31 pure cases, 60 parser checks, 41 fake-native state checks and 29 package checks. The accepted 27 PostgreSQL, 32 Linux pure-case and eight causal RED receipts were rehashed against unchanged runtime. Draft and anonymous public downloads matched every checksum before main advanced without force.
+
+The Skyrim interface stays optional; the existing web page works. Department dev.19 compatibility remains unverified; its exact dev.18 candidate is separate. The delivery bridge is unchanged from dev.17. Older release bodies, asset IDs/digests and tag objects remain unchanged. TEST remained under Department ownership; no WSL, live, game, core or provider operation occurred in this publication. Native gameplay/model quality, campaign-scale performance and dual-persistence failure limits remain as documented.
