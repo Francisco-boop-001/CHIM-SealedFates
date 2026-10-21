@@ -8,7 +8,7 @@
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The Department Skyrim interface is optional. Exact Department dev.20 compatibility remains unverified; evidence for an older adapter does not certify this server version. Use the existing web plugin page until an exact dev.20 pairing is verified. No sibling plugins are bundled. Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
+The optional [Department/PRISMA v0.1.0-prealpha.4](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.4) adapter passed the exact dev.20 server pairing tests. Published prealpha.3 and earlier refuse dev.20. The existing web plugin page still works. No sibling plugins are bundled, and installed Skyrim behavior remains unverified. Read [the source identities and verification limits](PRISMA-COMPATIBILITY.md). Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
 
 ## Main paired install
 

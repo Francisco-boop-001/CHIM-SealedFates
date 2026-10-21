@@ -46,11 +46,15 @@ def preflight_current_output(out, expected, release_label):
         if path.is_symlink() or not path.is_file():
             raise ValueError(f'Unsafe {release_label} output: ' + path.name)
 
-def build_current_release(release_version):
+def build_current_release(release_version, expected_source_closure=None):
     out = ROOT / 'dist'
-    manifest, _ = pkg.entries(ROOT)
+    manifest, payload = pkg.entries(ROOT)
     if manifest['version'] != release_version:
         raise ValueError('Release identity differs')
+    source_closure = sha(payload['checksums.sha256'])
+    if expected_source_closure is not None and source_closure != expected_source_closure:
+        raise ValueError('Owner source changed after compatibility preflight')
+    expected_server = pkg.packed(payload)
     release_label = 'dev' + release_version.rsplit('.', 1)[-1]
     names = {
         'correspondence-' + manifest['version'] + '.dwpkg',
@@ -62,10 +66,17 @@ def build_current_release(release_version):
     with tempfile.TemporaryDirectory(prefix=f'.{release_label}-release-', dir=ROOT) as temporary:
         staging = Path(temporary)
         result = pkg.build(ROOT, None, staging)
+        server_path = Path(result['server'])
+        if server_path.read_bytes() != expected_server:
+            raise ValueError('Staged server package differs from the validated source snapshot')
+        with ZipFile(result['bundle']) as archive:
+            embedded = 'CHIM/server-plugins/correspondence/' + server_path.name
+            if archive.testzip() is not None or archive.read(embedded) != expected_server:
+                raise ValueError('Embedded server package differs from the validated source snapshot')
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode='w', format=tarfile.USTAR_FORMAT) as archive:
             for name in sorted(pkg.SERVER_FILES):
-                data = (ROOT / 'server' / name).read_bytes()
+                data = payload['server/' + name]
                 entry = tarfile.TarInfo('correspondence/' + name)
                 entry.size = len(data)
                 entry.mode = 0o644
@@ -79,7 +90,7 @@ def build_current_release(release_version):
             if archive.getnames() != ['correspondence/' + n for n in sorted(pkg.SERVER_FILES)]:
                 raise ValueError('Catalog root layout differs')
             for member in archive.getmembers():
-                if not member.isfile() or archive.extractfile(member).read() != (ROOT / 'server' / member.name.removeprefix('correspondence/')).read_bytes():
+                if not member.isfile() or archive.extractfile(member).read() != payload['server/' + member.name.removeprefix('correspondence/')]:
                     raise ValueError('Catalog source bytes differ')
         package_names = sorted([Path(result['server']).name, Path(result['bundle']).name, 'correspondence.tar.gz'])
         checksums = ''.join(sha((staging / n).read_bytes()) + '  ' + n + '\n' for n in package_names).encode('ascii')
@@ -162,7 +173,11 @@ def main(argv=None):
         compatibility = gate.preflight(ROOT, args.department_interface, args.receipt)
     except (ValueError, OSError) as error:
         parser.error(str(error))
-    print(json.dumps({'compatibility': compatibility, 'assets': build()}, indent=2))
+    assets = build_current_release(
+        compatibility['owner']['version'],
+        compatibility['owner']['sourceClosureSha256'],
+    )
+    print(json.dumps({'compatibility': compatibility, 'assets': assets}, indent=2))
 
 
 if __name__ == '__main__':

@@ -5,6 +5,7 @@ import copy
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -182,6 +183,29 @@ class ReleasePreflightTest(unittest.TestCase):
         self.assertEqual(result['owner']['version'], '0.1.0-dev.20')
         self.assertEqual(result['pairing']['departmentFiles'], fixtures[0]['department']['files'])
 
+    def test_tested_pair_refuses_source_changed_between_capture_and_receipt_verification(self):
+        envelope, readiness, behavior, freeze = self.pairing_fixtures()
+        receipt = self.write_pairing(envelope, readiness, behavior, freeze)
+        source = self.root / 'server' / 'lib' / 'store.php'
+        self.assertNotEqual(source.resolve(), (ROOT / 'server' / 'lib' / 'store.php').resolve())
+        reviewed_bytes = source.read_bytes()
+        changed_bytes = reviewed_bytes + b':unreviewed-A'
+        source.write_bytes(changed_bytes)
+        real_entries = gate.pkg.entries
+
+        def capture_changed_payload_then_restore(root):
+            manifest, payload = real_entries(root)
+            self.assertEqual(payload['server/lib/store.php'], changed_bytes)
+            source.write_bytes(reviewed_bytes)
+            return manifest, payload
+
+        try:
+            with patch.object(gate.pkg, 'entries', side_effect=capture_changed_payload_then_restore):
+                with self.assertRaises(ValueError):
+                    gate.preflight(self.root, 'tested-paired', receipt)
+        finally:
+            source.write_bytes(reviewed_bytes)
+
     def test_tested_pair_refuses_missing_or_malformed_evidence(self):
         with self.assertRaises(ValueError):
             gate.preflight(self.root, 'tested-paired', None)
@@ -290,6 +314,16 @@ class ReleasePreflightTest(unittest.TestCase):
 
         envelope, readiness, behavior, freeze = self.pairing_fixtures()
         envelope['sourceReadiness']['receipt'] = '../source-readiness.json'
+        receipt = self.write_pairing(envelope, readiness, behavior, freeze)
+        with self.assertRaises(ValueError):
+            gate.preflight(self.root, 'tested-paired', receipt)
+
+    def test_additional_readiness_check_must_pass(self):
+        envelope, readiness, behavior, freeze = self.pairing_fixtures()
+        readiness['checks']['futureCompatibilityCheck'] = True
+        receipt = self.write_pairing(envelope, readiness, behavior, freeze)
+        self.assertEqual(gate.preflight(self.root, 'tested-paired', receipt)['status'], 'pass')
+        readiness['checks']['futureCompatibilityCheck'] = False
         receipt = self.write_pairing(envelope, readiness, behavior, freeze)
         with self.assertRaises(ValueError):
             gate.preflight(self.root, 'tested-paired', receipt)

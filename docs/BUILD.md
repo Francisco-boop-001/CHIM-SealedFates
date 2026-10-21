@@ -4,11 +4,13 @@ Run these commands from a clean checkout with Python 3 and a new **dist/** direc
 
     python scripts/build-package.py
     python scripts/release-assets.py --department-interface web-only
+    python -B tests/release_preflight_test.py
+    python -B tests/release_assets_preflight_test.py
     python -B tests/package_test.py
     python -B tests/bridge-parser.py
     python -B tests/bridge-state.py
 
-These package, parser, and host-state commands run with the repository's Python files and do not require WSL. The parser and host-state checks use fake native/JContainers boundaries.
+These package, release-gate, parser, and host-state commands run with the repository's Python files and do not require WSL. Release-gate tests use temporary project/evidence fixtures; they do not establish a real Department pairing. The parser and host-state checks use fake native/JContainers boundaries.
 
 The release command requires an explicit Department/PRISMA compatibility decision before it creates assets. `web-only` records the exact owner version and source identity without claiming the optional Skyrim interface works. A tested pairing instead uses `--department-interface tested-paired --receipt <verified-pairing.json>`; the gate rejects missing, changed or mismatched proof. Ordinary `build-package.py` builds remain independent of Department and its test server. See [the pairing procedure](PRISMA-COMPATIBILITY.md) before preparing a release.
 
@@ -16,7 +18,7 @@ When --pex is omitted, the CLI and release builder both use the manifest to sele
 
 Dev.17 includes a newly compiled, metadata-sanitized PEX; the package command verifies and reuses it. The private compile run retains raw output and logs. Its portable derived receipt explicitly records private retention and non-distribution; the builder rejects that receipt if the raw output is present under the distribution evidence root. Historical receipts that record actual raw removal remain supported. It does not compile Papyrus. A fresh bridge compile requires Caprica and the matching external import/dependency files; those SDK and compiler packages are not included here. See the compatibility references in [game/bridge-manifest.json](../game/bridge-manifest.json). Integration, bridge-wire, HTTP, and native PostgreSQL fixture scripts use external retained synthetic inputs and guarded local-cluster/artifact paths; they are fixture-source evidence, not standalone portable test commands. Package tests use fresh temporary project fixtures and can be directed to an evidence directory with `CHIM_PACKAGE_TEST_TMP`; they do not write to the checkout's **dist/**. Documentation, static checks, and package checks are not Skyrim gameplay results.
 
-For dev.20, `release-assets.py` builds the two packages, the server-only maintenance archive, and checksum list in a fresh local **dist/**. It does not publish or tag a release. The strict four-output allowlist refuses stale names and changed immutable bytes. Build from the immutable release tag and keep its **dist/** separate from historical release outputs.
+For dev.20, `release-assets.py` builds the two packages, the server-only maintenance archive, and checksum list in a fresh local **dist/**. It does not publish or tag a release. The strict four-output allowlist refuses stale names and changed immutable bytes. Keep each checkout's **dist/** separate from historical release outputs. The compatibility preflight was added after the dev.20 tag: use the reviewed current checkout to run it against the unchanged dev.20 runtime. Historical tags retain their original CLI and bundled build instructions; neither their tags nor their assets are replaced.
 
 The server-only tar archive contains the plugin under **correspondence/**, including **correspondence/manifest.json**; it is a maintenance/manual-administration archive. No catalog import or self-registration path is claimed; use the DWPkg through CHIM's package manager.
 

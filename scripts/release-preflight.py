@@ -101,11 +101,13 @@ def _owner_source(root, relative):
         raise ValueError('Missing or unsafe owner source closure file')
     return current
 
-def _verify_owner_map(root, owner_files):
+def _verify_owner_map(payload, owner_files):
     if 'server/manifest.json' not in owner_files:
         raise ValueError('Owner source closure omits its manifest')
     for relative, expected in owner_files.items():
-        data = _owner_source(root, relative).read_bytes()
+        data = payload.get(relative)
+        if not isinstance(data, bytes):
+            raise ValueError('Missing or unsafe owner source closure file')
         if len(data) != expected['bytes'] or _hash(data) != expected['sha256'].lower():
             raise ValueError('Owner source closure changed')
 
@@ -164,10 +166,8 @@ def _verify_readiness(readiness, owner_files, department_files):
 
     checks = readiness.get('checks')
     required_checks = {'adapterLoaded', 'manifestReady', 'sourceIdentityReady', 'runtimeReady', 'stagedClosureMatches'}
-    known_extra_checks = {'protocolLoaded', 'sourceStable', 'temporaryCleanup'}
     if (not isinstance(checks, dict) or not required_checks.issubset(checks) or
-            any(type(value) is not bool for value in checks.values()) or
-            any(checks[key] is not True for key in required_checks | (known_extra_checks & set(checks)))):
+            any(value is not True for value in checks.values())):
         raise ValueError('Department source-readiness checks did not pass')
     limits = readiness.get('limits')
     expected_limits = {
@@ -259,7 +259,7 @@ def _verify_behavior(behavior, owner, department, freeze_hash):
         raise ValueError('Runtime behavior source manifest hash differs')
     return case_count, coverage
 
-def _verify_pairing(root, receipt_path):
+def _verify_pairing(payload, receipt_path):
     receipt, _ = _read_json(receipt_path, 'pairing receipt')
     if (type(receipt.get('schemaVersion')) is not int or receipt['schemaVersion'] != 1 or
             receipt.get('kind') != 'department-owner-pairing' or receipt.get('status') != 'pass'):
@@ -270,7 +270,7 @@ def _verify_pairing(root, receipt_path):
         raise ValueError('Pairing receipt owner or Department identity differs')
     owner_files = _file_map(owner.get('files'), 'pairing owner files')
     department_files = _file_map(department.get('files'), 'pairing Department files')
-    _verify_owner_map(root, owner_files)
+    _verify_owner_map(payload, owner_files)
     if 'server/lib/protocol.php' not in department_files or 'server/adapters/correspondence.php' not in department_files:
         raise ValueError('Pairing receipt omits Department adapter inputs')
 
@@ -334,7 +334,7 @@ def preflight(root: Path, department_interface: str, receipt: Optional[Path]) ->
         pairing = {'status': 'not-claimed'}
     else:
         receipt_path = Path(receipt)
-        pairing = _verify_pairing(root, receipt_path)
+        pairing = _verify_pairing(payload, receipt_path)
     return {
         'schemaVersion': 1,
         'status': 'pass',

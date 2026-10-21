@@ -6,9 +6,13 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import contextlib
+import io
+import tarfile
 import unittest
 from pathlib import Path
 from zipfile import ZipFile
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 TEST_TMP_ROOT = Path(os.environ.get('CHIM_PACKAGE_TEST_TMP', ROOT.parent))
@@ -362,6 +366,92 @@ class PackageTest(unittest.TestCase):
 
     def test_dev20_release_has_only_current_four_assets_deterministically(self):
         self.assert_current_release('0.1.0-dev.20')
+
+    def test_release_refuses_source_changed_after_gate_before_snapshot(self):
+        self.assertNotEqual(self.root.resolve(), ROOT.resolve())
+        manifest_path = self.root / 'server/manifest.json'
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.20'}), encoding='utf-8')
+        target = self.root / 'server/lib/store.php'
+        original_root = release.ROOT
+        release.ROOT = self.root
+        actual_preflight = release.gate.preflight
+
+        def preflight_then_edit(root, department_interface, receipt):
+            decision = actual_preflight(root, department_interface, receipt)
+            target.write_bytes(target.read_bytes() + b'-drift-after-gate')
+            return decision
+
+        try:
+            with patch.object(release.gate, 'preflight', side_effect=preflight_then_edit), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(ValueError):
+                    release.main(['--department-interface', 'web-only'])
+            self.assertFalse((self.root / 'dist').exists())
+        finally:
+            release.ROOT = original_root
+
+    def test_release_refuses_package_changed_after_snapshot_before_real_reads(self):
+        self.assertNotEqual(self.root.resolve(), ROOT.resolve())
+        manifest_path = self.root / 'server/manifest.json'
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.20'}), encoding='utf-8')
+        target = self.root / 'server/lib/store.php'
+        original_root = release.ROOT
+        release.ROOT = self.root
+        real_package_build = release.pkg.build
+
+        def edit_then_package(root, pex, output):
+            target.write_bytes(target.read_bytes() + b'-drift-before-package-read')
+            return real_package_build(root, pex, output)
+
+        try:
+            with patch.object(release.pkg, 'build', side_effect=edit_then_package), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                with self.assertRaises(ValueError):
+                    release.main(['--department-interface', 'web-only'])
+            self.assertFalse((self.root / 'dist').exists())
+        finally:
+            release.ROOT = original_root
+
+    def test_release_assets_use_one_snapshot_when_source_changes_after_package_build(self):
+        self.assertNotEqual(self.root.resolve(), ROOT.resolve())
+        manifest_path = self.root / 'server/manifest.json'
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.20'}), encoding='utf-8')
+        expected_files = {
+            name: (self.root / 'server' / name).read_bytes()
+            for name in pkg.SERVER_FILES
+        }
+        target = self.root / 'server/lib/store.php'
+        original_root = release.ROOT
+        release.ROOT = self.root
+        real_package_build = release.pkg.build
+
+        def package_then_edit(root, pex, output):
+            result = real_package_build(root, pex, output)
+            target.write_bytes(target.read_bytes() + b'-drift-after-package-build')
+            return result
+
+        try:
+            with patch.object(release.pkg, 'build', side_effect=package_then_edit), \
+                    contextlib.redirect_stdout(io.StringIO()):
+                release.main(['--department-interface', 'web-only'])
+        finally:
+            release.ROOT = original_root
+
+        out = self.root / 'dist'
+        server_name = 'correspondence-0.1.0-dev.20.dwpkg'
+        with ZipFile(out / server_name) as server_archive:
+            for name, data in expected_files.items():
+                self.assertEqual(server_archive.read('server/' + name), data)
+            server_bytes = (out / server_name).read_bytes()
+        with ZipFile(out / 'CHIM-Sealed-Fates-0.1.0-dev.20.zip') as bundle:
+            nested = bundle.read('CHIM/server-plugins/correspondence/' + server_name)
+        self.assertEqual(nested, server_bytes)
+        with tarfile.open(out / 'correspondence.tar.gz', 'r:gz') as archive:
+            for name, data in expected_files.items():
+                member = archive.extractfile('correspondence/' + name)
+                self.assertIsNotNone(member)
+                self.assertEqual(member.read(), data)
+        self.assertNotEqual(target.read_bytes(), expected_files['lib/store.php'])
 
     def assert_current_release(self, version):
         manifest_path = self.root / 'server/manifest.json'

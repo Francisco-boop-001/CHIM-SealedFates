@@ -14,7 +14,7 @@ A delivered receipt is emitted in this member order: `protocol_version, document
 
 ## Build and verification
 
-From the repository root, `python scripts/release-assets.py` reproduces the release using the included verified PEX. See [build instructions](../docs/BUILD.md). `python tests/bridge-parser.py` and `python tests/bridge-state.py` mechanically translate production validation/control flow and use deliberately fake native boundaries. They do not run the Papyrus VM or Skyrim.
+From the repository root, `python scripts/release-assets.py --department-interface web-only` reproduces the release using the included verified PEX, without claiming Department compatibility. See [build instructions](../docs/BUILD.md) for a tested pairing. `python tests/bridge-parser.py` and `python tests/bridge-state.py` mechanically translate production validation/control flow and use deliberately fake native boundaries. They do not run the Papyrus VM or Skyrim.
 
 Fresh Papyrus compilation requires Caprica plus compatible CHIM, SKSE, JContainers and Papyrus Extender declarations. These third-party SDKs and the private development compiler wrapper are not redistributed. The manifest/receipt record the retained build identities and dependencies; shipping the tested PEX avoids presenting an untested recompilation as the same binary.
 

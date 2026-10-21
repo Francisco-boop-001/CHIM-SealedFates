@@ -152,8 +152,14 @@ Publication was Windows-only. TEST and live stayed stopped, protected live-VHD m
 ## PRISMA dev.20 compatibility repair and release gate — 2026-10-21
 
 - [x] Coordinate the exact adapter port and exclusive ownership with the Department author.
-- [ ] Review and test exact dev.20 adapter behavior on disposable TEST without weakening pins or no-resend safety.
+- [x] Review and test exact dev.20 adapter behavior on disposable TEST without weakening pins or no-resend safety.
 - [x] Add a repeatable source-bound release preflight and intentional paired/web-only decision.
-- [ ] Document the verified pairing and future release procedure; record review and limits.
+- [x] Document the verified pairing and future release procedure; record review and limits.
 
 Department owns its source and TEST execution; Sealed Fates owns its release checks. Live/game/core/providers and immutable released assets stay untouched.
+
+### Compatibility repair review
+
+Department prealpha.4 is published from `08680e31635a4ed91bd9efcb46d7d9b8f30d95e1`; all 33 disposable PostgreSQL facade cases and 11 prechecks pass. Independent source/package review binds all 128 committed source files, 133 frozen inputs and 47 server files. Eleven anonymous asset downloads and the public source archive match the reviewed candidate. The separate pairing ZIP carries the four exact preflight files and its own checksums.
+
+Twenty release tests and 33 package tests pass in both source layouts. Causal source-edit regressions bind receipt validation, packaging and the catalog to the same source snapshot. The actual corrected paired CLI produces the original acceptance output byte for byte and reproduces all four owner dev.20 assets unchanged. The server runtime and bridge remain identical to the published tag. Native/HTTP/gameplay, actual transfers, model quality and autonomous forwarding are not newly established. TEST and its owned cluster stopped; live/game/core/providers remain untouched.

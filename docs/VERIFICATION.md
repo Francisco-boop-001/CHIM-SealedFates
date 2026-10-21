@@ -2,7 +2,7 @@
 
 ## Dev.20 PRE-ALPHA release
 
-The accepted repair evidence covers 28 PostgreSQL jobs and 35 Linux pure cases against the exact executable server bytes. The release changes only manifest version metadata. Fresh host checks and clean-tag deterministic builds bind the distributed assets. See [dev.20 evidence and limits](DEV20-RECOVERY.md). This publication does not start TEST or access live/game/core/providers; Department dev.20 compatibility remains unverified.
+The accepted repair evidence covers 28 PostgreSQL jobs and 35 Linux pure cases against the exact executable server bytes. The release changes only manifest version metadata. Fresh host checks and clean-tag deterministic builds bind the distributed assets. See [dev.20 evidence and limits](DEV20-RECOVERY.md). That original publication did not certify Department dev.20 compatibility. Subsequent exact-pair testing passed 33 PostgreSQL facade cases and 11 prechecks, with source preservation and owned cleanup verified. The actual paired release command reproduced all four dev.20 assets unchanged. See [the released matching adapter, source identities and limits](PRISMA-COMPATIBILITY.md). No live/game/core/provider deployment occurred.
 
 ## Dev.19 PRE-ALPHA release
 
