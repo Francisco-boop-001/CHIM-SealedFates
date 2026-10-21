@@ -1231,27 +1231,15 @@ final class CorrespondenceOffscreenPg
         // actor's mail forever while it remains addressable.
         if ($id < 1 || $id > 2147483647 || !correspondenceActorName($row['npc_name'] ?? null)) return false;
 
+        // Metadata, stats, death flag and relationships are not checked either: npcMap()
+        // normalizes unusable shapes to empty/alive on an eligible actor. Only the
+        // eligibility flags themselves must be readable before mail can proceed.
         $extended = $this->profileJsonObject($row['extended_data'] ?? null);
-        $metadataRaw = $row['metadata'] ?? null;
-        $metadata = $this->profileJsonObject($metadataRaw);
-        $metadataMissing = $metadataRaw === null || $metadataRaw === []
-            || (is_string($metadataRaw) && (trim($metadataRaw) === '' || trim($metadataRaw) === 'null' || trim($metadataRaw) === '[]'));
-        if (!($extended instanceof stdClass) || (!($metadata instanceof stdClass) && !$metadataMissing)
-            || !property_exists($extended,'background_life_enabled')
-            || !property_exists($extended,'background_life_letters')
-            || !$this->validProfileBoolean($extended->background_life_enabled)
-            || !$this->validProfileBoolean($extended->background_life_letters)) return false;
-
-        if (property_exists($extended,'relationships')
-            && !($extended->relationships instanceof stdClass)
-            && $extended->relationships !== null && $extended->relationships !== []) return false;
-        if ($metadata instanceof stdClass && property_exists($metadata,'stats')) {
-            $stats = $metadata->stats;
-            if (!($stats instanceof stdClass) && $stats !== null && $stats !== []) return false;
-            if ($stats instanceof stdClass
-                && property_exists($stats,'is_dead') && !$this->validProfileBoolean($stats->is_dead)) return false;
-        }
-        return true;
+        return $extended instanceof stdClass
+            && property_exists($extended,'background_life_enabled')
+            && property_exists($extended,'background_life_letters')
+            && $this->validProfileBoolean($extended->background_life_enabled)
+            && $this->validProfileBoolean($extended->background_life_letters);
     }
 
     private function actorProfileNeedsDeferral(array $row): bool

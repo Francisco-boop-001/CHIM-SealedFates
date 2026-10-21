@@ -1,3 +1,26 @@
+# CHIM Sealed Fates 0.1.0-dev.21 — PRE-ALPHA
+
+The courier had stopped delivering to anyone whose paperwork had a smudge on it. Smudges are not a crime. He has been reminded.
+
+Background letters no longer stall when an NPC's profile metadata has an unusual shape: a death flag that is missing or not a clear true/false, metadata or stats that are not JSON objects, or relationships stored as a list or text. Those NPCs were already treated as eligible correspondents, but letters to or from them were deferred indefinitely and their senders could not start new letters. Explicit opt-outs and explicit deaths still stop mail, and unreadable Background Life or Letters settings still wait for repair.
+
+**Web-only release.** The optional Department/PRISMA interface prealpha.4 is paired with dev.20 and refuses dev.21. If you use PRISMA, stay on dev.20 until a dev.21 pairing is released; the existing web plugin page works with dev.21. The matching delivery bridge is unchanged from dev.17 and is still required for physical notes, items and gold.
+
+Verification: a new regression failed before the change and passes after it; all 29 pure PHP suites pass; all 28 PostgreSQL jobs pass on a fresh, network-isolated disposable cluster against the exact executable server bytes. Only manifest version metadata changes from those bytes. Release-gate and package tests pass, and the assets reproduce from the clean tag. Actual Skyrim inventory/co-save/gameplay, provider/model quality and campaign-scale performance remain unverified.
+
+## Dev.21 assets
+
+[Download this PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.21). Use one documented installation route and keep only one correspondence version enabled.
+
+| File | SHA-256 | Bytes |
+| --- | --- | ---: |
+| [CHIM-Sealed-Fates-0.1.0-dev.21.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/CHIM-Sealed-Fates-0.1.0-dev.21.zip) | `f68e6b56dc3986026eb2d6848fe68595c8d577215b24362ffa4687f26fbd1f16` | 2827550 |
+| [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/SHA256SUMS.txt) | `27c68d9f23ab40ddece8b4cc3cd4932ba716c1a0f407d3973b49d7823160dfa1` | 289 |
+| [correspondence-0.1.0-dev.21.dwpkg](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/correspondence-0.1.0-dev.21.dwpkg) | `70b60d31762ac0b2edbac86964414ee64fd58878266bc3e09deb96797ada1345` | 2807359 |
+| [correspondence.tar.gz](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/correspondence.tar.gz) | `e54cfa87684a149b96d7662dfb8224b9786d223c461a67e7bc9f8dc3687993c1` | 2426004 |
+
+---
+
 # CHIM Sealed Fates 0.1.0-dev.20 — PRE-ALPHA
 
 Skyrim has one courier. I gave him emotional blackmail, gold transfers and forwarded insults, then misplaced his filing stamp. He kept the letter. The software should have done the same. It does now. His union has not returned my calls.

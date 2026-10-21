@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-dev.21 — PRE-ALPHA
+
+- Let offscreen letters proceed for eligible NPCs whose metadata, stats, death flag or relationships have unusual shapes; explicit opt-out and death stay terminal, and unreadable Background Life or Letters settings stay recheckable.
+- Accept dev.21 in the release preflight and asset builder. Released web-only: Department/PRISMA prealpha.4 is paired with dev.20 and refuses dev.21.
+- Bind 28 disposable PostgreSQL jobs and 29 pure PHP suites to this source; retain the unchanged source-bound dev.17 bridge.
+
 ## 0.1.0-dev.20 — PRE-ALPHA
 
 - Normalize unusable personalities at the existing prompt boundary and age clean re-claims from the new attempt.

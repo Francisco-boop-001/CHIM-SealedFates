@@ -1,5 +1,9 @@
 # Verification and limits
 
+## Dev.21 PRE-ALPHA release
+
+Dev.21 changes one offscreen eligibility check and the release identity. A new pure-PHP regression failed against the previous check and passes after the change; all 29 pure PHP suites pass. A fresh, network-isolated disposable PostgreSQL cluster ran all 28 dev.20 PostgreSQL jobs against the exact executable server bytes, with owned cleanup and unchanged protected live-disk metadata. The release changes only manifest version metadata from those bytes. Release-gate and package tests pass. Dev.21 is released web-only; no Department/PRISMA dev.21 pairing is claimed. No live/game/core/provider deployment occurred.
+
 ## Dev.20 PRE-ALPHA release
 
 The accepted repair evidence covers 28 PostgreSQL jobs and 35 Linux pure cases against the exact executable server bytes. The release changes only manifest version metadata. Fresh host checks and clean-tag deterministic builds bind the distributed assets. See [dev.20 evidence and limits](DEV20-RECOVERY.md). That original publication did not certify Department dev.20 compatibility. Subsequent exact-pair testing passed 33 PostgreSQL facade cases and 11 prechecks, with source preservation and owned cleanup verified. The actual paired release command reproduced all four dev.20 assets unchanged. See [the released matching adapter, source identities and limits](PRISMA-COMPATIBILITY.md). No live/game/core/provider deployment occurred.

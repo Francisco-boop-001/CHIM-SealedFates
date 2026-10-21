@@ -1,6 +1,6 @@
 # Installation and removal
 
-**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The package is a matched pair: server package and Papyrus bridge must come from the same paired archive. Dev.20 retains the byte-identical, source-bound dev.17 bridge and its original build provenance. Install the server and bridge from the dev.20 paired archive together; do not relabel an older archive.
+**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The package is a matched pair: server package and Papyrus bridge must come from the same paired archive. Dev.21 retains the byte-identical, source-bound dev.17 bridge and its original build provenance. Install the server and bridge from the dev.21 paired archive together; do not relabel an older archive.
 
 ## Pick your interface
 
@@ -8,17 +8,17 @@
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The optional [Department/PRISMA v0.1.0-prealpha.4](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.4) adapter passed the exact dev.20 server pairing tests. Published prealpha.3 and earlier refuse dev.20. The existing web plugin page still works. No sibling plugins are bundled, and installed Skyrim behavior remains unverified. Read [the source identities and verification limits](PRISMA-COMPATIBILITY.md). Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
+The optional [Department/PRISMA v0.1.0-prealpha.4](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.4) adapter passed the exact dev.20 server pairing tests. Published prealpha.3 and earlier refuse dev.20. Prealpha.4 does not accept dev.21: if you use PRISMA, stay on dev.20 until a dev.21 pairing is released. The existing web plugin page still works. No sibling plugins are bundled, and installed Skyrim behavior remains unverified. Read [the source identities and verification limits](PRISMA-COMPATIBILITY.md). Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
 
 ## Main paired install
 
-Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.20.zip**, and verify it against **SHA256SUMS.txt**.
+Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.21.zip**, and verify it against **SHA256SUMS.txt**.
 
 1. Stop the offscreen service before replacing files (see **Updating** below). Install that ZIP as an MO2 mod. Confirm that exactly one active mod supplies **Data/Scripts/CHIMCorrespondenceBridge.pex** and exactly one correspondence **.dwpkg** remains in the merged **CHIM/server-plugins/correspondence/** directory. Disable older playtest/recovery mods that supply either file.
-2. From the same ZIP, install **correspondence-0.1.0-dev.20.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
-3. Keep the bridge and server package from the dev.20 paired archive. Do not pair the server package with a bridge from another release.
+2. From the same ZIP, install **correspondence-0.1.0-dev.21.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
+3. Keep the bridge and server package from the dev.21 paired archive. Do not pair the server package with a bridge from another release.
 
-The paired ZIP includes the unchanged, hash-verified MO2 bridge PEX and the dev.20 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.20 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
+The paired ZIP includes the unchanged, hash-verified MO2 bridge PEX and the dev.21 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.21 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
 
 CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Older playtest ZIPs contain 2026 timestamps; current reproducible archives use a fixed 1980 timestamp. With both enabled, the courier may diligently install the older package. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
 

@@ -1,4 +1,4 @@
-**0.1.0-dev.20 — PRE-ALPHA.** Closed-letter recovery, persistent restore quarantine and clean retry timing are repaired. [Release and downloads](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.20) · [Evidence and limits](docs/DEV20-RECOVERY.md).
+**0.1.0-dev.21 — PRE-ALPHA.** Background letters no longer stall on unusual NPC profile metadata. Web-only release: PRISMA users should stay on dev.20 for now. [Release and downloads](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.21) · [Release notes](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -8,7 +8,7 @@ Part of the World of Drama-Llama.
 
 Skyrim has one courier, and he is VERY good at his job. Let's reward him with love letters, forged apologies, and forwarded insults. I call it 'emergent storytelling' because 'I have made this man's working conditions worse' looks dreadful on a feature list.
 
-Sealed Fates adds physical letters and optional item or gold transfers to CHIM, private written context, and bounded NPC correspondence. Dev.20 repairs closed-letter recovery and marker-failure quarantine while preserving strict claim and transfer checks. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
+Sealed Fates adds physical letters and optional item or gold transfers to CHIM, private written context, and bounded NPC correspondence. Dev.21 stops unusual NPC profile metadata from stalling background letters; dev.20 repaired closed-letter recovery and marker-failure quarantine. Strict claim and transfer checks are unchanged. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
 
 ## Pick your interface
 
@@ -16,13 +16,13 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The optional [Department/PRISMA v0.1.0-prealpha.4](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.4) adapter passed the exact dev.20 server pairing tests. Published prealpha.3 and earlier refuse dev.20. The existing web plugin page still works. No sibling plugins are bundled, and installed Skyrim behavior remains unverified. Read [the source identities and verification limits](docs/PRISMA-COMPATIBILITY.md).
+The optional [Department/PRISMA v0.1.0-prealpha.4](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.4) adapter passed the exact dev.20 server pairing tests. Published prealpha.3 and earlier refuse dev.20. Prealpha.4 does not accept dev.21: if you use PRISMA, stay on dev.20 until a dev.21 pairing is released. The existing web plugin page still works. No sibling plugins are bundled, and installed Skyrim behavior remains unverified. Read [the source identities and verification limits](docs/PRISMA-COMPATIBILITY.md).
 
 ## Download
 
-Download the [dev.20 PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.20). See the [release notes](docs/RELEASE.md) for the current and historical checksums.
+Download the [dev.21 PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.21). See the [release notes](docs/RELEASE.md) for the current and historical checksums.
 
-Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.20/CHIM-Sealed-Fates-0.1.0-dev.20.zip) for the main install path; it contains the matching bridge PEX and server package. The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.20/correspondence-0.1.0-dev.20.dwpkg) is for CHIM's package manager. The server-only maintenance [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.20/correspondence.tar.gz) is not automatically listed by CHIM.
+Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/CHIM-Sealed-Fates-0.1.0-dev.21.zip) for the main install path; it contains the matching bridge PEX and server package. The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/correspondence-0.1.0-dev.21.dwpkg) is for CHIM's package manager. The server-only maintenance [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/correspondence.tar.gz) is not automatically listed by CHIM.
 
 ## The web page
 

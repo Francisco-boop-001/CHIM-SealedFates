@@ -67,9 +67,27 @@ $badMetadata = $row;
 $badMetadata['metadata']='[1]';
 $badDeadFlag = $row;
 $badDeadFlag['metadata']='{"stats":{"is_dead":"unknown"}}';
-foreach ([$badName,$badSettings,$missingSettings,$badSettingValue,$badMetadata,$badDeadFlag] as $invalid) {
+foreach ([$badName,$badSettings,$missingSettings,$badSettingValue] as $invalid) {
     offscreenDev19ProfileCheck($classifier->invoke($engine,$invalid)===false,
-        'invalid actor name, settings, or metadata must be recheckable rather than inferred disabled');
+        'invalid actor name or settings must be recheckable rather than inferred disabled');
+}
+
+// npcMap() also normalizes unusable metadata, stats, death flags and relationships
+// and keeps the actor eligible. Construction must agree for those shapes too.
+$stringStats = $row;
+$stringStats['metadata']='{"stats":"x"}';
+$nullDeadFlag = $row;
+$nullDeadFlag['metadata']='{"stats":{"is_dead":null}}';
+$listRelationships = $row;
+$listRelationships['extended_data']='{"background_life_enabled":true,"background_life_letters":true,"relationships":["Lydia"]}';
+$scalarRelationships = $row;
+$scalarRelationships['extended_data']='{"background_life_enabled":true,"background_life_letters":true,"relationships":""}';
+foreach (['list metadata'=>$badMetadata,'unknown death flag'=>$badDeadFlag,'null death flag'=>$nullDeadFlag,'scalar stats'=>$stringStats,'list relationships'=>$listRelationships,'scalar relationships'=>$scalarRelationships] as $label=>$profile) {
+    $projected = (new ReflectionMethod($engine,'npcMap'))->invoke($engine,[$profile])[900001] ?? null;
+    offscreenDev19ProfileCheck(is_array($projected) && (new ReflectionMethod($engine,'eligible'))->invoke($engine,$projected)===true,
+        "an actor with {$label} must stay eligible in npcMap");
+    offscreenDev19ProfileCheck($classifier->invoke($engine,$profile)===true && $deferral->invoke($engine,$profile)===false,
+        "an eligible actor with {$label} must be constructible so its mail is not deferred forever");
 }
 
 // npcMap() treats an unusable personality as an empty one and keeps the actor
