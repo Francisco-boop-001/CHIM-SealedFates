@@ -8,6 +8,8 @@ The Department Skyrim interface is optional. Published Department prealpha.1 tar
 
 All 21 integrated PostgreSQL jobs and 23 pure suites (25 cases) passed on the exact frozen disposable candidate. Fresh host/package checks and clean-tag rebuilds bind this publication to those bytes. The bridge PEX is unchanged from dev.17; its original compile descriptor remains intact. No fresh native/gameplay, provider/model-quality or live-installation claim is added. See [recovery details](DEV18-RECOVERY.md), [installation](INSTALL.md) and [verification limits](VERIFICATION.md).
 
+Documentation clarification — 2026-10-21: dev.18 removes the global event-clock freshness scan. A retained dev.17 performance sentence in the tagged README is superseded by the corrected main README and dev.18 recovery notes. Release runtime, immutable tag and all asset checksums are unchanged.
+
 ## Dev.18 assets
 
 [Download this PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.18). Install the paired ZIP or use the server package for its intended route; avoid multiple enabled correspondence versions.

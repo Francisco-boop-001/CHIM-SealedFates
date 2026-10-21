@@ -74,8 +74,15 @@ Department performed a read-only compatibility review. Its published prealpha.1 
 ## Dev.18 publication follow-up (explicitly authorized)
 
 - [x] Reverify exact runtime/test evidence and fresh host checks; finalize accurate release notes.
-- [ ] Commit intended source, create annotated dev.18 tag and reproduce four assets from its clean export.
-- [ ] Push tag, upload draft assets, verify downloads, then publish PRE-ALPHA.
-- [ ] Advance main without force after publication, verify public assets/refs and record final review.
+- [x] Commit intended source, create annotated dev.18 tag and reproduce four assets from its clean export.
+- [x] Push tag, upload draft assets, verify downloads, then publish PRE-ALPHA.
+- [x] Advance main without force after publication, verify public assets/refs and record final review.
 
 Department owns its separate integration/publication. No TEST, live, game, core or provider operation is authorized by this publication follow-up.
+
+
+### Publication review
+
+Published correspondence-v0.1.0-dev.18 as PRE-ALPHA from source commit da09ddc46cece79a06e22671f3de69238cd3cd71. All 117 clean-tag source files match; 28 package checks passed on the export, and all four assets reproduce the frozen disposable-tested candidate exactly. Fresh host checks passed (28 package,60 parser,41 fake-native state,76 PHP lints); all 21 PostgreSQL/25 pure-case execution evidence was rehashed against unchanged runtime. Draft and anonymous public downloads matched every expected checksum before main advanced without force.
+
+Department received immutable owner pins and remains responsible for its separate dev.18 integration. Published Department prealpha.1 remains dev.17-pinned; dev.18 compatibility is not claimed. The web interface remains available. A dated publication-note/main-README clarification corrects a retained historical timestamp-scan sentence without changing the release tag or asset bytes. Published dev.14-17 bodies, asset IDs/digests and tag objects were reverified unchanged. No TEST/live/game/core/provider operation occurred in this publication follow-up.
