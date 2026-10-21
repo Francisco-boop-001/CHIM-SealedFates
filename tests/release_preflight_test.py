@@ -310,6 +310,20 @@ class ReleasePreflightTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             gate.preflight(self.root, 'automatic', None)
 
+    def test_malformed_owner_manifest_is_a_controlled_refusal(self):
+        fixture_manifest = Path(self.temp.name) / 'project/server/manifest.json'
+        self.assertNotEqual(fixture_manifest.resolve(), (ROOT / 'server/manifest.json').resolve())
+        original = fixture_manifest.read_bytes()
+        try:
+            for manifest in ([], None, {'name': 'correspondence', 'version': 20},
+                             {'name': 'correspondence', 'version': None}):
+                with self.subTest(manifest=manifest):
+                    fixture_manifest.write_text(json.dumps(manifest), encoding='utf-8')
+                    with self.assertRaises(ValueError):
+                        gate.preflight(self.root, 'web-only', None)
+        finally:
+            fixture_manifest.write_bytes(original)
+
     def test_command_line_requires_an_explicit_interface_choice(self):
         import subprocess
         import sys

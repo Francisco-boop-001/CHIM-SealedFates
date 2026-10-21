@@ -238,7 +238,9 @@ def entries(root):
             raise ValueError('Missing or unsafe allowlisted source: '+name)
         payload['server/'+name]=path.read_bytes()
     manifest=json.loads(payload['server/manifest.json'])
-    if manifest.get('name')!='correspondence' or not re.fullmatch(r'[0-9A-Za-z][0-9A-Za-z._+-]{0,63}',manifest.get('version','')):
+    if (not isinstance(manifest,dict) or manifest.get('name')!='correspondence'
+            or not isinstance(manifest.get('version'),str)
+            or not re.fullmatch(r'[0-9A-Za-z][0-9A-Za-z._+-]{0,63}',manifest['version'])):
         raise ValueError('Invalid correspondence manifest')
     payload['manifest.json']=(json.dumps({'schema_version':4,'name':'correspondence','version':manifest['version'],'server':{'mutable_paths':[]}},sort_keys=True,indent=2)+'\n').encode()
     payload['checksums.sha256']=''.join(hashlib.sha256(data).hexdigest()+'  '+name+'\n' for name,data in sorted(payload.items())).encode('ascii')
