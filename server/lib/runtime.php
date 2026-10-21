@@ -264,7 +264,7 @@ final class CorrespondenceService
             if (!hash_equals(correspondenceCanonicalJson($operation['source']), correspondenceCanonicalJson($event))) throw new DomainException('source_unavailable');
             if (($event['people'] ?? null) !== '|'.$doc['recipient']['name'].'|' || ($source['receipt']['receipt_id'] ?? null) !== ($operation['receipt_id'] ?? null) || ($source['receipt']['operation_id'] ?? null) !== ($operation['operation_id'] ?? null) || ($source['receipt']['status'] ?? null) !== 'confirmed' || ($source['receipt']['exposure'] ?? null) !== 'context') throw new DomainException('source_unavailable');
             $clock = $this->store->scope();
-            if ((int)($clock['gamets'] ?? 0) < (int)($operation['receipt_anchor']['gamets'] ?? PHP_INT_MAX) || (int)($clock['gamets'] ?? 0) < (int)($event['gamets'] ?? PHP_INT_MAX)) throw new DomainException('source_unavailable');
+            if ((int)($clock['gamets'] ?? 0) < (int)($operation['receipt_anchor']['gamets'] ?? PHP_INT_MAX) || (int)($clock['gamets'] ?? 0) < (int)($event['gamets'] ?? PHP_INT_MAX)) throw new DomainException('source_not_due');
             return ['event' => $event, 'source' => $source];
         });
     }
@@ -314,10 +314,47 @@ final class CorrespondenceService
             foreach($op['receipt']['attachments']as$item)if($item['quantity']!==0||$item['before_source']!==$item['after_source']||$item['before_recipient']!==$item['after_recipient'])throw new DomainException('retry_unsafe');
             $doc['operation_id']=null;$this->store->saveDocument($doc);return $this->dispatch($id);
         });
-    }    public function receive(array $receipt): array
+    }
+    private function matchingWrittenSourceAfterReceiptLoss(array $doc,array $operation,array $receipt):bool
+    {
+        if (($receipt['status']??null)!=='delivered' || ($doc['recipient']['kind']??null)!=='npc'
+            || ($operation['document_id']??null)!==$doc['document_id']
+            || ($operation['playthrough_id']??null)!==$doc['playthrough_id']
+            || ($receipt['playthrough_id']??null)!==$doc['playthrough_id']
+            || !is_array($operation['receipt']??null) || !is_array($operation['receipt_anchor']??null)
+            || !is_array($operation['source']??null)) return false;
+        try {
+            if (correspondenceCanonicalJson($operation['receipt'])!==correspondenceCanonicalJson($receipt)) return false;
+            $anchor=$operation['receipt_anchor'];
+            correspondenceKeys($anchor,['rowid','ts','gamets','type','data','sess','localts','people']);
+            if ((!is_int($anchor['rowid']) && (!is_string($anchor['rowid']) || !ctype_digit($anchor['rowid']))) || (int)$anchor['rowid']<1
+                || !is_numeric($anchor['ts']) || !is_numeric($anchor['gamets']) || !is_numeric($anchor['localts'])
+                || !in_array($anchor['type'],['info','correspondence_receipt_confirmed'],true) || $anchor['sess']!=='correspondence_v1' || $anchor['people']!=='' || !is_string($anchor['data'])) return false;
+            $anchorData=json_decode($anchor['data'],true,64,JSON_THROW_ON_ERROR);
+            if (!is_array($anchorData)) return false;
+            correspondenceKeys($anchorData,['document_id','operation_id','receipt_hash']);
+            $expectedAnchorData=['document_id'=>$doc['document_id'],'operation_id'=>$operation['operation_id'],'receipt_hash'=>hash('sha256',correspondenceJson($receipt))];
+            if ($anchorData!==$expectedAnchorData) return false;
+            $sourceEvent=$operation['source'];
+            correspondenceKeys($sourceEvent,['rowid','ts','gamets','type','data','sess','localts','people']);
+            if (!$this->store->eventMatches($sourceEvent) || !in_array($sourceEvent['type'],['info','written_evidence'],true) || $sourceEvent['sess']!=='written_evidence_v1'
+                || $sourceEvent['people']!=='|'.$doc['recipient']['name'].'|' || !is_string($sourceEvent['data'])
+                || !is_numeric($sourceEvent['gamets']) || (int)$sourceEvent['gamets']<(int)$anchor['gamets']) return false;
+            $expectedSource=['schema_version'=>1,'document_id'=>$doc['document_id'],'playthrough_id'=>$doc['playthrough_id'],'recipient'=>$doc['recipient'],'claimed_sender'=>$doc['claimed_sender'],'body'=>$doc['body'],'receipt'=>['receipt_id'=>$operation['receipt_id'],'operation_id'=>$operation['operation_id'],'status'=>'confirmed','exposure'=>'context'],'attachments'=>$doc['attachments']];
+            return $sourceEvent['data']===correspondenceJson($expectedSource);
+        } catch (Throwable) {
+            return false;
+        }
+    }
+    public function receive(array $receipt): array
     {
         correspondenceKeys($receipt,['protocol_version','document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce','status','reason','note_form_id','attachments']);
-        foreach(['document_id','operation_id','receipt_id','scope_token'] as $key) correspondenceUuidCheck($receipt[$key]);
+        foreach(['document_id','operation_id','receipt_id','scope_token'] as $key) {
+            if (is_string($receipt[$key]) && preg_match('/\A[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}\z/D',$receipt[$key])===1) $receipt[$key]=strtolower($receipt[$key]);
+            correspondenceUuidCheck($receipt[$key]);
+        }
+        if (!is_string($receipt['nonce']) || preg_match('/\A[0-9a-fA-F]{64}\z/D',$receipt['nonce'])!==1) throw new InvalidArgumentException('invalid_nonce');
+        $receipt['nonce']=strtolower($receipt['nonce']);
         if ($receipt['protocol_version']!==1 || !in_array($receipt['status'],['delivered','failed','unknown'],true) || !is_string($receipt['reason']) || preg_match('/\A[a-z][a-z0-9_]{0,63}\z/D',$receipt['reason'])!==1 || !is_int($receipt['note_form_id']) || $receipt['note_form_id'] < -2147483648 || $receipt['note_form_id'] > 2147483647 || !is_array($receipt['attachments']) || !array_is_list($receipt['attachments'])) throw new InvalidArgumentException('invalid_receipt');
         return $this->store->transaction(function()use($receipt){
             $doc=$this->document($receipt['document_id'],true); $op=$this->store->loadOperation($receipt['operation_id']);
@@ -331,15 +368,22 @@ final class CorrespondenceService
             $seen=[]; foreach($receipt['attachments'] as $actual) {
                 if (!is_array($actual)) throw new InvalidArgumentException('invalid_counters');
                 correspondenceKeys($actual,['form_id','quantity','before_source','after_source','before_recipient','after_recipient']);
-                foreach($actual as $key=>$value) if (!is_int($value) || ($key!=='form_id' && ($value<0 || $value>2147483647))) throw new InvalidArgumentException('invalid_counters');
-                $form=$actual['form_id']; if (!isset($expected[$form]) || isset($seen[$form]) || $actual['quantity']>$expected[$form] || ($receipt['status']!=='unknown' && ($actual['before_source']-$actual['after_source']!==$actual['quantity'] || $actual['after_recipient']-$actual['before_recipient']!==$actual['quantity']))) throw new DomainException('receipt_delta_mismatch');
+                foreach($actual as $key=>$value) {
+                    if (!is_int($value)) throw new InvalidArgumentException('invalid_counters');
+                    if ($key==='quantity') {
+                        $minimum=$receipt['status']==='unknown'?-2147483648:0;
+                        if ($value<$minimum || $value>2147483647) throw new InvalidArgumentException('invalid_counters');
+                    } elseif ($key!=='form_id' && ($value<0 || $value>2147483647)) throw new InvalidArgumentException('invalid_counters');
+                }
+                $form=$actual['form_id']; if (!isset($expected[$form]) || isset($seen[$form]) || ($receipt['status']!=='unknown' && $actual['quantity']>$expected[$form]) || ($receipt['status']==='unknown' && $actual['after_recipient']-$actual['before_recipient']!==$actual['quantity']) || ($receipt['status']!=='unknown' && ($actual['before_source']-$actual['after_source']!==$actual['quantity'] || $actual['after_recipient']-$actual['before_recipient']!==$actual['quantity']))) throw new DomainException('receipt_delta_mismatch');
                 if ($receipt['status']==='delivered' && $actual['quantity']!==$expected[$form]) throw new DomainException('receipt_quantity_mismatch');
                 if ($receipt['status']==='failed' && $actual['quantity']!==0) throw new DomainException('receipt_failed_mutation');
                 $seen[$form]=true;
             }
             if ($receipt['status']==='failed' && $receipt['note_form_id']!==0) throw new DomainException('receipt_failed_note');
             if ($receipt['status']==='delivered' && (count($seen)!==count($expected) || $receipt['note_form_id']===0)) throw new DomainException('receipt_incomplete');
-            $op['receipt']=$receipt; $op['source']=null;
+            $preserveSource=$this->matchingWrittenSourceAfterReceiptLoss($doc,$op,$receipt);
+            $op['receipt']=$receipt; if (!$preserveSource) $op['source']=null;
             $op['receipt_anchor']=$this->store->appendEvent('correspondence_receipt_confirmed',correspondenceJson(['document_id'=>$doc['document_id'],'operation_id'=>$op['operation_id'],'receipt_hash'=>hash('sha256',correspondenceJson($receipt))]),'','correspondence_v1');
             $this->store->saveOperation($op);
             return ['document_id'=>$doc['document_id'],'state'=>$this->state($doc),'operation_id'=>$op['operation_id']];

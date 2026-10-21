@@ -1,4 +1,4 @@
-"""Reproduce the pinned dev.14 release and current dev.15/dev.16 package assets."""
+"""Reproduce the pinned dev.14 release and bounded later package candidates."""
 from pathlib import Path
 from zipfile import ZipFile
 import gzip
@@ -101,7 +101,7 @@ def build_current_release(release_version):
 
 def build():
     version = json.loads((ROOT / 'server/manifest.json').read_text(encoding='utf-8')).get('version')
-    if version in {'0.1.0-dev.15', '0.1.0-dev.16'}:
+    if version in {'0.1.0-dev.15', '0.1.0-dev.16', '0.1.0-dev.17'}:
         return build_current_release(version)
     if version != '0.1.0-dev.14':
         raise ValueError('Unsupported release identity')

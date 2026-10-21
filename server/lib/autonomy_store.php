@@ -86,8 +86,10 @@ final class CorrespondenceAutonomyPg
         $modelCalls = 0;
         $inputChars = 0;
         $outputChars = 0;
-        $finish = function(string $status, string $reason) use (&$modelCalls, &$inputChars, &$outputChars, $started): array {
-            return [
+        $claimCorrelationId = null;
+        $claimSourceIds = [];
+        $finish = function(string $status, string $reason) use (&$modelCalls, &$inputChars, &$outputChars, &$claimCorrelationId, &$claimSourceIds, $started): array {
+            $result = [
                 'status' => $status,
                 'reason' => $reason,
                 'model_calls' => $modelCalls,
@@ -95,6 +97,9 @@ final class CorrespondenceAutonomyPg
                 'output_chars' => $outputChars,
                 'elapsed_ms' => max(0, (int)((hrtime(true) - $started) / 1000000)),
             ];
+            if ($claimCorrelationId !== null) $result['correlation_id'] = $claimCorrelationId;
+            if ($claimSourceIds !== []) $result['source_ids'] = $claimSourceIds;
+            return $result;
         };
         if (!$this->policyReady()) return $finish('idle', 'policy_unavailable');
 
@@ -118,37 +123,45 @@ final class CorrespondenceAutonomyPg
                 $age = correspondenceAutonomyGamets(2);
                 $rows = $this->sourceCandidates($scope, $clock['gamets'], $age);
                 if ($rows === []) return ['kind'=>'idle','status'=>'idle','reason'=>'no_eligible_source'];
-                $candidate = $rows[0];
-                $eventId = (int)($candidate['source_event_id'] ?? 0);
-                $documentId = (string)($candidate['source_document_id'] ?? '');
-                $recipientId = (int)($candidate['recipient_id'] ?? 0);
-                if ($eventId < 1 || $recipientId < 1 || preg_match('/\A[0-9a-f-]{36}\z/D', $documentId) !== 1) return ['kind'=>'idle','status'=>'idle','reason'=>'invalid_candidate'];
-                try {
-                    $exposed = $this->service->readExposedSource($eventId, $recipientId);
-                } catch (DomainException|InvalidArgumentException) {
-                    $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets']);
-                    return ['kind'=>'idle','status'=>'idle','reason'=>'source_unavailable'];
+                $deferredReason = null;
+                foreach ($rows as $candidate) {
+                    $eventId = (int)($candidate['source_event_id'] ?? 0);
+                    $documentId = (string)($candidate['source_document_id'] ?? '');
+                    $recipientId = (int)($candidate['recipient_id'] ?? 0);
+                    if ($eventId < 1 || $recipientId < 1 || preg_match('/\A[0-9a-f-]{36}\z/D', $documentId) !== 1) return ['kind'=>'idle','status'=>'idle','reason'=>'invalid_candidate'];
+                    try {
+                        $exposed = $this->service->readExposedSource($eventId, $recipientId);
+                    } catch (DomainException|InvalidArgumentException $error) {
+                        $sourceReason = $error->getMessage();
+                        if (in_array($sourceReason, ['player_unavailable','actor_unavailable','identity_changed','actor_identity_changed','source_not_due'], true)) {
+                            $deferredReason ??= $sourceReason;
+                            continue;
+                        }
+                        $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets']);
+                        return ['kind'=>'idle','status'=>'idle','reason'=>'source_unavailable'];
+                    }
+                    $source = $exposed['source'];
+                    $byId = $this->npcMap($this->npcRows());
+                    $context = $this->contextForSource($source, $byId);
+                    if ($context === null) {
+                        $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets']);
+                        return ['kind'=>'idle','status'=>'idle','reason'=>'actor_unavailable'];
+                    }
+                    if ($this->actorCooldownUntil($scope, $recipientId, $clock['gamets']) > $clock['gamets']) return ['kind'=>'idle','status'=>'idle','reason'=>'cooldown'];
+                    $lineage = $this->lineage($scope, $documentId);
+                    if ($lineage['depth'] >= 3 || $this->linkCount($scope, $lineage['root_document_id']) >= 3) {
+                        $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets'], 'chain_limit');
+                        return ['kind'=>'idle','status'=>'idle','reason'=>'chain_limit'];
+                    }
+                    $claim = $this->claim($scope, $documentId, $eventId, $clock['gamets'], $lineage, $context, $exposed['event']['data']);
+                    if ($claim === null) return ['kind'=>'idle','status'=>'idle','reason'=>'already_claimed'];
+                    return $claim + [
+                        'kind'=>'claimed', 'clock'=>$clock, 'setting_updated_at'=>$setting['updated_at'] ?? null,
+                        'event'=>$exposed['event'], 'source'=>$source, 'self'=>$context['self'], 'contacts'=>$context['contacts'],
+                        'context_sha256'=>$context['context_sha256'],
+                    ];
                 }
-                $source = $exposed['source'];
-                $byId = $this->npcMap($this->npcRows());
-                $context = $this->contextForSource($source, $byId);
-                if ($context === null) {
-                    $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets']);
-                    return ['kind'=>'idle','status'=>'idle','reason'=>'actor_unavailable'];
-                }
-                if ($this->actorCooldownUntil($scope, $recipientId, $clock['gamets']) > $clock['gamets']) return ['kind'=>'idle','status'=>'idle','reason'=>'cooldown'];
-                $lineage = $this->lineage($scope, $documentId);
-                if ($lineage['depth'] >= 3 || $this->linkCount($scope, $lineage['root_document_id']) >= 3) {
-                    $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets'], 'chain_limit');
-                    return ['kind'=>'idle','status'=>'idle','reason'=>'chain_limit'];
-                }
-                $claim = $this->claim($scope, $documentId, $eventId, $clock['gamets'], $lineage, $context, $exposed['event']['data']);
-                if ($claim === null) return ['kind'=>'idle','status'=>'idle','reason'=>'already_claimed'];
-                return $claim + [
-                    'kind'=>'claimed', 'clock'=>$clock, 'setting_updated_at'=>$setting['updated_at'] ?? null,
-                    'event'=>$exposed['event'], 'source'=>$source, 'self'=>$context['self'], 'contacts'=>$context['contacts'],
-                    'context_sha256'=>$context['context_sha256'],
-                ];
+                return ['kind'=>'idle','status'=>'idle','reason'=>$deferredReason ?? 'no_eligible_source'];
             });
         } catch (Throwable) {
             return $finish('failed', 'storage_error');
@@ -157,6 +170,11 @@ final class CorrespondenceAutonomyPg
         if (($work['kind'] ?? null) === 'idle' || ($work['kind'] ?? null) === 'dispatch') return $finish($work['status'], $work['reason']);
         if (($work['kind'] ?? null) !== 'claimed') return $finish('failed', 'storage_error');
 
+        $workClaimId = $work['claim_id'] ?? null;
+        if (is_string($workClaimId) && preg_match('/\A[0-9a-f-]{36}\z/Di', $workClaimId) === 1) $claimCorrelationId = $workClaimId;
+        $sourceEventId = $work['source_event_id'] ?? null;
+        if (is_int($sourceEventId) && $sourceEventId > 0) $claimSourceIds = [$sourceEventId];
+
         $decision = null;
         $body = '';
         try {
@@ -164,9 +182,14 @@ final class CorrespondenceAutonomyPg
             if (!is_array($messages)) throw new UnexpectedValueException('invalid_messages');
             $inputChars = $this->messageChars($messages);
             $modelCalls++;
+            if (!$this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars)) {
+                $modelCalls = 0;
+                return $finish('failed', 'storage_error');
+            }
             $raw = $requestModel($messages);
             if (!is_string($raw)) throw new UnexpectedValueException('invalid_model_output');
             $outputChars = $this->charCount($raw);
+            if (!$this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars)) return $finish('failed', 'storage_error');
             $decision = correspondenceAutonomyDecision($raw, $work['source'], $work['contacts']);
             if (!is_array($decision) || !in_array($decision['action'] ?? null, self::ACTION_VALUES, true)) throw new InvalidArgumentException('invalid_decision');
             if ($decision['action'] !== 'none') {
@@ -228,6 +251,7 @@ final class CorrespondenceAutonomyPg
             });
             return $finish($result['status'], $result['reason']);
         } catch (Throwable) {
+            $this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars);
             return $finish('failed', 'storage_error');
         }
     }
@@ -387,7 +411,7 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
 
     private function closeLostClaim(array $work, string $reason): array
     {
-        $this->store->query("UPDATE plugins.correspondence_autonomy_decisions SET status='stale',action=NULL,child_document_id=NULL,due_gamets=NULL,payload=(payload-ARRAY['completion_anchor','completed_gamets','global_cooldown_until_gamets','actor_cooldown_until_gamets','completed_status','completed_action','completed_child_document_id','completed_due_gamets','model_calls','input_chars','output_chars'])||jsonb_build_object('reason_code',$1::text) WHERE playthrough_id=$2 AND source_document_id=$3 AND claim_id=$4 AND status='claimed'", [$reason,$work['playthrough_id'],$work['source_document_id'],$work['claim_id']]);
+        $this->store->query("UPDATE plugins.correspondence_autonomy_decisions SET status='stale',action=NULL,child_document_id=NULL,due_gamets=NULL,payload=(payload-ARRAY['completion_anchor','completed_gamets','global_cooldown_until_gamets','actor_cooldown_until_gamets','completed_status','completed_action','completed_child_document_id','completed_due_gamets'])||jsonb_build_object('reason_code',$1::text) WHERE playthrough_id=$2 AND source_document_id=$3 AND claim_id=$4 AND status='claimed'", [$reason,$work['playthrough_id'],$work['source_document_id'],$work['claim_id']]);
         return ['status'=>'stale','reason'=>$reason];
     }
 
@@ -426,7 +450,8 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
                 $retired++;
                 continue;
             }
-            $this->markTerminal($work, 'stale', null, null, null, 'abandoned_claim_expired', $gamets, 0, 0, 0);
+            $metrics = $this->attemptCounters($decision['payload']);
+            $this->markTerminal($work, 'stale', null, null, null, 'abandoned_claim_expired', $gamets, $metrics['model_calls'], $metrics['input_chars'], $metrics['output_chars']);
             $retired++;
         }
         return $retired;
@@ -877,7 +902,36 @@ SQL;
                 $this->markTerminal($work,'failed',null,null,null,$reason,$clock['gamets'],$calls,$inputChars,$outputChars);
                 return ['status'=>'failed','reason'=>$reason];
             });
-        }catch(Throwable){return ['status'=>'failed','reason'=>'storage_error'];}
+        }catch(Throwable){
+            $this->persistAttemptCounters($work,$calls,$inputChars,$outputChars);
+            return ['status'=>'failed','reason'=>'storage_error'];
+        }
+    }
+
+    private function attemptCounters(array $payload): array
+    {
+        $limit = 2147483647;
+        $calls = $payload['model_calls'] ?? null;
+        $inputChars = $payload['input_chars'] ?? null;
+        $outputChars = $payload['output_chars'] ?? null;
+        return [
+            'model_calls'=>is_int($calls) && $calls >= 0 && $calls <= 1 ? $calls : 0,
+            'input_chars'=>is_int($inputChars) && $inputChars >= 0 && $inputChars <= $limit ? $inputChars : 0,
+            'output_chars'=>is_int($outputChars) && $outputChars >= 0 && $outputChars <= $limit ? $outputChars : 0,
+        ];
+    }
+
+    private function persistAttemptCounters(array $work,int $calls,int $inputChars,int $outputChars): bool
+    {
+        if ($calls < 0 || $calls > 1 || $inputChars < 0 || $inputChars > 2147483647 || $outputChars < 0 || $outputChars > 2147483647) return false;
+        try {
+            $rows = $this->store->query("UPDATE plugins.correspondence_autonomy_decisions SET payload=COALESCE(payload,'{}'::jsonb)||jsonb_build_object('model_calls',$5::integer,'input_chars',$6::integer,'output_chars',$7::integer) WHERE playthrough_id=$1 AND source_document_id=$2 AND source_event_id=$3 AND claim_id=$4 AND status='claimed' RETURNING claim_id::text", [
+                $work['playthrough_id'],$work['source_document_id'],(string)$work['source_event_id'],$work['claim_id'],$calls,$inputChars,$outputChars,
+            ]);
+            return count($rows) === 1 && ($rows[0]['claim_id'] ?? null) === $work['claim_id'];
+        } catch (Throwable) {
+            return false;
+        }
     }
 
     private function markTerminal(array $work,string $status,?string $action,?string $child,?int $due,string $reason,int $gamets,int $calls,int $inputChars,int $outputChars): array

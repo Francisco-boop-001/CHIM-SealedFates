@@ -73,7 +73,7 @@ def translate(name, string_coercion=False):
     exec(compile(code, str(SOURCE) + ':' + name, 'exec'), namespace)
     return code
 
-translated = {name: translate(name) for name in ('IsHex', 'IsUUID', 'IntegerLexemeValid', 'JsonFieldCount', 'IdentityValid', 'CorrelationValid', 'RequestValid')}
+translated = {name: translate(name) for name in ('IsHex', 'IsUUID', 'UUIDCaseEqual', 'IntegerLexemeValid', 'JsonFieldCount', 'IdentityValid', 'CorrelationValid', 'RequestValid')}
 uuid = '12345678-1234-1234-1234-123456789abc'
 actor = dict(refid=20, plugin='Skyrim.esm', local_id=20)
 request = dict(protocol_version=1, document_id=uuid, operation_id=uuid, receipt_id=uuid,
@@ -91,6 +91,8 @@ def valid(value, raw=None):
 
 def clone(): return json.loads(json.dumps(request))
 check('canonical_empty_attachments', valid(request))
+check('uuid_case_equal', namespace['UUIDCaseEqual'](uuid, uuid.upper()))
+check('uuid_case_unequal', not namespace['UUIDCaseEqual'](uuid, '12345678-1234-1234-1234-123456789abd'))
 for scope in ('1', '100', '2147483647', '9223372036854775807'):
     case=clone(); case['playthrough_id']=scope
     check('positive_profile_'+scope, valid(case))
@@ -99,6 +101,8 @@ for scope in ('', '0', '01', '-1', '1.0', 'a', '1"x', '10000000000000000000'):
     check('invalid_scope_'+scope, not valid(case))
 case=clone(); case['attachments']=[dict(kind='gold',form_id=15,plugin='Skyrim.esm',local_id=15,quantity=7)]
 check('gold_attachment', valid(case))
+uppercaseTitle=clone(); uppercaseTitle['title']='letter '+uppercaseTitle['document_id'].upper()
+check('uppercase_title_hex_suffix_is_valid', valid(uppercaseTitle))
 case['attachments'][0]['quantity']=True
 check('boolean_quantity_rejected_before_native_normalization', not valid(case))
 case['attachments'][0]['quantity']=0
@@ -122,7 +126,12 @@ check('unknown_top_field', not valid(case))
 raw=json.dumps(request, separators=(',', ':'))
 check('duplicate_key', not valid(request, raw.replace('"protocol_version":1', '"protocol_version":1,"protocol_version":1')))
 check('boolean_protocol', not valid(dict(request, protocol_version=True)))
-check('uppercase_nonce', not valid(dict(request, nonce='A'*64)))
+case=clone(); case['nonce']='A'*64
+check('uppercase_nonce_correlation_is_valid', valid(case))
+case=clone()
+for field in ('document_id','operation_id','receipt_id','scope_token','nonce'):
+    case[field]=case[field].upper()
+check('uppercase_correlation_with_mixed_case_title_suffix_is_valid', valid(case))
 check('bad_renderer', not valid(dict(request, renderer_key='.'*32)))
 check('hidden_provenance_title', not valid(dict(request, title='payer: player')))
 check('escaped_protocol_delimiters_do_not_count_as_fields', namespace['JsonFieldCount']('{"x":"a:b@c|d\\\"e"}')==1)

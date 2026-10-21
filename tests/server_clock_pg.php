@@ -23,7 +23,10 @@ $after=$store->loadOperation($op['operation_id']);clockCheck((int)$after['receip
 require_once $GLOBALS['ENGINE_PATH'].'/lib/prompt_injections.php';include dirname(__DIR__).'/server/context_pre.php';
 $text=chimRenderPromptInjections('character_bottom',['herika_name'=>'Camilla','narrator_name'=>'The Narrator','game_request'=>['inputtext','210','210','Dragonborn: Hello']]);
 $after=$store->loadOperation($op['operation_id']);clockCheck(str_contains($text,'Native clock rollback letter.')&&(int)$after['source']['gamets']===210&&(int)$after['source']['ts']===210,'source must use actual scoped context request210');
-$snapshot=base64_encode(correspondenceJson(['source'=>'plugin_player_routing_v2','present_actors'=>[['form_id'=>hexdec('000A2C94'),'name'=>'Lydia','distance'=>10,'managed'=>true,'creature'=>false]]]));clockHook(['inputtext','220','220','Dragonborn: Hello',$snapshot]);
+$snapshot=base64_encode(correspondenceJson(['source'=>'plugin_player_routing_v2','present_actors'=>[['form_id'=>hexdec('000A2C94'),'name'=>'Lydia','distance'=>10,'managed'=>true,'creature'=>false]]]));
+// This case checks a renewed anchor's native clock; identical fresh snapshots are coalesced.
+clockSql("UPDATE plugins.correspondence_presence SET payload=jsonb_set(payload,'{observed_at}',to_jsonb((extract(epoch from now())::bigint-46)))");
+clockHook(['inputtext','220','220','Dragonborn: Hello',$snapshot]);
 $presence=clockSql("WITH marked AS MATERIALIZED (SELECT rowid,gamets,data FROM public.eventlog WHERE type='info' AND sess='correspondence_v1') SELECT gamets FROM marked WHERE data::jsonb ? 'token' ORDER BY rowid DESC LIMIT 1");clockCheck((int)$presence[0]['gamets']===220,'managed observation must bind actual native clock220');
 clockHook(['init','300','150','fixture']);
 clockCheck(clockSql('SELECT pg_try_advisory_xact_lock(18459814,1) AS acquired')[0]['acquired']==='f','init must hold session fence against another connection through prune and marker');

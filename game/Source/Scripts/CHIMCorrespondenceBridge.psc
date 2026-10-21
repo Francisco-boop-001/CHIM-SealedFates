@@ -3,16 +3,24 @@ Scriptname CHIMCorrespondenceBridge Hidden
 ; Physical receipts only. Recipient exposure belongs to the scoped server render/read path.
 Function DispatchExternalCommand(String executorName, String command, String parameter) global
     If JContainers.APIVersion() != 3 || JContainers.featureVersion() < 3
-        Debug.Trace("[CHIM Correspondence] unsupported_jcontainers")
+        TraceReconcileDiagnostic("unsupported_jcontainers")
         Return
     EndIf
     If StringUtil.GetLength(parameter) > 16000
-        Debug.Trace("[CHIM Correspondence] invalid_payload")
+        TraceReconcileDiagnostic("payload_too_large")
         Return
     EndIf
-    Int request = JValue.retain(JValue.objectFromPrototype(parameter))
+    Int request = JValue.objectFromPrototype(parameter)
+    If !JValue.isMap(request)
+        TraceReconcileDiagnostic("malformed_payload")
+        If request
+            JValue.release(request)
+        EndIf
+        Return
+    EndIf
+    request = JValue.retain(request)
     If !CorrelationValid(request)
-        Debug.Trace("[CHIM Correspondence] invalid_correlation")
+        TraceReconcileDiagnostic("invalid_correlation")
         JValue.release(request)
         Return
     EndIf
@@ -26,6 +34,10 @@ Function DispatchExternalCommand(String executorName, String command, String par
         Emit(request, "failed", "unsupported_action", 0, "[]")
     EndIf
     JValue.release(request)
+EndFunction
+
+Function TraceReconcileDiagnostic(String reason) global
+    Debug.Trace("[CHIM Correspondence] " + reason + "; use Check outcome (read-only Reconcile); do not resend")
 EndFunction
 
 Bool Function CorrelationValid(Int request) global
@@ -67,7 +79,9 @@ Bool Function RequestValid(Int request, String parameter) global
     If !IdentityValid(JMap.getObj(request, "recipient"), "refid") || !IdentityValid(JMap.getObj(request, "payer"), "refid")
         Return false
     EndIf
-    If JMap.valueType(request, "title") != 6 || JMap.getStr(request, "title") != "letter " + JMap.getStr(request, "document_id")
+    String title = JMap.getStr(request, "title")
+    String titleDocumentID = StringUtil.Substring(title, 7)
+    If JMap.valueType(request, "title") != 6 || StringUtil.GetLength(title) != 43 || StringUtil.Substring(title, 0, 7) != "letter " || !IsUUID(titleDocumentID) || !UUIDCaseEqual(titleDocumentID, JMap.getStr(request, "document_id"))
         Return false
     EndIf
     If !IsHex(JMap.getStr(request, "renderer_key"), 32)
@@ -209,7 +223,7 @@ Bool Function IsHex(String value, Int textLength) global
     Int i = 0
     While i < textLength
         Int character = StringUtil.AsOrd(StringUtil.GetNthChar(value, i))
-        If !((character >= 48 && character <= 57) || (character >= 97 && character <= 102))
+        If !((character >= 48 && character <= 57) || (character >= 97 && character <= 102) || (character >= 65 && character <= 70))
             Return false
         EndIf
         i += 1
@@ -229,6 +243,28 @@ Bool Function IsUUID(String value) global
                 Return false
             EndIf
         ElseIf !IsHex(character, 1)
+            Return false
+        EndIf
+        i += 1
+    EndWhile
+    Return true
+EndFunction
+
+Bool Function UUIDCaseEqual(String leftValue, String rightValue) global
+    If StringUtil.GetLength(leftValue) != 36 || StringUtil.GetLength(rightValue) != 36
+        Return false
+    EndIf
+    Int i = 0
+    While i < 36
+        Int leftCharacter = StringUtil.AsOrd(StringUtil.GetNthChar(leftValue, i))
+        Int rightCharacter = StringUtil.AsOrd(StringUtil.GetNthChar(rightValue, i))
+        If leftCharacter >= 65 && leftCharacter <= 70
+            leftCharacter += 32
+        EndIf
+        If rightCharacter >= 65 && rightCharacter <= 70
+            rightCharacter += 32
+        EndIf
+        If leftCharacter != rightCharacter
             Return false
         EndIf
         i += 1
@@ -414,7 +450,7 @@ Function Emit(Int request, String status, String reason, Int noteID, String actu
 EndFunction
 
 String Function ReceiptJSON(Int request, String status, String reason, Int noteID, String actual) global
-    ; Only validated UUID/hex/digit scope strings and fixed codes enter this JSON; names/title/provenance never enter it.
+    ; Only validated correlation strings and fixed codes enter this JSON; names/title/provenance never enter it.
     Return "{\"protocol_version\":1,\"document_id\":\"" + JMap.getStr(request, "document_id") + "\",\"operation_id\":\"" + JMap.getStr(request, "operation_id") + "\",\"receipt_id\":\"" + JMap.getStr(request, "receipt_id") + "\",\"playthrough_id\":\"" + JMap.getStr(request, "playthrough_id") + "\",\"scope_token\":\"" + JMap.getStr(request, "scope_token") + "\",\"nonce\":\"" + JMap.getStr(request, "nonce") + "\",\"status\":\"" + status + "\",\"reason\":\"" + reason + "\",\"note_form_id\":" + noteID + ",\"attachments\":" + actual + "}"
 EndFunction
 

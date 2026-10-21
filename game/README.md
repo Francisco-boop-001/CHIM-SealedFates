@@ -2,7 +2,7 @@
 
 `Source/Scripts/CHIMCorrespondenceBridge.psc` is a separate global Papyrus extension. Install only the paired `Scripts/CHIMCorrespondenceBridge.pex`; it does not replace a CHIM built-in.
 
-The repository includes the exact anonymous compiled bridge used for the dev.14 server checks. [The bridge manifest](bridge-manifest.json) binds the script, compiler and PEX hashes. The public receipt under `bridge/` at the repository root is an explicitly redacted projection of the actual compiler receipt: it retains hashes and compilation facts, removes private paths/identifying pre-sanitization metadata, and records the original receipt hash. It is not a new compilation.
+The repository retains the anonymous dev.14 bridge and includes the new dev.17 bridge bound by the current manifest. [The bridge manifest](bridge-manifest.json) binds the script, compiler and PEX hashes. The portable receipt under `bridge/` at the repository root is a projection of the actual new compilation: it retains hashes and compilation facts, uses portable input labels, and records the original private receipt hash. Raw compiler output and logs are preserved privately, outside the distributable source. The sanitized header is anonymous and its compiled code/debug body is byte-identical to the raw output.
 
 ## Wire and receipts
 

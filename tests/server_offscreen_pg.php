@@ -208,7 +208,7 @@ offscreenPgObserve($engine, 'bored', 120, 120);
 $dsnForPeer = $dsn;
 $modelCalls = 0;
 $peerResult = null;
-$result = $engine->tick(function (array $messages) use (&$modelCalls, &$peerResult, $dsnForPeer): string {
+$driftResult = $engine->tick(function (array $messages) use (&$modelCalls, &$peerResult, $dsnForPeer): string {
     $modelCalls++;
     $goalPayload = json_decode($messages[1]['content'], true, 64, JSON_THROW_ON_ERROR);
     offscreenPgCheck(!str_contains($messages[0]['content'], 'Ignore prior rules')
@@ -224,15 +224,27 @@ $result = $engine->tick(function (array $messages) use (&$modelCalls, &$peerResu
     pg_close($peer);
     return offscreenPgInitiation();
 });
-offscreenPgCheck($result['status'] === 'processed' && $result['reason'] === 'initiated' && $result['model_calls'] === 1 && $modelCalls === 1, 'own_goal_must_create_one_root_letter');
+offscreenPgCheck($driftResult['status'] === 'stale' && $driftResult['reason'] === 'observation_changed'
+    && $driftResult['model_calls'] === 1 && $modelCalls === 1, 'drifted_goal_output_must_be_rejected');
 offscreenPgCheck(($peerResult['status'] ?? null) === 'idle' && in_array($peerResult['reason'] ?? null, ['cooldown','already_claimed'], true), 'new_clock_concurrent_worker_must_idle');
+offscreenPgCheck(offscreenPgSql("SELECT count(*)::int AS n FROM plugins.correspondence_offscreen_mail WHERE playthrough_id=$1 AND depth=0", [$scope])[0]['n'] === '0'
+    && offscreenPgSql("SELECT rowid FROM public.eventlog WHERE sess='written_evidence_v1'") === [], 'drifted_goal_must_not_create_or_expose_mail');
+
+$freshGoalGamets = 120 + correspondenceAutonomyGamets(7);
+offscreenPgObserve($engine, 'bored', 122, $freshGoalGamets);
+$result = $engine->tick(static function () use (&$modelCalls): string {
+    $modelCalls++;
+    return offscreenPgInitiation();
+});
+offscreenPgCheck($result['status'] === 'processed' && $result['reason'] === 'initiated'
+    && $result['model_calls'] === 1 && $modelCalls === 2, 'fresh_goal_after_true_cooldown_must_create_one_root_letter');
 offscreenPgCheck(offscreenPgSql("SELECT count(*)::int AS n FROM plugins.correspondence_offscreen_mail WHERE playthrough_id=$1 AND depth=0 AND status='in_transit'", [$scope])[0]['n'] === '1', 'one_letter_persisted');
 offscreenPgCheck(offscreenPgSql("SELECT rowid FROM public.eventlog WHERE sess='written_evidence_v1'") === [], 'creation_and_arrival_must_not_expose_context');
 
 $replayCalls = 0;
 $replay = $engine->tick(static function () use (&$replayCalls): string { $replayCalls++; return offscreenPgInitiation(); });
 offscreenPgCheck($replay['status'] === 'idle' && $replayCalls === 0, 'same_observation_replay_must_not_call_model');
-offscreenPgObserve($engine, 'location', 122, 121);
+offscreenPgObserve($engine, 'location', 123, $freshGoalGamets);
 $pausedClockCalls = 0;
 $pausedClock = $engine->tick(static function () use (&$pausedClockCalls): string { $pausedClockCalls++; return offscreenPgInitiation(); });
 offscreenPgCheck($pausedClock['status'] === 'idle' && $pausedClock['reason'] === 'gametime_paused' && $pausedClockCalls === 0, 'same_gamets_location_must_not_call_model');

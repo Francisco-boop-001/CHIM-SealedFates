@@ -265,6 +265,116 @@ storeRecoveryCheck(
     'restore_pruned_receipt_between_read_probe_and_writer_retry_must_refuse_exposure'
 );
 
+$receiptRestoreStore = new CorrespondenceMemoryStore();
+$receiptRestoreService = new CorrespondenceService($receiptRestoreStore);
+$receiptRestoreInput = $identityInput;
+$receiptRestoreInput['request_id'] = '99999999-9999-4999-8999-999999999999';
+$receiptRestoreInput['body'] = 'Keep the original written source after receipt-anchor recovery.';
+$receiptRestoreDoc = $receiptRestoreService->compose($receiptRestoreInput);
+$receiptRestoreDispatch = $receiptRestoreService->dispatch($receiptRestoreDoc['document_id']);
+$receiptRestoreOperation = $receiptRestoreStore->operations[$receiptRestoreDispatch['operation_id']];
+$receiptRestoreReceipt = [
+    'protocol_version'=>1,
+    'document_id'=>$receiptRestoreDoc['document_id'],
+    'operation_id'=>$receiptRestoreOperation['operation_id'],
+    'receipt_id'=>$receiptRestoreOperation['receipt_id'],
+    'playthrough_id'=>'unprofiled',
+    'scope_token'=>$receiptRestoreOperation['scope_token'],
+    'nonce'=>$receiptRestoreOperation['nonce'],
+    'status'=>'delivered',
+    'reason'=>'physical_only',
+    'note_form_id'=>12345,
+    'attachments'=>[],
+];
+$receiptRestoreService->receive($receiptRestoreReceipt);
+$receiptRestorePrompt = $receiptRestoreService->prompt('Camilla');
+$receiptRestoreOperation = $receiptRestoreStore->operations[$receiptRestoreDispatch['operation_id']];
+$writtenSource = $receiptRestoreOperation['source'];
+$writtenSourceCount = count(array_filter($receiptRestoreStore->events, static fn($event) => $event['sess'] === 'written_evidence_v1'));
+unset($receiptRestoreStore->events[$receiptRestoreOperation['receipt_anchor']['rowid']]);
+$receiptRestoreUnknown = $receiptRestoreService->get($receiptRestoreDoc['document_id'])['state'] === 'unknown';
+$receiptRestoreService->receive($receiptRestoreReceipt);
+$receiptRestoreOperation = $receiptRestoreStore->operations[$receiptRestoreDispatch['operation_id']];
+$receiptRestorePromptAgain = $receiptRestoreService->prompt('Camilla');
+storeRecoveryCheck(
+    $receiptRestorePrompt !== ''
+        && $receiptRestoreUnknown
+        && $receiptRestoreOperation['source'] === $writtenSource
+        && $receiptRestoreStore->eventMatches($writtenSource)
+        && $receiptRestorePromptAgain === $receiptRestorePrompt
+        && count(array_filter($receiptRestoreStore->events, static fn($event) => $event['sess'] === 'written_evidence_v1')) === $writtenSourceCount,
+    'matching_written_source_must_survive_receipt_anchor_loss_and_replay_without_duplicate_publication'
+);
+
+$wrongScopeStore = new CorrespondenceMemoryStore();
+$wrongScopeService = new CorrespondenceService($wrongScopeStore);
+$wrongScopeInput = $identityInput;
+$wrongScopeInput['request_id'] = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
+$wrongScopeDoc = $wrongScopeService->compose($wrongScopeInput);
+$wrongScopeDispatch = $wrongScopeService->dispatch($wrongScopeDoc['document_id']);
+$wrongScopeOperation = $wrongScopeStore->operations[$wrongScopeDispatch['operation_id']];
+$wrongScopeReceipt = [
+    'protocol_version'=>1,
+    'document_id'=>$wrongScopeDoc['document_id'],
+    'operation_id'=>$wrongScopeOperation['operation_id'],
+    'receipt_id'=>$wrongScopeOperation['receipt_id'],
+    'playthrough_id'=>'unprofiled',
+    'scope_token'=>$wrongScopeOperation['scope_token'],
+    'nonce'=>$wrongScopeOperation['nonce'],
+    'status'=>'delivered',
+    'reason'=>'physical_only',
+    'note_form_id'=>12345,
+    'attachments'=>[],
+];
+$wrongScopeService->receive($wrongScopeReceipt);
+$wrongScopeService->prompt('Camilla');
+$wrongScopeOperation = $wrongScopeStore->operations[$wrongScopeDispatch['operation_id']];
+$wrongScopeSource = $wrongScopeOperation['source'];
+$wrongScopeSource['data'] = str_replace('"playthrough_id":"unprofiled"', '"playthrough_id":"other"', $wrongScopeSource['data']);
+$wrongScopeStore->events[$wrongScopeSource['rowid']] = $wrongScopeSource;
+$wrongScopeOperation['source'] = $wrongScopeSource;
+$wrongScopeStore->operations[$wrongScopeDispatch['operation_id']] = $wrongScopeOperation;
+unset($wrongScopeStore->events[$wrongScopeOperation['receipt_anchor']['rowid']]);
+$wrongScopeService->receive($wrongScopeReceipt);
+storeRecoveryCheck(
+    $wrongScopeStore->operations[$wrongScopeDispatch['operation_id']]['source'] === null,
+    'source_with_wrong_scope_must_not_be_preserved_after_receipt_replay'
+);
+
+$wrongAnchorStore = new CorrespondenceMemoryStore();
+$wrongAnchorService = new CorrespondenceService($wrongAnchorStore);
+$wrongAnchorInput = $identityInput;
+$wrongAnchorInput['request_id'] = 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb';
+$wrongAnchorDoc = $wrongAnchorService->compose($wrongAnchorInput);
+$wrongAnchorDispatch = $wrongAnchorService->dispatch($wrongAnchorDoc['document_id']);
+$wrongAnchorOperation = $wrongAnchorStore->operations[$wrongAnchorDispatch['operation_id']];
+$wrongAnchorReceipt = [
+    'protocol_version'=>1,
+    'document_id'=>$wrongAnchorDoc['document_id'],
+    'operation_id'=>$wrongAnchorOperation['operation_id'],
+    'receipt_id'=>$wrongAnchorOperation['receipt_id'],
+    'playthrough_id'=>'unprofiled',
+    'scope_token'=>$wrongAnchorOperation['scope_token'],
+    'nonce'=>$wrongAnchorOperation['nonce'],
+    'status'=>'delivered',
+    'reason'=>'physical_only',
+    'note_form_id'=>12345,
+    'attachments'=>[],
+];
+$wrongAnchorService->receive($wrongAnchorReceipt);
+$wrongAnchorService->prompt('Camilla');
+$wrongAnchorOperation = $wrongAnchorStore->operations[$wrongAnchorDispatch['operation_id']];
+unset($wrongAnchorStore->events[$wrongAnchorOperation['receipt_anchor']['rowid']]);
+$anchorData = json_decode($wrongAnchorOperation['receipt_anchor']['data'], true, 64, JSON_THROW_ON_ERROR);
+$anchorData['receipt_hash'] = str_repeat('0', 64);
+$wrongAnchorOperation['receipt_anchor']['data'] = correspondenceJson($anchorData);
+$wrongAnchorStore->operations[$wrongAnchorDispatch['operation_id']] = $wrongAnchorOperation;
+$wrongAnchorService->receive($wrongAnchorReceipt);
+storeRecoveryCheck(
+    $wrongAnchorStore->operations[$wrongAnchorDispatch['operation_id']]['source'] === null,
+    'source_must_not_survive_receipt_replay_when_lost_anchor_hash_does_not_match'
+);
+
 if ($storeRecoveryFailures !== []) {
     throw new RuntimeException('server_recovery_runtime_red: '.implode('; ', $storeRecoveryFailures));
 }

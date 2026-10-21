@@ -154,7 +154,7 @@ function correspondenceAutonomyCoreModelFactory(): ?callable
             if (!is_object($connector) || !is_callable([$connector, 'fast_request'])) {
                 throw new DomainException('model_unavailable');
             }
-            $raw = $connector->fast_request($messages, ['MAX_TOKENS' => 1024], 'backgroundlife');
+            $raw = $connector->fast_request($messages, ['MAX_TOKENS' => 4096], 'backgroundlife');
             if (!is_string($raw)) throw new DomainException('model_response_unavailable');
             return $raw;
         };

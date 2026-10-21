@@ -6,11 +6,12 @@ $request = $GLOBALS['gameRequest'] ?? null;
 if (!is_array($request) || !correspondenceAutonomyNativeRequest($request)) return;
 
 try {
-    correspondenceAutonomyRunNativePostrequest(
+    $result = correspondenceAutonomyRunNativePostrequest(
         $request,
         'correspondenceAutonomyProduction',
         'correspondenceAutonomyCoreModelFactory'
     );
+    correspondenceDiagnostic('autonomy_outcome', $result);
 } catch (Throwable) {
     correspondenceDiagnostic('autonomy_unavailable');
 }

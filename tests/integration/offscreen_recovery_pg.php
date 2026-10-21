@@ -65,6 +65,14 @@ function recoveryFixtureExposedMail(
         $arrivalCalls++;
         throw new RuntimeException('arrival_must_not_call_model');
     });
+    if ($arrival !== ['status'=>'processed','reason'=>'arrival','model_calls'=>0] || $arrivalCalls !== 0) {
+        fwrite(STDERR, json_encode(['fixture_mail_arrival'=>[
+            'status'=>$arrival['status'] ?? null,
+            'reason'=>$arrival['reason'] ?? null,
+            'model_calls'=>$arrival['model_calls'] ?? null,
+            'callback_calls'=>$arrivalCalls,
+        ]], JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    }
     recoveryCheck($arrival === ['status'=>'processed','reason'=>'arrival','model_calls'=>0] && $arrivalCalls === 0, 'fixture_mail_arrival_failed');
 
     $mail = recoveryPrivate($engine, 'mailById', ['unprofiled', $mail['message_id']]);
@@ -383,26 +391,74 @@ $gamets++;
 recoveryObserve($engine, $ts, $gamets);
 $expiryCalls = 0;
 $expiry = $engine->tick(static function () use (&$expiryCalls): string { $expiryCalls++; throw new RuntimeException('expired_claim_must_not_retry'); });
-recoveryCheck($expiryCalls === 0 && $expiry['model_calls'] === 0, 'expired_claim_must_not_retry_provider');
-$expiredJob = recoverySql("SELECT status,payload->>'reason_code' AS reason_code,payload->'abandoned_anchor'->>'rowid' AS abandoned_anchor FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id='unprofiled' AND job_id=$1", [$abandoned['job_id']])[0] ?? [];
+recoveryCheck($expiryCalls === 0 && $expiry['model_calls'] === 0 && ($expiry['reason'] ?? null) === 'claim_timeout', 'expired_claim_must_not_retry_provider');
+$expiredJob = recoverySql("SELECT job_id::text,claim_id::text,status,payload->>'attempt' AS attempt,payload->>'reconsiderable' AS reconsiderable,payload->>'reason_code' AS reason_code,payload->'abandoned_anchor'->>'rowid' AS abandoned_anchor FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id='unprofiled' AND job_id=$1", [$abandoned['job_id']])[0] ?? [];
 $expiredSource = recoverySql("SELECT status,body,source_event_id::text,payload->>'reason_code' AS reason_code,payload->'stale_anchor'->>'rowid' AS stale_anchor FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND message_id=$1", [$secondRoot['message_id']])[0] ?? [];
 recoveryCheck(($expiredJob['status'] ?? null) === 'stale' && ($expiredJob['reason_code'] ?? null) === 'claim_timeout'
+    && (string)($expiredJob['attempt'] ?? '') === '0' && ($expiredJob['reconsiderable'] ?? null) === 'true'
     && is_string($expiredJob['abandoned_anchor'] ?? null), 'expired_claim_must_get_one_anchored_terminal_state');
-recoveryCheck(($expiredSource['status'] ?? null) === 'stale' && ($expiredSource['reason_code'] ?? null) === 'claim_timeout'
-    && is_string($expiredSource['stale_anchor'] ?? null) && ($expiredSource['source_event_id'] ?? null) === null
-    && ($expiredSource['body'] ?? null) === 'A fresh letter after the abandoned reaction.', 'expired_claim_must_retire_only_unexposed_source_without_changing_body');
-$expiredAnchor = recoverySql("SELECT data::jsonb->>'transition' AS transition,data::jsonb->>'message_id' AS message_id,data::jsonb->>'reason_code' AS reason_code FROM public.eventlog WHERE rowid=$1", [$expiredSource['stale_anchor']])[0] ?? [];
-recoveryCheck(($expiredAnchor['transition'] ?? null) === 'mail_stale'
-    && ($expiredAnchor['message_id'] ?? null) === $secondRoot['message_id']
-    && ($expiredAnchor['reason_code'] ?? null) === 'claim_timeout', 'expired_claim_retirement_anchor_must_match_source');
+recoveryCheck(($expiredSource['status'] ?? null) === 'arrived' && ($expiredSource['stale_anchor'] ?? null) === null
+    && ($expiredSource['source_event_id'] ?? null) === null
+    && ($expiredSource['body'] ?? null) === 'A fresh letter after the abandoned reaction.', 'first_expired_claim_must_preserve_exact_unexposed_source_for_one_retry');
+$expiredAnchor = recoverySql("SELECT data::jsonb->>'transition' AS transition,data::jsonb->>'job_id' AS job_id,data::jsonb->>'claim_id' AS claim_id,data::jsonb->>'attempt' AS attempt,data::jsonb->>'reconsiderable' AS reconsiderable,data::jsonb->>'reason_code' AS reason_code FROM public.eventlog WHERE rowid=$1", [$expiredJob['abandoned_anchor']])[0] ?? [];
+recoveryCheck(($expiredAnchor['transition'] ?? null) === 'job_abandoned'
+    && ($expiredAnchor['job_id'] ?? null) === $abandoned['job_id']
+    && ($expiredAnchor['claim_id'] ?? null) === $abandoned['claim_id']
+    && ($expiredAnchor['attempt'] ?? null) === '0' && ($expiredAnchor['reconsiderable'] ?? null) === 'true'
+    && ($expiredAnchor['reason_code'] ?? null) === 'claim_timeout', 'expired_claim_reconsideration_anchor_must_match_source_claim');
 recoveryCheck(recoverySql("SELECT rowid FROM public.eventlog WHERE sess='written_evidence_v1' AND data::jsonb->>'document_id'=$1", [$secondRoot['message_id']]) === []
     && $engine->pendingSources() === [], 'expired_claim_must_never_publish_false_exposure');
 
 $ts++;
 $gamets += correspondenceAutonomyGamets(8);
 recoveryObserve($engine, $ts, $gamets);
+$secondTimeoutCalls = 0;
+$afterTimeout = $engine->tick(static function () use (&$secondTimeoutCalls, &$ts, &$gamets, $engine): string {
+    $secondTimeoutCalls++;
+    $ts++;
+    $gamets++;
+    recoveryObserve($engine, $ts, $gamets);
+    return json_encode(['action'=>'reply','recipient'=>'npc:900001','body'=>'The second stale output must not expose this letter.','reason'=>'I want to answer.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+});
+$secondTimeoutJob = recoverySql("SELECT job_id::text,claim_id::text,status,payload->>'attempt' AS attempt,payload->>'reconsiderable' AS reconsiderable,payload->'completion_anchor'->>'rowid' AS completion_anchor,payload->>'reason_code' AS reason_code FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id='unprofiled' AND source_message_id=$1", [$secondRoot['message_id']])[0] ?? [];
+$secondTimeoutAnchor = recoverySql("SELECT data::jsonb->>'attempt' AS attempt,data::jsonb->>'reconsiderable' AS reconsiderable,data::jsonb->>'reason_code' AS reason_code FROM public.eventlog WHERE rowid=$1", [$secondTimeoutJob['completion_anchor'] ?? ''])[0] ?? [];
+$secondTimeoutSource = recoverySql("SELECT status,body,source_event_id::text FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND message_id=$1", [$secondRoot['message_id']])[0] ?? [];
+$secondTimeoutChildren = recoverySql("SELECT count(*)::int AS amount FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND payload->>'parent_message_id'=$1", [$secondRoot['message_id']])[0]['amount'] ?? 0;
+recoveryCheck(($afterTimeout['status'] ?? null) === 'stale' && ($afterTimeout['reason'] ?? null) === 'observation_changed'
+    && $secondTimeoutCalls === 1 && ($secondTimeoutJob['job_id'] ?? null) === $abandoned['job_id']
+    && ($secondTimeoutJob['claim_id'] ?? null) !== $abandoned['claim_id']
+    && ($secondTimeoutJob['status'] ?? null) === 'stale' && (string)($secondTimeoutJob['attempt'] ?? '') === '1'
+    && ($secondTimeoutJob['reconsiderable'] ?? null) !== 'true' && ($secondTimeoutJob['reason_code'] ?? null) === 'observation_changed'
+    && (string)($secondTimeoutAnchor['attempt'] ?? '') === '1' && ($secondTimeoutAnchor['reconsiderable'] ?? null) !== 'true'
+    && ($secondTimeoutAnchor['reason_code'] ?? null) === 'observation_changed'
+    && ($secondTimeoutSource['status'] ?? null) === 'arrived' && ($secondTimeoutSource['body'] ?? null) === 'A fresh letter after the abandoned reaction.'
+    && ($secondTimeoutSource['source_event_id'] ?? null) === null && (int)$secondTimeoutChildren === 0,
+    'claim_timeout_must_reuse_one_job_for_only_one_stale_reconsideration');
+
+$ts++;
+$gamets++;
+recoveryObserve($engine, $ts, $gamets);
+$thirdTimeoutCalls = 0;
+$afterSecondFailure = $engine->tick(static function () use (&$thirdTimeoutCalls): string {
+    $thirdTimeoutCalls++;
+    throw new RuntimeException('second_stale_claim_must_not_retry');
+});
+$retiredTimeoutSource = recoverySql("SELECT status,body,source_event_id::text,payload->>'reason_code' AS reason_code,payload->'stale_anchor'->>'rowid' AS stale_anchor FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND message_id=$1", [$secondRoot['message_id']])[0] ?? [];
+$retiredTimeoutChildren = recoverySql("SELECT count(*)::int AS amount FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND payload->>'parent_message_id'=$1", [$secondRoot['message_id']])[0]['amount'] ?? 0;
+recoveryCheck(($afterSecondFailure['status'] ?? null) === 'processed' && ($afterSecondFailure['reason'] ?? null) === 'reaction_abandoned'
+    && $thirdTimeoutCalls === 0 && ($retiredTimeoutSource['status'] ?? null) === 'stale'
+    && ($retiredTimeoutSource['reason_code'] ?? null) === 'reaction_abandoned'
+    && ($retiredTimeoutSource['body'] ?? null) === 'A fresh letter after the abandoned reaction.'
+    && ($retiredTimeoutSource['source_event_id'] ?? null) === null && is_string($retiredTimeoutSource['stale_anchor'] ?? null)
+    && (int)$retiredTimeoutChildren === 0
+    && recoverySql("SELECT rowid FROM public.eventlog WHERE sess='written_evidence_v1' AND data::jsonb->>'document_id'=$1", [$secondRoot['message_id']]) === [],
+    'second_stale_reconsideration_must_retire_once_without_model_or_social_effects');
+
+$ts++;
+$gamets += correspondenceAutonomyGamets(8);
+recoveryObserve($engine, $ts, $gamets);
 $afterTimeout = $engine->tick(static fn(array $messages): string => recoveryInitiation('A fresh letter after claim timeout.'));
-recoveryCheck($afterTimeout['status'] === 'processed' && $afterTimeout['reason'] === 'initiated', 'claim_timeout_must_allow_later_sender_initiation');
+recoveryCheck($afterTimeout['status'] === 'processed' && $afterTimeout['reason'] === 'initiated', 'retired_timeout_source_must_allow_later_sender_initiation');
 
 $thirdRoot = recoverySql("SELECT message_id::text,due_gamets::text FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND sender_id=900001 AND depth=0 AND status='in_transit' AND body=$1 LIMIT 1", ['A fresh letter after claim timeout.'])[0] ?? [];
 $ts++;
@@ -427,6 +483,32 @@ recoveryCheck(($restoredSource['status'] ?? null) === 'arrived'
     && ($restoredSource['source_event_id'] ?? null) === null
     && recoverySql("SELECT rowid FROM public.eventlog WHERE sess='written_evidence_v1' AND data::jsonb->>'document_id'=$1", [$thirdRoot['message_id']]) === [],
     'restore_changed_result_must_not_expose_or_mutate_source');
+
+$ts++;
+$gamets++;
+recoveryObserve($engine, $ts, $gamets);
+$restoreCleanupCalls = 0;
+$restoreCleanup = $engine->tick(static function () use (&$restoreCleanupCalls): string {
+    $restoreCleanupCalls++;
+    throw new RuntimeException('restore_changed_terminal_cleanup_must_not_call_model');
+});
+$restoreTerminalJob = recoverySql("SELECT status,payload->>'reason_code' AS reason_code,payload->>'reconsiderable' AS reconsiderable FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id='unprofiled' AND source_message_id=$1", [$thirdRoot['message_id']])[0] ?? [];
+$restoreRetiredSource = recoverySql("SELECT status,body,source_event_id::text,payload->>'reason_code' AS reason_code,payload->'stale_anchor'->>'rowid' AS stale_anchor FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND message_id=$1", [$thirdRoot['message_id']])[0] ?? [];
+$restoreRetiredAnchor = recoverySql("SELECT data::jsonb->>'transition' AS transition,data::jsonb->>'message_id' AS message_id,data::jsonb->>'reason_code' AS reason_code FROM public.eventlog WHERE rowid::text=$1", [$restoreRetiredSource['stale_anchor'] ?? ''])[0] ?? [];
+recoveryCheck($restoreCleanup === ['status'=>'processed','reason'=>'reaction_abandoned','model_calls'=>0] && $restoreCleanupCalls === 0,
+    'restore_changed_terminal_cleanup_must_take_one_metadata_only_tick');
+recoveryCheck(($restoreTerminalJob['status'] ?? null) === 'stale' && ($restoreTerminalJob['reason_code'] ?? null) === 'restore_changed'
+    && ($restoreTerminalJob['reconsiderable'] ?? null) !== 'true'
+    && ($restoreRetiredSource['status'] ?? null) === 'stale'
+    && ($restoreRetiredSource['body'] ?? null) === 'A fresh letter after claim timeout.'
+    && ($restoreRetiredSource['source_event_id'] ?? null) === null
+    && ($restoreRetiredSource['reason_code'] ?? null) === 'restore_changed'
+    && is_string($restoreRetiredSource['stale_anchor'] ?? null)
+    && ($restoreRetiredAnchor['transition'] ?? null) === 'mail_stale'
+    && ($restoreRetiredAnchor['message_id'] ?? null) === $thirdRoot['message_id']
+    && ($restoreRetiredAnchor['reason_code'] ?? null) === 'restore_changed'
+    && recoverySql("SELECT rowid FROM public.eventlog WHERE sess='written_evidence_v1' AND data::jsonb->>'document_id'=$1", [$thirdRoot['message_id']]) === [],
+    'restore_changed_cleanup_must_retire_exact_unexposed_source');
 
 $ts++;
 $gamets += 1;
@@ -841,7 +923,7 @@ recoveryCheck($fairScanFailures === [], 'offscreen_recovery_fair_scan_regression
 echo json_encode([
     'status'=>'PASS',
     'model_throw_retires_without_exposure'=>true,
-    'expired_reaction_claim_retires_without_retry'=>true,
+    'expired_reaction_claim_reconsiders_once_then_retires_without_effects'=>true,
     'existing_terminal_reaction_recovers_without_retry'=>true,
     'malformed_returned_json_retires_without_exposure'=>true,
     'schema_invalid_returned_json_retires_without_exposure'=>true,

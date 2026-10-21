@@ -31,7 +31,7 @@ class Note(Form):
 class Actor(Form):
     def __init__(self, fid):
         super().__init__(fid); self.inventory={}; self.dead=False; self.disabled=False
-        self.equipped=[]; self.quest=PList(); self.moves=0; self.notes=0; self.partial=False; self.reject_note=False
+        self.equipped=[]; self.quest=PList(); self.moves=0; self.notes=0; self.partial=False; self.reject_note=False; self.counter_adjustment=0
     def GetItemCount(self, form):
         base=getattr(form,'base',form)
         return sum(count for held,count in self.inventory.items() if getattr(held,'base',held)==base)
@@ -48,6 +48,9 @@ class Actor(Form):
         moved=count-1 if self.partial else count
         self.inventory[form]=self.GetItemCount(form)-moved
         recipient.AddItem(form, moved, silent)
+        if recipient.counter_adjustment:
+            recipient.inventory[form]=recipient.GetItemCount(form)+recipient.counter_adjustment
+            recipient.counter_adjustment=0
 
 original_get_str=v.JMap.getStr
 v.JMap.getStr=lambda *args: PString(original_get_str(*args))
@@ -57,25 +60,31 @@ v.JMap.setInt=v.JMap.setStr
 v.JMap.setForm=v.JMap.setStr
 v.JValue.retain=lambda obj: obj
 v.JValue.release=lambda obj: 0
-v.JValue.objectFromPrototype=json.loads
-journal={}; logs=[]; forms={}; renderer=[True]; extender=[PList([5,10,0])]
+def parse_object(raw):
+    try:
+        value=json.loads(raw)
+        return value if isinstance(value,dict) else 0
+    except (TypeError,ValueError):
+        return 0
+v.JValue.objectFromPrototype=parse_object
+journal={}; logs=[]; forms={}; renderer=[True]; extender=[PList([5,10,0])]; api_version=[3]; feature_version=[3]; debug_messages=[]
 def claim(root,path,candidate,comparand,create,error):
     if path in root: return root[path]
     root[path]=candidate; return 0
 v.namespace.update(PString=PString, JAtomic=SimpleNamespace(compareExchangeObj=claim),
     JDB=SimpleNamespace(root=lambda:journal,solveObj=lambda path:journal.get(path,0)),
-    JContainers=SimpleNamespace(APIVersion=lambda:3,featureVersion=lambda:3,fileExistsAtPath=lambda p:renderer[0]),
+    JContainers=SimpleNamespace(APIVersion=lambda:api_version[0],featureVersion=lambda:feature_version[0],fileExistsAtPath=lambda p:renderer[0]),
     Game=SimpleNamespace(GetFormFromFile=lambda local,plugin:forms.get((plugin.lower(),local))),
     PO3_SKSEFunctions=SimpleNamespace(GetQuestItems=lambda actor:actor.quest,GetPapyrusExtenderVersion=lambda:extender[0]),
     AIAgentFunctions=SimpleNamespace(logMessage=lambda payload,event:logs.append(json.loads(payload))),
-    Debug=SimpleNamespace(Trace=lambda message:None))
-for name in ('Resolve','JournalPath','ReceiptJSON','Emit','Finish','Replay','Preflight','Deliver','ClaimAndDeliver','Reconcile','DispatchExternalCommand'):
+    Debug=SimpleNamespace(Trace=lambda message:debug_messages.append(str(message))))
+for name in ('Resolve','JournalPath','ReceiptJSON','UUIDCaseEqual','TraceReconcileDiagnostic','Emit','Finish','Replay','Preflight','Deliver','ClaimAndDeliver','Reconcile','DispatchExternalCommand'):
     v.translate(name,string_coercion=True)
 
 checks=[]
 def check(name, condition): assert condition,name; checks.append(name)
 def reset():
-    journal.clear(); logs.clear(); forms.clear(); renderer[0]=True; extender[0]=PList([5,10,0])
+    journal.clear(); logs.clear(); forms.clear(); debug_messages.clear(); renderer[0]=True; extender[0]=PList([5,10,0]); api_version[0]=3; feature_version[0]=3
     payer=Actor(21); recipient=Actor(20); item=Form(15,'Gold')
     forms.update({('skyrim.esm',20):recipient,('skyrim.esm',21):payer,('skyrim.esm',15):item,
                   ('aiagent.esp',0x22D30):Form(0x123,'Generic Note'),('aiagent.esp',0x21D0B):Form(0x124,'AIAssisted')})
@@ -88,12 +97,14 @@ def dispatch(request, action='Deliver'):
     return logs[-1]
 
 request,payer,recipient,item=reset(); receipt=dispatch(request)
+legacy_path='.chim_correspondence_v1.p'+request['playthrough_id']+'.s'+request['scope_token']+'.o'+request['operation_id']
+check('legacy_journal_path_format_preserved',v.namespace['JournalPath'](request)==legacy_path)
 check('production_removeitem_branch',receipt['status']=='delivered' and payer.GetItemCount(item)==13 and recipient.GetItemCount(item)==7)
 check('note_created_once',recipient.notes==1)
 check('exact_both_deltas',receipt['attachments']==[dict(form_id=15,quantity=7,before_source=20,after_source=13,before_recipient=0,after_recipient=7)])
 check('no_exposure_or_private_provenance',not any(key in receipt for key in ('exposure','body','payer','author','actual_author','title')))
 replay=dispatch(request)
-check('duplicate_replays_without_mutation',replay==receipt and payer.moves==1 and recipient.notes==1)
+check('legacy_exact_wire_replay_without_mutation',replay==receipt and payer.moves==1 and recipient.notes==1)
 check('reconcile_cached_without_mutation',dispatch(request,'Reconcile')==receipt and payer.moves==1 and recipient.notes==1)
 changed=json.loads(json.dumps(request)); changed['attachments'][0]['quantity']=8
 check('same_operation_changed_payload',dispatch(changed)['reason']=='operation_conflict' and payer.moves==1)
@@ -120,6 +131,9 @@ check('identity_mismatch_no_mutation',dispatch(request)['reason']=='invalid_acto
 request,payer,recipient,item=reset(); payer.partial=True; receipt=dispatch(request)
 check('partial_transfer_unknown',receipt['status']=='unknown' and receipt['reason']=='transfer_mismatch' and receipt['attachments'][0]['quantity']==6)
 check('partial_transfer_never_retries',dispatch(request)==receipt and payer.moves==1 and recipient.notes==1)
+request,payer,recipient,item=reset(); recipient.inventory[item]=10; recipient.counter_adjustment=-12; receipt=dispatch(request)
+check('negative_recipient_delta_preserved_in_unknown',receipt['status']=='unknown' and receipt['attachments'][0]==dict(form_id=15,quantity=-5,before_source=20,after_source=13,before_recipient=10,after_recipient=5))
+check('negative_unknown_replay_never_repeats_transfer',dispatch(request)==receipt and payer.moves==1 and recipient.notes==1)
 request,payer,recipient,item=reset(); request['attachments']=[]
 check('letter_without_attachments',dispatch(request)['status']=='delivered' and payer.moves==0 and recipient.notes==1)
 request,payer,recipient,item=reset(); request['attachments'][0]['quantity']=True
@@ -144,6 +158,29 @@ request,payer,recipient,item=reset(); request['payer']=dict(request['recipient']
 check('same_payer_recipient_letter_without_attachments',dispatch(request)['status']=='delivered' and recipient.notes==1 and recipient.moves==0 and payer.moves==0)
 request,payer,recipient,item=reset(); request['payer']=dict(request['recipient'])
 check('same_payer_recipient_transfer_rejected',dispatch(request)['reason']=='invalid_actor' and recipient.notes==recipient.moves==0)
+request,payer,recipient,item=reset()
+for field in ('document_id','operation_id','receipt_id','scope_token','nonce'):
+    request[field]=request[field].upper()
+raw=json.dumps(request,separators=(',',':')); before=len(logs)
+v.namespace['DispatchExternalCommand']('managed-executor','ExtCmdCHIMCorrespondenceBridge_Deliver',raw)
+receipt=logs[-1] if len(logs)>before else {}
+check('uppercase_wire_receipt_preserves_correlated_identity',receipt.get('status')=='delivered' and all(receipt.get(field)==request[field] for field in ('document_id','operation_id','receipt_id','scope_token','nonce')))
+note=next((form for form in recipient.inventory if isinstance(form,Note)),None)
+check('uppercase_wire_preserves_generated_title_text',note is not None and note.GetDisplayName()==request['title'])
+check('uppercase_wire_replays_without_second_transfer',dispatch(request)==receipt and payer.moves==1 and recipient.notes==1)
+
+for label,api,feature,payload,reason in (
+    ('unsupported_jcontainers',2,3,json.dumps(request,separators=(',',':')),'unsupported_jcontainers'),
+    ('unsupported_jcontainers_feature',3,2,json.dumps(request,separators=(',',':')),'unsupported_jcontainers'),
+    ('oversize_payload',3,3,'x'*16001,'payload_too_large'),
+    ('malformed_json',3,3,'{bad json','malformed_payload'),
+):
+    request,payer,recipient,item=reset(); api_version[0]=api; feature_version[0]=feature
+    v.namespace['DispatchExternalCommand']('managed-executor','ExtCmdCHIMCorrespondenceBridge_Deliver',payload)
+    check(label+'_safe_reconcile_diagnostic_without_receipt',logs==[] and payer.moves==recipient.notes==0 and bool(debug_messages) and reason in debug_messages[-1] and 'check outcome (read-only reconcile)' in debug_messages[-1].lower() and 'do not resend' in debug_messages[-1] and payload not in debug_messages[-1])
+request,payer,recipient,item=reset(); malformed=v.clone(); malformed['nonce']='bad'
+v.namespace['DispatchExternalCommand']('managed-executor','ExtCmdCHIMCorrespondenceBridge_Deliver',json.dumps(malformed,separators=(',',':')))
+check('invalid_correlation_emits_no_fabricated_receipt_and_safe_diagnostic',logs==[] and payer.moves==recipient.notes==0 and bool(debug_messages) and 'invalid_correlation' in debug_messages[-1] and 'check outcome (read-only reconcile)' in debug_messages[-1].lower() and 'do not resend' in debug_messages[-1])
 print(json.dumps(dict(status='PASS',evidence_kind='production Papyrus mechanically translated; fake native inventory/JDB boundary, no native execution',checks=len(checks),cases=checks),indent=2))
 
 

@@ -238,6 +238,11 @@ final class CorrespondencePgStore implements CorrespondenceStore
     }
     public function observeManaged(string $raw):void
     {
+        // An identical recent snapshot needs no new authority or writer lock.
+        $payload=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1',[$this->scope()['playthrough_id']]));
+        if(is_array($payload)&&($payload['raw']??null)===$raw&&is_int($payload['observed_at']??null)
+            &&$payload['observed_at']<=time()&&time()-$payload['observed_at']<15
+            &&is_array($payload['anchor']??null)&&$this->eventMatches($payload['anchor']))return;
         $this->transaction(function()use($raw){
             $scope=$this->scope()['playthrough_id'];
             $anchor=$this->appendEvent('correspondence_presence',correspondenceJson(['token'=>correspondenceUuid()]),'','correspondence_v1');

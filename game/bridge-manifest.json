@@ -2,7 +2,7 @@
   "schema_version": 1,
   "build_evidence_root": ".",
   "product": "CHIM Correspondence bridge",
-  "candidate": "unpublished-20261019",
+  "candidate": "unpublished-0.1.0-dev.17",
   "script": "CHIMCorrespondenceBridge",
   "actions": [
     "ExtCmdCHIMCorrespondenceBridge_Deliver",
@@ -57,18 +57,18 @@
     "sha256": "c8013baf3350bf9b313a633f74997ce6a9a47c343e489f886bcde359369126f0"
   },
   "pex": {
-    "path": "bridge/20261020T011358116Z/Data/Scripts/CHIMCorrespondenceBridge.pex",
-    "sha256": "7020f4d7dca2c5d94628102540add58227d93b106ef619ae65a33c00ccc8fd8a",
-    "bytes": 18496
+    "path": "bridge/20261021T003347791Z/Data/Scripts/CHIMCorrespondenceBridge.pex",
+    "sha256": "ee23f155d9417d6c68007613abade09cd218f5e6f11ea700413b3bb1ac4539c0",
+    "bytes": 19809
   },
-  "build_receipt": "bridge/20261020T011358116Z/build-receipt.json",
+  "build_receipt": "bridge/20261021T003347791Z/build-receipt.json",
   "evidence": {
-    "host_parser_checks": 56,
+    "host_parser_checks": 60,
     "native_concurrency": "NOT RUN",
     "native_gameplay": "NOT RUN",
     "co_save_restore": "NOT RUN",
     "static_checks": 26,
-    "host_state_checks": 30,
+    "host_state_checks": 41,
     "actual_server_wire_checks": 8
   },
   "package_allowlist": [
@@ -83,13 +83,13 @@
     "Dynamic FF reference identities rejected.",
     "Note proof uses +1 aggregate template count with unique reference/title/faction; concurrent identical note acquisition is not independently excluded.",
     "Renderer readiness checks template/faction/image file presence; PNG decoding and actual native display await isolated gameplay.",
-    "SKSE source warns case-insensitive string interning may affect GetNthChar/AsOrd; native strict-lowercase acceptance remains to verify.",
+    "SKSE source warns case-insensitive string interning may affect GetNthChar/AsOrd; UUID/nonce validation now accepts ASCII hex case; native interning, journal aliases and receipt display remain to verify.",
     "JContainers co-save journal and atomic claim are source/compile contracts, not native save atomicity evidence.",
     "Reconcile replays cached receipt or unknown; it never moves inventory. Exact original JSON wire is required."
   ],
   "source": {
     "path": "game/Source/Scripts/CHIMCorrespondenceBridge.psc",
-    "sha256": "260f03bf18402b020664f83e997ca028ed894cd0f151df6beb62cd9085e3def0"
+    "sha256": "2e8366eded1458c23f5bc3d0fa1368455e4a20461b173737ea4275facc030061"
   },
-  "build_receipt_sha256": "ea2bdd96406aad5dd47fe452c296f455ec7396322a59bd0cfa7e0261ec7b7059"
+  "build_receipt_sha256": "f8040b5ee7ee8e6f6e3a41ebe6f060dc3a393478c1a4416ffdad39b455db4848"
 }

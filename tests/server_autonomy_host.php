@@ -312,7 +312,7 @@ autonomyHostCheck(autonomyHostProtectedGlobals() === $beforeConfiguredFactory, '
 $beforeConfiguredCall = autonomyHostProtectedGlobals();
 $configuredRaw = correspondenceAutonomyPreserveNativeGlobals(static fn() => $configuredModel([['role' => 'user', 'content' => 'bounded payload']]));
 autonomyHostCheck(is_string($configuredRaw) && LLMConnector::$setOldGlobalsCalls === 3 && LLMConnector::$getConnectorCalls === 3, 'configured adapter must restore the full core connector setup for one bounded request');
-autonomyHostCheck($GLOBALS['autonomyHostFastRequests'] === [[[['role' => 'user', 'content' => 'bounded payload']], ['MAX_TOKENS' => 1024], 'backgroundlife']], 'configured adapter must use the standard bounded dialogue request');
+autonomyHostCheck($GLOBALS['autonomyHostFastRequests'] === [[[['role' => 'user', 'content' => 'bounded payload']], ['MAX_TOKENS' => 4096], 'backgroundlife']], 'configured adapter must use the standard bounded dialogue request');
 autonomyHostCheck($GLOBALS['autonomyHostConnectorGlobalsSeen'] === ['configured-key'], 'validated connector settings must be installed when its request callback runs');
 autonomyHostCheck($GLOBALS['autonomyHostRequestFlagsSeen'] === [[false, '']], 'core connector action flags must be installed when its request callback runs');
 autonomyHostCheck(autonomyHostProtectedGlobals() === $beforeConfiguredCall, 'configured adapter must restore connector and character/routing globals after the call');

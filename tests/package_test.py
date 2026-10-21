@@ -83,6 +83,19 @@ class PackageTest(unittest.TestCase):
             strings.append(data[offset:offset + size].decode('utf-8'))
             offset += size
         return {'source': strings[0], 'user': strings[1], 'computer': strings[2], 'end': offset}
+    def rewrite_receipt(self, receipt):
+        self.receipt.write_text(json.dumps(receipt, indent=2) + '\n', encoding='utf-8')
+        manifest_path = self.root / 'game' / 'bridge-manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['build_receipt_sha256'] = hashlib.sha256(self.receipt.read_bytes()).hexdigest()
+        manifest_path.write_text(json.dumps(manifest, indent=2) + '\n', encoding='utf-8')
+    def private_raw_receipt(self, raw_path):
+        receipt = json.loads(self.receipt.read_text(encoding='utf-8'))
+        receipt['anonymization']['raw_pex_removed'] = False
+        receipt['anonymization']['raw_pex_not_distributed'] = True
+        receipt['anonymization']['raw_pex_retained_for_private_review'] = True
+        receipt['raw_pex']['path'] = raw_path
+        self.rewrite_receipt(receipt)
     def test_autonomy_runtime_membership(self):
         required={'postrequest.php','lib/autonomy_policy.php','lib/autonomy_store.php','lib/autonomy_host.php','migrations/002_autonomy.sql'}
         self.assertTrue(required.issubset(set(pkg.SERVER_FILES)), 'Autonomous mail runtime and migration must ship together')
@@ -100,6 +113,31 @@ class PackageTest(unittest.TestCase):
     def test_canonical_project_relocates_from_explicit_evidence_root(self):
         self.assertEqual(self.root.parent, self.e8 / 'projects')
         self.assertEqual(pkg.verify_bridge(self.root, self.pex), self.pex.read_bytes())
+    def test_legacy_removed_raw_pex_receipt_is_still_accepted(self):
+        receipt = json.loads(self.receipt.read_text(encoding='utf-8'))
+        receipt['anonymization']['raw_pex_removed'] = True
+        receipt['anonymization'].pop('raw_pex_not_distributed', None)
+        receipt['anonymization'].pop('raw_pex_retained_for_private_review', None)
+        receipt['raw_pex'].pop('path', None)
+        self.rewrite_receipt(receipt)
+        self.assertEqual(pkg.verify_bridge(self.root, self.pex), self.pex.read_bytes())
+    def test_private_raw_pex_outside_distributed_evidence_is_accepted(self):
+        raw_path = 'bridge/test-run/compiler-output/CHIMCorrespondenceBridge.pex'
+        self.private_raw_receipt(raw_path)
+        self.assertFalse((self.e8 / raw_path).exists())
+        self.assertEqual(pkg.verify_bridge(self.root, self.pex), self.pex.read_bytes())
+    def test_raw_pex_present_in_distributed_evidence_is_rejected(self):
+        raw_path = 'bridge/test-run/compiler-output/CHIMCorrespondenceBridge.pex'
+        self.private_raw_receipt(raw_path)
+        distributed_raw = self.e8 / raw_path
+        distributed_raw.parent.mkdir(parents=True)
+        distributed_raw.write_bytes(self.pex.read_bytes())
+        with self.assertRaisesRegex(ValueError, 'raw PEX is present in distributed evidence'):
+            pkg.verify_bridge(self.root, self.pex)
+    def test_private_raw_pex_path_must_be_safe_and_relative(self):
+        self.private_raw_receipt('../outside/raw.pex')
+        with self.assertRaisesRegex(ValueError, 'Bridge evidence paths must be relative and contained'):
+            pkg.verify_bridge(self.root, self.pex)
     def test_public_checkout_rebuilds_from_relative_evidence(self):
         checkout = Path(self.temp.name) / 'public-checkout'
         checkout.mkdir()
@@ -274,6 +312,34 @@ class PackageTest(unittest.TestCase):
         checksum_names = [line.split('  ', 1)[1] for line in (out / 'SHA256SUMS.txt').read_text(encoding='ascii').splitlines()]
         self.assertEqual(checksum_names, sorted(expected - {'SHA256SUMS.txt'}))
 
+    def test_dev17_release_has_only_current_four_assets_deterministically(self):
+        manifest_path = self.root / 'server/manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['version'] = '0.1.0-dev.17'
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+        original_root = release.ROOT
+        release.ROOT = self.root
+        try:
+            first = release.build()
+            first_bytes = {name: (self.root / 'dist' / name).read_bytes() for name in first}
+            second = release.build()
+            second_bytes = {name: (self.root / 'dist' / name).read_bytes() for name in second}
+        finally:
+            release.ROOT = original_root
+        expected = {
+            'correspondence-0.1.0-dev.17.dwpkg',
+            'CHIM-Sealed-Fates-0.1.0-dev.17.zip',
+            'correspondence.tar.gz',
+            'SHA256SUMS.txt',
+        }
+        out = self.root / 'dist'
+        self.assertEqual({path.name for path in out.iterdir()}, expected)
+        self.assertEqual(set(first), expected)
+        self.assertEqual(set(second), expected)
+        self.assertEqual(first_bytes, second_bytes)
+        checksum_names = [line.split('  ', 1)[1] for line in (out / 'SHA256SUMS.txt').read_text(encoding='ascii').splitlines()]
+        self.assertEqual(checksum_names, sorted(expected - {'SHA256SUMS.txt'}))
+
     def test_dev16_preflight_preserves_dev15_and_conflicting_outputs(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
@@ -309,7 +375,7 @@ class PackageTest(unittest.TestCase):
     def test_release_rejects_unsupported_version(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        manifest['version'] = '0.1.0-dev.17'
+        manifest['version'] = '0.1.0-dev.18'
         manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
         original_root = release.ROOT
         release.ROOT = self.root

@@ -92,6 +92,22 @@ def e8_artifact(evidence_root, relative):
         raise ValueError('Bridge evidence must remain under the manifest evidence root bridge directory')
     return path
 
+def verify_raw_pex_provenance(evidence_root, raw_pex, anonymization):
+    if not isinstance(raw_pex, dict) or not isinstance(anonymization, dict):
+        raise ValueError('Compiler receipt raw PEX provenance is invalid')
+    removed = anonymization.get('raw_pex_removed') is True
+    retained_privately = (anonymization.get('raw_pex_not_distributed') is True and
+                          anonymization.get('raw_pex_retained_for_private_review') is True)
+    raw_path = raw_pex.get('path')
+    if raw_path is not None:
+        raw_path = e8_artifact(evidence_root, raw_path)
+        if raw_path.exists():
+            raise ValueError('raw PEX is present in distributed evidence')
+    elif retained_privately:
+        raise ValueError('Compiler receipt has no raw PEX path for private review')
+    if not removed and not retained_privately:
+        raise ValueError('Compiler receipt does not prove raw PEX removal or private retention')
+
 def sanitizer_paths(evidence_root, raw_pex, clean_pex):
     bridge = bridge_directory(evidence_root)
     raw_path = Path(raw_pex)
@@ -163,6 +179,8 @@ def verify_bridge(root, pex=None):
     receipt_compiler = receipt.get('compiler', {})
     receipt_pex = receipt.get('pex', {})
     raw_pex = receipt.get('raw_pex', {})
+    if not isinstance(raw_pex, dict) or not isinstance(receipt_pex, dict):
+        raise ValueError('Compiler receipt PEX provenance is invalid')
     if receipt_source.get('path') != source_rel or receipt_source.get('sha256') != source_hash:
         raise ValueError('Compiler receipt source does not match the candidate source')
     if receipt_compiler.get('version') != compiler.get('version') or str(receipt_compiler.get('sha256', '')).casefold() != str(compiler.get('sha256', '')).casefold():
@@ -177,10 +195,12 @@ def verify_bridge(root, pex=None):
     if args.count('--anonymize') != 1 or receipt.get('source_argument') != BRIDGE_SCRIPT or args[-1:] != [BRIDGE_SCRIPT]:
         raise ValueError('Compiler receipt does not prove an anonymized relative-source build')
     anonymization = receipt.get('anonymization', {})
-    if (anonymization.get('requested') is not True or anonymization.get('header_only') is not True or
-            anonymization.get('raw_pex_removed') is not True or not isinstance(anonymization.get('caprica_header_clean'), bool) or
+    if (not isinstance(anonymization, dict) or anonymization.get('requested') is not True or
+            anonymization.get('header_only') is not True or
+            not isinstance(anonymization.get('caprica_header_clean'), bool) or
             not isinstance(anonymization.get('method'), str) or not anonymization.get('method')):
         raise ValueError('Compiler receipt does not prove bounded PEX header anonymization')
+    verify_raw_pex_provenance(evidence_root, raw_pex, anonymization)
     inputs = receipt.get('inputs', [])
     if not isinstance(inputs, list) or any(not isinstance(item, dict) or not isinstance(item.get('role'), str) or
                                            not re.fullmatch(r'[0-9A-Fa-f]{64}', str(item.get('sha256', '')))

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-dev.17 — PRE-ALPHA
+
+- Retire one proven ineligible arrived letter per tick and close abandoned old-generation claims without exposing or rewriting mail. Newly anchored transient reactions can be reconsidered once under fresh eligibility and restore checks.
+- Isolate init-fence failures from CHIM startup, release the fence after restore, and retry storage-failed receipt intake once without dispatching a transfer again.
+- Persist callback-attempt counters independently of social effects, preserve them across claim expiry, and emit bounded, privacy-safe outcome diagnostics. Attempts are not provider billing proof.
+- Preserve signed unknown recipient deltas and accept ASCII hex UUID/nonce case at validation boundaries; rebuild the source-bound anonymous Papyrus bridge without changing exact-wire journal paths.
+- Coalesce unchanged fresh presence observations while preserving clock and anchor checks. Keep the existing mixed-clock/restore safety policy.
+- Clarify single-package installation, worker shutdown, retained data, unsupported catalog import and historical kit provenance. Keep the optional interface and existing web page.
+- Verify exact dev.17 Department adapter compatibility on disposable TEST; keep the interface optional and the web page usable. No new provider evaluation, live installation or Skyrim gameplay claim.
+
 ## 0.1.0-dev.16 — PRE-ALPHA
 
 - Deferred autonomy sources before claim when the Background Life connector is unavailable or invalid, while continuing due-child dispatch. A later valid connector can process an unclaimed source once.
