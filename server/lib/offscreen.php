@@ -1226,10 +1226,10 @@ final class CorrespondenceOffscreenPg
     private function actorProfileConstructible(array $row): bool
     {
         $id = $this->intValue($row['id'] ?? null);
-        $personality = $row['personality'] ?? null;
-        if ($id < 1 || $id > 2147483647 || !correspondenceActorName($row['npc_name'] ?? null)
-            || !is_string($personality) || strlen($personality) > 8000 || preg_match('//u',$personality)!==1
-            || str_contains($personality,"\0") || preg_match_all('/./us',$personality)>2000) return false;
+        // Personality is not checked here: npcMap() projects any unusable personality
+        // as '' on an otherwise eligible actor, so rejecting it would defer that
+        // actor's mail forever while it remains addressable.
+        if ($id < 1 || $id > 2147483647 || !correspondenceActorName($row['npc_name'] ?? null)) return false;
 
         $extended = $this->profileJsonObject($row['extended_data'] ?? null);
         $metadataRaw = $row['metadata'] ?? null;
@@ -1305,7 +1305,7 @@ final class CorrespondenceOffscreenPg
             $metadata = $this->jsonObject($row['metadata'] ?? null);
             $stats = is_array($metadata['stats'] ?? null) ? $metadata['stats'] : [];
             $personality = $row['personality'] ?? '';
-            if (!is_string($personality) || strlen($personality) > 8000 || preg_match('//u',$personality)!==1 || preg_match_all('/./us',$personality)>2000) $personality = '';
+            if (!is_string($personality) || strlen($personality) > 8000 || preg_match('//u',$personality)!==1 || str_contains($personality,"\0") || preg_match_all('/./us',$personality)>2000) $personality = '';
             $coords = $metadata['last_coords'] ?? null;
             if (is_string($coords)) $coords = json_decode($coords, true);
             $location = is_array($coords) && is_string($coords[3] ?? null) && strlen($coords[3]) <= 200 && preg_match('//u',$coords[3])===1 ? $coords[3] : '';

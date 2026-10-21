@@ -1,6 +1,6 @@
 {
   "name": "correspondence",
-  "version": "0.1.0-dev.19",
+  "version": "0.1.0-dev.20",
   "schema_version": 2,
   "description": "Sealed Fates: letters with consequences, bounded NPC correspondence, and a parchment web dashboard with the World of Drama-Llama artwork.",
   "status": "development_candidate",

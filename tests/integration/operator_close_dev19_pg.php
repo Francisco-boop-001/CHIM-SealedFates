@@ -45,12 +45,15 @@ foreach(['remove','change','reset_operation']as$mutation){
     closePgCheck($refused,'closure_must_be_monotonic_'.$mutation);
 }
 closePgCheck(pg_num_rows(pg_query($connection,'SELECT * FROM public.responselog'))===$before,'closure_does_not_send');
-foreach(['dispatch','retry']as$action){$refused=false;try{$service->$action($queued['document_id']);}catch(DomainException){$refused=true;}closePgCheck($refused,'closed_'.$action.'_refused');}
+$close=$persisted['operator_close'];pg_query_params($connection,'DELETE FROM public.eventlog WHERE rowid=$1',[$close['rowid']]);
+$listed=array_column($service->list(),null,'document_id');closePgCheck(isset($listed[$queued['document_id']])&&$listed[$queued['document_id']]['operator_closed']===true&&$listed[$queued['document_id']]['operator_close_evidence_unavailable']===true,'pruned_close_keeps_closed_letter_visible');
+$refused=false;try{$service->dispatch($queued['document_id']);}catch(DomainException $e){$refused=$e->getMessage()==='operator_closed';}closePgCheck($refused,'pruned_close_still_blocks_dispatch');
+$refused=false;try{$service->retry($queued['document_id']);}catch(DomainException $e){$refused=$e->getMessage()==='retry_unsafe';}closePgCheck($refused,'pruned_close_still_blocks_retry');
 $service->dispatch($queued['document_id'],true);
 $receipt['status']='delivered';$receipt['reason']='physical_only';$receipt['note_form_id']=12345;$receipt['attachments'][0]['quantity']=50;$receipt['attachments'][0]['after_source']=50;$receipt['attachments'][0]['after_recipient']=50;
 closePgCheck($service->receive($receipt)['state']==='delivered','late_proof_resolves_closed_unknown');
 $eventCount=pg_num_rows(pg_query($connection,'SELECT * FROM public.eventlog'));closePgCheck($service->close($queued['document_id'])['state']==='delivered'&&pg_num_rows(pg_query($connection,'SELECT * FROM public.eventlog'))===$eventCount,'repeated_close_after_late_proof_is_idempotent');
-$listed=array_column($service->list(),null,'document_id');closePgCheck($listed[$queued['document_id']]['operator_closed']===true,'late_proof_not_reopen');
+$listed=array_column($service->list(),null,'document_id');closePgCheck($listed[$queued['document_id']]['operator_closed']===true&&$listed[$queued['document_id']]['operator_close_evidence_unavailable']===true,'late_proof_not_reopen');
 $cap=['version'=>1,'input_type'=>'written_evidence','source_marker'=>'written_evidence_v1','source_event_type'=>'info','recipient_only'=>true,'max_body_codepoints'=>2000];
 $calls=0;$request=function()use(&$calls){$calls++;return ['status'=>'processed','reason'=>'no_change'];};
 pg_query($connection,'BEGIN');
@@ -58,7 +61,13 @@ closePgCheck(correspondenceCallConsumer(42,fn()=>$cap,$request,$connection)['rea
 closePgCheck(pg_transaction_status($connection)===PGSQL_TRANSACTION_INTRANS,'consumer_guard_must_not_commit_or_rollback');pg_query($connection,'ROLLBACK');
 $result=correspondenceCallConsumer(42,fn()=>$cap,function()use($connection){pg_query($connection,'BEGIN');return ['status'=>'processed','reason'=>'no_change'];},$connection);
 closePgCheck($result['reason']==='consumer_connection_busy','consumer_leaked_transaction_refused');
-$refused=false;try{$store->readTransaction(fn()=>true);}catch(Throwable){$refused=true;}closePgCheck($refused&&pg_transaction_status($connection)===PGSQL_TRANSACTION_INTRANS,'store_must_not_commit_consumer_transaction');pg_query($connection,'ROLLBACK');
-$close=$store->loadDocument($queued['document_id'])['operator_close'];pg_query_params($connection,'DELETE FROM public.eventlog WHERE rowid=$1',[$close['rowid']]);
-$refused=false;try{$service->dispatch($queued['document_id']);}catch(DomainException $e){$refused=$e->getMessage()==='document_unavailable';}closePgCheck($refused,'pruned_closure_must_quarantine');
+    $refused=false;try{$store->readTransaction(fn()=>true);}catch(Throwable){$refused=true;}closePgCheck($refused&&pg_transaction_status($connection)===PGSQL_TRANSACTION_INTRANS,'store_must_not_commit_consumer_transaction');pg_query($connection,'ROLLBACK');
+$input['request_id']=correspondenceUuid();$lost=$service->compose($input);$lostDispatch=$service->dispatch($lost['document_id']);$lostOp=$store->loadOperation($lostDispatch['operation_id']);$service->close($lost['document_id']);
+$lostReceipt=array_intersect_key($lostOp,array_flip(['protocol_version','document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce']));
+$lostReceipt+=['status'=>'delivered','reason'=>'physical_only','note_form_id'=>12345,'attachments'=>[['form_id'=>15,'quantity'=>50,'before_source'=>100,'after_source'=>50,'before_recipient'=>0,'after_recipient'=>50]]];
+$lostDoc=$store->loadDocument($lost['document_id']);pg_query_params($connection,'DELETE FROM public.eventlog WHERE rowid=$1 OR rowid=$2',[$lostDoc['operator_close']['rowid'],$lostOp['dispatch_anchor']['rowid']]);
+$refused=false;try{$service->dispatch($lost['document_id'],true);}catch(DomainException $e){$refused=$e->getMessage()==='dispatch_anchor_unavailable';}closePgCheck($refused,'missing_dispatch_anchor_blocks_reconcile');
+$refused=false;try{$service->receive($lostReceipt);}catch(DomainException $e){$refused=$e->getMessage()==='dispatch_anchor_unavailable';}closePgCheck($refused&&$store->loadOperation($lostDispatch['operation_id'])['receipt']===null,'missing_dispatch_anchor_blocks_receipt_recovery');
+$docAnchor=$lostDoc['anchor'];pg_query_params($connection,'DELETE FROM public.eventlog WHERE rowid=$1',[$docAnchor['rowid']]);
+$refused=false;try{$service->get($lost['document_id']);}catch(DomainException $e){$refused=$e->getMessage()==='document_unavailable';}closePgCheck($refused,'missing_document_anchor_stays_unavailable');
 pg_close($connection);echo "PASS dev19 PG operator close and consumer idle boundaries\n";

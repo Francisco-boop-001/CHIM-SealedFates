@@ -1,3 +1,32 @@
+# CHIM Sealed Fates 0.1.0-dev.20 — PRE-ALPHA
+
+Skyrim has one courier. I gave him emotional blackmail, gold transfers and forwarded insults, then misplaced his filing stamp. He kept the letter. The software should have done the same. It does now. His union has not returned my calls.
+
+Closed letters remain visible when their later close event is pruned. The page flags the missing proof while dispatch/retry stays blocked. A matching original receipt or read-only reconciliation can recover delivery only with surviving original document and dispatch evidence. Closing the paperwork does not recall a letter, refund money or prevent genuine late delivery from causing social consequences.
+
+A failed restore-marker write now attempts persistent database quarantine for the clear epoch observed before the attempt. It preserves the native floor and any newer initializer, including one completed before token capture. Existing restore, identity, inherited-transaction and unknown/no-resend protections remain strict. Unusable biographies normalize at prompt projection, and clean re-claimed decisions age from the new attempt. Full forwarded letters remain intact.
+
+**The new Skyrim interface is optional; the existing web plugin page still works.** Use the web page until an exact Department dev.20 pairing is verified. The matching delivery bridge is still required for physical notes, items and gold; its PEX and original build provenance are unchanged from dev.17. No sibling plugin is bundled.
+
+Verification: accepted disposable evidence covers 28 PostgreSQL jobs, 35 Linux pure cases and two targeted causal PG RED/GREEN comparisons. The exact executable server and contract bytes are preserved; only manifest version metadata changes. Fresh Windows checks passed 91 PHP lints, 34 pure cases, 60 translated parser checks and 41 fake-native state checks; all 30 package tests pass. A clean annotated-tag export reproduces the four assets below. One synthetic operation fixture was corrected to include its real playthrough identity; its identity-race assertion is unchanged. See [recovery and evidence](DEV20-RECOVERY.md), [installation](INSTALL.md) and [verification limits](VERIFICATION.md).
+
+This is PRE-ALPHA server recovery and packaging evidence. Actual Skyrim inventory/co-save/gameplay, new real-model quality, campaign-scale performance and exact Department dev.20 compatibility remain unverified. If no trustworthy prior clear epoch/token exists, or both persistence channels fail while core continues, cross-process quarantine cannot be guaranteed; repair prerequisites and perform another supported init. No live data, installed game, core or provider is changed. Publication does not start TEST or contact the coordinator.
+
+## Dev.20 assets
+
+[Download this PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.20). Use one documented installation route and keep only one correspondence version enabled.
+
+| File | SHA-256 | Bytes |
+| --- | --- | ---: |
+| [CHIM-Sealed-Fates-0.1.0-dev.20.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.20/CHIM-Sealed-Fates-0.1.0-dev.20.zip) | `3674e2eba435a947bf17e6be733bae202830ea11446ece36c57011327a9aa89f` | 2828316 |
+| [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.20/SHA256SUMS.txt) | `f398aaea3773ff5adbb96391acfaf32908c2c9a915357f4c3b71ba3c2c210f91` | 289 |
+| [correspondence-0.1.0-dev.20.dwpkg](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.20/correspondence-0.1.0-dev.20.dwpkg) | `4ba2336d7a5fe2bea9b1120f06557fe8c4197006bd449e4e4b64f097ea0ebb14` | 2808125 |
+| [correspondence.tar.gz](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.20/correspondence.tar.gz) | `1acbbb4c85edf71733f8fb805f7cc8b887a00811a61abe9131e99fdf48f650ac` | 2426039 |
+
+Historical release sections and their original checksums remain below. Dated dev.14–18 advisories preserve their old tags/downloads.
+
+---
+
 # CHIM Sealed Fates 0.1.0-dev.19 — PRE-ALPHA
 
 Skyrim has one courier. I gave him more paperwork, then discovered the paperwork had learned to block the queue. He has filed a grievance. I have fixed the queue. Neither of us has received a raise.

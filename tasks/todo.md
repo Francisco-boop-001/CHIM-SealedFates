@@ -130,3 +130,13 @@ Department holds TEST. This publication stays Windows-only and authorizes no liv
 Published `correspondence-v0.1.0-dev.19` as PRE-ALPHA from source commit `04830d8298da9e2356dc96df4b2b6632cc23930c`. All 132 clean-tag source files match the precommit snapshot; 29 package checks passed on the export, and all four assets reproduce the frozen disposable-tested candidate byte-for-byte. Fresh Windows checks passed 90 PHP lints, 31 pure cases, 60 parser checks, 41 fake-native state checks and 29 package checks. The accepted 27 PostgreSQL, 32 Linux pure-case and eight causal RED receipts were rehashed against unchanged runtime. Draft and anonymous public downloads matched every checksum before main advanced without force.
 
 The Skyrim interface stays optional; the existing web page works. Department dev.19 compatibility remains unverified; its exact dev.18 candidate is separate. The delivery bridge is unchanged from dev.17. Older release bodies, asset IDs/digests and tag objects remain unchanged. TEST remained under Department ownership; no WSL, live, game, core or provider operation occurred in this publication. Native gameplay/model quality, campaign-scale performance and dual-persistence failure limits remain as documented.
+
+
+## Dev.20 publication — 2026-10-21 (authorized)
+
+- [x] Rehash accepted recovery receipts and preserve canonical/public preimages and protected-live metadata.
+- [x] Package exact tested runtime under dev.20, update honest PRE-ALPHA docs and run fresh host/package checks.
+- [ ] Commit reviewed source, annotate tag and reproduce all assets from a clean tag export.
+- [ ] Verify draft/public downloads before advancing main; preserve old releases and record review.
+
+Publication only: no TEST start, coordinator contact, live/game/core/provider changes or installation.

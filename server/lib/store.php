@@ -101,6 +101,33 @@ final class CorrespondencePgStore implements CorrespondenceStore
         }finally{$this->restoreAdmin=false;}
         return $epoch;
     }
+    public static function captureClearRestoreEpoch(string $path):?string
+    {
+        try{$sentinel=self::readRestoreSentinelFile($path);}catch(Throwable){return null;}
+        return $sentinel!==null&&$sentinel['state']==='clear'?$sentinel['epoch']:null;
+    }
+    public function quarantineRequestRestoreEpoch(?string $expectedRestoreToken,?string $expectedPriorEpoch):void
+    {
+        if($this->active)throw new LogicException('restore_epoch_during_transaction');
+        if(!$this->restoreStateReady)throw new DomainException('restore_epoch_state_uninitialized');
+        if(!is_string($expectedRestoreToken)||$this->requestRestoreToken===null||!hash_equals($this->requestRestoreToken,$expectedRestoreToken))throw new DomainException('restore_token_unavailable');
+        $separator=strpos($expectedRestoreToken,':');
+        if($separator!==36)throw new DomainException('restore_token_unavailable');
+        try{$epoch=correspondenceUuidCheck(substr($expectedRestoreToken,0,$separator));$expectedPriorEpoch=correspondenceUuidCheck($expectedPriorEpoch);}catch(Throwable){throw new DomainException('restore_token_unavailable');}
+        if(!hash_equals($expectedPriorEpoch,$epoch))throw new DomainException('restore_epoch_changed');
+        $this->assertConnectionIdle();
+        $this->restoreAdmin=true;
+        try{
+            $this->queryRaw('BEGIN');
+            try{
+                $this->queryRaw("SET LOCAL lock_timeout='3s'");
+                $this->queryRaw('SELECT pg_advisory_xact_lock(18459814, 1)');
+                $rows=$this->queryRaw('UPDATE plugins.correspondence_restore_state SET pending=TRUE,updated_at=now() WHERE singleton IS TRUE AND epoch=$1::uuid RETURNING epoch::text',[$expectedPriorEpoch]);
+                if(count($rows)!==1)throw new DomainException('restore_epoch_changed');
+                $this->queryRaw('COMMIT');
+            }catch(Throwable $error){try{$this->queryRaw('ROLLBACK');}catch(Throwable){}throw $error;}
+        }finally{$this->restoreAdmin=false;}
+    }
     public function completeRestoreEpoch(string $epoch):void
     {
         correspondenceUuidCheck($epoch);

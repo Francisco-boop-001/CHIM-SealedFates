@@ -47,6 +47,10 @@ function pg_query_params(mixed $connection,string $sql,array $parameters=[]):mix
         $epoch=$parameters[0]??null;$db=&$GLOBALS['restoreOwnershipDb'];
         if($db['epoch']===$epoch&&$db['pending']){$db['pending']=false;return new RestoreOwnershipPgResult([['epoch'=>$epoch]]);}return new RestoreOwnershipPgResult([]);
     }
+    if(str_starts_with($sql,'UPDATE plugins.correspondence_restore_state SET pending=TRUE')){
+        $epoch=$parameters[0]??null;$db=&$GLOBALS['restoreOwnershipDb'];
+        if($db['epoch']===$epoch){$db['pending']=true;return new RestoreOwnershipPgResult([['epoch'=>$epoch]]);}return new RestoreOwnershipPgResult([]);
+    }
     if(str_starts_with($sql,'UPDATE plugins.correspondence_restore_state SET epoch=')){
         $db=&$GLOBALS['restoreOwnershipDb'];$db=['epoch'=>$parameters[0],'pending'=>true,'floor'=>$parameters[1]];return new RestoreOwnershipPgResult([['epoch'=>$parameters[0]]]);
     }
@@ -62,7 +66,7 @@ function pg_fetch_all(RestoreOwnershipPgResult $result):array|false{return $resu
 function pg_free_result(RestoreOwnershipPgResult $result):bool{return true;}
 function pg_close(mixed $connection):bool{$GLOBALS['restoreOwnershipClosed']++;return true;}
 function pg_transaction_status(mixed $connection):int{return $GLOBALS['restoreOwnershipTransaction'];}
-function ptp_connect():mixed{$GLOBALS['restoreOwnershipConnected']++;return new stdClass();}
+function ptp_connect():mixed{$GLOBALS['restoreOwnershipConnected']++;$beforeConnect=$GLOBALS['restoreOwnershipBeforeConnect']??null;unset($GLOBALS['restoreOwnershipBeforeConnect']);if(is_callable($beforeConnect))$beforeConnect();return new stdClass();}
 function ptr_runtime_enter():void{}
 final class Logger
 {
@@ -92,6 +96,68 @@ function restoreOwnershipExpectFailure(callable $call,string $message):Throwable
 }
 
 $case=$argv[1]??null;
+if(in_array($case,['init_marker_failure_quarantine','init_marker_failure_newer_epoch','init_marker_failure_before_capture'],true)){
+    $race=$case==='init_marker_failure_newer_epoch';$beforeCapture=$case==='init_marker_failure_before_capture';
+    $root=restoreOwnershipDir();$runDir=$root.DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.'playthrough_runtime';mkdir($runDir,0700,true);
+    $GLOBALS['ENGINE_PATH']=$root;$GLOBALS['ptr_runtime_generation']='fixture-generation';
+    $marker=$runDir.DIRECTORY_SEPARATOR.'correspondence.restore.json';$epochA='11111111-1111-4111-8111-111111111111';$epochB='22222222-2222-4222-8222-222222222222';
+    restoreOwnershipCheck(CorrespondencePgStore::writeRestoreSentinelFile($marker,'clear',$epochA),'old_clear_marker_write_failed');
+    $GLOBALS['restoreOwnershipDb']=['epoch'=>$epochA,'pending'=>false,'floor'=>'77'];
+    $lock=@fopen($marker.'.lock','c+b');restoreOwnershipCheck(is_resource($lock)&&flock($lock,LOCK_EX|LOCK_NB),'init_fixture_lock_failed');
+    if($beforeCapture)$GLOBALS['restoreOwnershipBeforeConnect']=static function()use($lock,$marker,$epochB):void{
+        flock($lock,LOCK_UN);fclose($lock);
+        restoreOwnershipCheck(CorrespondencePgStore::writeRestoreSentinelFile($marker,'clear',$epochB),'newer_clear_marker_write_failed');
+        $GLOBALS['restoreOwnershipDb']=['epoch'=>$epochB,'pending'=>false,'floor'=>'999'];
+    };
+    $GLOBALS['restoreOwnershipAfterMarkerPrecheck']=static function()use($race,$lock,$marker,$epochB):void{
+        if(!$race)return;
+        flock($lock,LOCK_UN);fclose($lock);
+        restoreOwnershipCheck(CorrespondencePgStore::writeRestoreSentinelFile($marker,'clear',$epochB),'newer_clear_marker_write_failed');
+        $GLOBALS['restoreOwnershipDb']=['epoch'=>$epochB,'pending'=>false,'floor'=>'999'];
+    };
+    $GLOBALS['gameRequest']=['init','1800000000000000100','42','fixture'];
+    include dirname(__DIR__).'/server/preprocessing.php';
+    restoreOwnershipCheck(($GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']??false)===true,'failed_marker_write_must_keep_this_request_unsafe');
+    if($beforeCapture){
+        restoreOwnershipCheck($GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']->requestRestoreToken()===$epochB.':fixture-generation','production_capture_fixture_must_observe_B_after_A_marker_timeout');
+        restoreOwnershipCheck($GLOBALS['restoreOwnershipDb']===['epoch'=>$epochB,'pending'=>false,'floor'=>'999'],'failed_A_marker_write_must_not_quarantine_B_completed_before_factory_capture');
+        restoreOwnershipCheck(restoreOwnershipMarker($marker)===['schema'=>'correspondence.restore.v1','state'=>'clear','epoch'=>$epochB],'failed_A_marker_write_must_preserve_B_marker');
+        correspondenceReleaseInitFence();$GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']=false;
+        @unlink($marker);@unlink($marker.'.lock');@rmdir($runDir);@rmdir(dirname($runDir));@rmdir($root);
+        echo "PASS failed init marker write cannot poison B completed before factory token capture\n";exit(0);
+    }
+    if($race){
+        restoreOwnershipCheck($GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']->requestRestoreToken()===$epochA.':fixture-generation','failed_init_must_keep_its_captured_old_token');
+        restoreOwnershipCheck($GLOBALS['restoreOwnershipDb']===['epoch'=>$epochB,'pending'=>false,'floor'=>'999'],'delayed_old_init_must_not_poison_completed_newer_epoch');
+        restoreOwnershipCheck(restoreOwnershipMarker($marker)===['schema'=>'correspondence.restore.v1','state'=>'clear','epoch'=>$epochB],'delayed_old_init_must_preserve_newer_marker');
+        correspondenceReleaseInitFence();$GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']=false;
+        @unlink($marker);@unlink($marker.'.lock');@rmdir($runDir);@rmdir(dirname($runDir));@rmdir($root);
+        echo "PASS failed init marker write cannot poison a newer completed epoch\n";exit(0);
+    }
+    restoreOwnershipCheck($GLOBALS['restoreOwnershipDb']===['epoch'=>$epochA,'pending'=>true,'floor'=>'77'],'failed_marker_write_must_quarantine_only_captured_epoch_and_preserve_floor');
+    restoreOwnershipCheck(restoreOwnershipMarker($marker)===['schema'=>'correspondence.restore.v1','state'=>'clear','epoch'=>$epochA],'failed_marker_write_must_preserve_old_marker');
+    $quarantineSql=array_slice($GLOBALS['restoreOwnershipSql'],-8);
+    restoreOwnershipCheck(in_array("SET LOCAL lock_timeout='3s'",$quarantineSql,true)&&in_array('SELECT pg_advisory_xact_lock(18459814, 1)',$quarantineSql,true)&&count(array_filter($quarantineSql,static fn($sql)=>str_starts_with($sql,'UPDATE plugins.correspondence_restore_state SET pending=TRUE')))===1,'fallback_must_use_bounded_writer_lock_and_one_exact_epoch_update');
+    flock($lock,LOCK_UN);fclose($lock);
+    correspondenceReleaseInitFence();
+    $GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']=false;
+    unset($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED'],$GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']);
+    $fresh=restoreOwnershipStore($marker);$fresh->ensureSchema();$fresh->captureRequestRestoreToken();
+    $writerError=restoreOwnershipExpectFailure(fn()=>$fresh->transaction(static fn()=>true),'another_writer_must_reject_database_quarantine');
+    restoreOwnershipCheck($writerError instanceof DomainException,'another_writer_must_observe_persisted_pending_epoch');
+    $beforeInherited=count($GLOBALS['restoreOwnershipSql']);$GLOBALS['restoreOwnershipTransaction']=1;
+    $inheritedError=restoreOwnershipExpectFailure(fn()=>$GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']->quarantineRequestRestoreEpoch($epochA.':fixture-generation',$epochA),'quarantine_must_not_touch_an_inherited_transaction');
+    restoreOwnershipCheck($inheritedError instanceof DomainException&&$inheritedError->getMessage()==='connection_transaction_active'&&count($GLOBALS['restoreOwnershipSql'])===$beforeInherited&&$GLOBALS['restoreOwnershipTransaction']===1,'fallback_must_preserve_inherited_transaction_untouched');$GLOBALS['restoreOwnershipTransaction']=PGSQL_TRANSACTION_IDLE;
+    $oldOwnerError=restoreOwnershipExpectFailure(fn()=>$GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']->completeRestoreEpoch($epochA),'old_owner_must_not_clear_failed_init_quarantine');
+    restoreOwnershipCheck($oldOwnerError instanceof DomainException&&$GLOBALS['restoreOwnershipDb']['pending'],'old_owner_must_leave_failed_init_quarantine_pending');
+    restoreOwnershipCheck(CorrespondencePgStore::writeRestoreSentinelFile($marker,'pending',$epochB),'recovery_pending_marker_write_failed');
+    $GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']->beginRestoreEpoch($epochB,'100');
+    $GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']->completeRestoreEpoch($epochB);
+    restoreOwnershipCheck($GLOBALS['restoreOwnershipDb']===['epoch'=>$epochB,'pending'=>false,'floor'=>'100']&&restoreOwnershipMarker($marker)===['schema'=>'correspondence.restore.v1','state'=>'clear','epoch'=>$epochB],'later_supported_init_must_recover_quarantined_state');
+    $GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']=false;
+    @unlink($marker);@unlink($marker.'.lock');@rmdir($runDir);@rmdir(dirname($runDir));@rmdir($root);
+    echo "PASS failed init marker write quarantines the captured epoch and later init recovers\n";exit(0);
+}
 if($case==='init_lock_failure'){
     $root=restoreOwnershipDir();$runDir=$root.DIRECTORY_SEPARATOR.'log'.DIRECTORY_SEPARATOR.'playthrough_runtime';mkdir($runDir,0700,true);
     $GLOBALS['ENGINE_PATH']=$root;$GLOBALS['restoreOwnershipPgMode']='fail';

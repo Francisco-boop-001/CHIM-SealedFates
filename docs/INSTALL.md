@@ -1,6 +1,6 @@
 # Installation and removal
 
-**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The package is a matched pair: server package and Papyrus bridge must come from the same paired archive. Dev.19 retains the byte-identical, source-bound dev.17 bridge and its original build provenance. Install the server and bridge from the dev.19 paired archive together; do not relabel an older archive.
+**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The package is a matched pair: server package and Papyrus bridge must come from the same paired archive. Dev.20 retains the byte-identical, source-bound dev.17 bridge and its original build provenance. Install the server and bridge from the dev.20 paired archive together; do not relabel an older archive.
 
 ## Pick your interface
 
@@ -8,17 +8,17 @@
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The Department Skyrim interface is optional. Its published prealpha.1 targets dev.17; a separate dev.18 adapter candidate does not certify dev.19. Use the existing web plugin page until an exact dev.19 Department pairing is verified. No sibling plugins are bundled. Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
+The Department Skyrim interface is optional. Exact Department dev.20 compatibility remains unverified; evidence for an older adapter does not certify this server version. Use the existing web plugin page until an exact dev.20 pairing is verified. No sibling plugins are bundled. Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
 
 ## Main paired install
 
-Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.19.zip**, and verify it against **SHA256SUMS.txt**.
+Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.20.zip**, and verify it against **SHA256SUMS.txt**.
 
 1. Stop the offscreen service before replacing files (see **Updating** below). Install that ZIP as an MO2 mod. Confirm that exactly one active mod supplies **Data/Scripts/CHIMCorrespondenceBridge.pex** and exactly one correspondence **.dwpkg** remains in the merged **CHIM/server-plugins/correspondence/** directory. Disable older playtest/recovery mods that supply either file.
-2. From the same ZIP, install **correspondence-0.1.0-dev.19.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
-3. Keep the bridge and server package from the dev.19 paired archive. Do not pair the server package with a bridge from another release.
+2. From the same ZIP, install **correspondence-0.1.0-dev.20.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
+3. Keep the bridge and server package from the dev.20 paired archive. Do not pair the server package with a bridge from another release.
 
-The paired ZIP includes the unchanged, hash-verified MO2 bridge PEX and the dev.19 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.19 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
+The paired ZIP includes the unchanged, hash-verified MO2 bridge PEX and the dev.20 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.20 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
 
 CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Older playtest ZIPs contain 2026 timestamps; current reproducible archives use a fixed 1980 timestamp. With both enabled, the courier may diligently install the older package. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
 
@@ -69,6 +69,10 @@ Historical sibling packages are exact development fixtures, not current dependen
 A storage-failed receipt gets one intake retry with the same packet. This does not repeat delivery or move inventory. If the packet still cannot be accepted, keep the operation pending/unknown and use read-only Reconcile with the original dispatch wire; never compose or dispatch a replacement as a recovery shortcut. A missing or untrusted native journal cannot prove delivery. Reconcile reads an existing journal; it cannot repair missing or unsupported JContainers, a malformed dispatch packet, or a missing journal. Fix the prerequisite first, keep the original operation and its evidence, then check that same operation. If its outcome still cannot be proven, abandon further delivery attempts and leave it pending/unknown. There is no safe clean-failure receipt or automatic resend for an unproven transfer, and no database deletion is required.
 
 Dev.19 adds **Close without resending or refunding** to the web page for manual letters. This records an idempotent administrative closure and blocks dispatch/retry for that document. The physical outcome remains queued, dispatched, failed or unknown as actually supported by evidence. It does not remove a queued game command, recover money, prove that nothing moved, or stop a genuine late receipt. The read-only outcome check remains available for dispatched/unknown operations. Autonomous child dispatch stays owned by its scheduler; pause autonomous correspondence through its normal control rather than closing its children manually.
+
+The dev.20 F-03 recovery repair keeps a closed letter visible if its later administrative close event has been pruned. The page flags the missing closure proof; the stored closure still blocks dispatch and retry. A correctly correlated receipt or read-only reconciliation can resolve the original operation only while its original document and dispatch anchors survive. A genuine late delivery can still be read, change relationships, and prompt replies: closing the paperwork does not recall the courier. Missing original anchors remain quarantined. This repair ships in dev.20; the immutable dev.19 download does not contain it.
+
+The dev.20 F-04 repair also attempts database-only quarantine when the restore marker cannot be written. It marks only the request's previously captured epoch pending, under the existing writer lock, preserving the native timestamp floor and any newer initializer. Another supported init is required to recover; do not clear the row or marker manually. If no trustworthy prior epoch was captured, or both persistence channels fail, cross-process quarantine cannot be guaranteed. The current request stays unsafe. This repair ships in dev.20; the immutable dev.19 download does not contain it.
 
 If JContainers or another native dependency is missing, restore the supported dependency in the disposable profile first and retry only the original read-only check. If its journal is missing, corrupt or cannot be correlated with the original operation, preserve unknown and close further attempts if desired. No clean-failure receipt is invented to make the UI look reassuring. The courier is many things; a forensic accountant is not currently one of them.
 

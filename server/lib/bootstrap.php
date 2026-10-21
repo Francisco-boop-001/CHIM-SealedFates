@@ -59,7 +59,7 @@ function correspondenceCaptureRequestIngress(CorrespondencePgStore $store):void
 function correspondencePrepareRestoreInit(array $request):void
 {
     if((string)($request[2]??'')==='10000000')return;
-    $markerWritten=false;$runtime=null;
+    $markerWritten=false;$runtime=null;$store=null;$priorRestoreToken=null;$priorRestoreEpoch=null;
     try{
         $GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']=false;
         $GLOBALS['CORRESPONDENCE_RESTORE_INIT_START']=true;
@@ -69,14 +69,17 @@ function correspondencePrepareRestoreInit(array $request):void
         $GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']=true;
         $GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']=false;
         $root=correspondenceEngineRoot();$sentinel=$root.'/log/playthrough_runtime/correspondence.restore.json';
+        $priorRestoreEpoch=CorrespondencePgStore::captureClearRestoreEpoch($sentinel);
         $markerWritten=CorrespondencePgStore::writeRestoreSentinelFile($sentinel,'pending',$epoch);
         $runtime=correspondenceProduction();$store=$runtime['store'];$GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']=$store;
+        $priorRestoreToken=$store->requestRestoreToken();
         try{$GLOBALS['CORRESPONDENCE_RESTORE_INIT_ROWID']=$store->initMarkerStart();}catch(Throwable){$GLOBALS['CORRESPONDENCE_RESTORE_INIT_ROWID']=null;}
         $gamets=$request[2]??null;$GLOBALS['CORRESPONDENCE_RESTORE_INIT_GAMETS']=is_string($gamets)&&preg_match('/\A[0-9]{1,20}\z/D',$gamets)===1?$gamets:null;
         if(empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_SHUTDOWN_REGISTERED'])){register_shutdown_function('correspondenceCompletePendingInit');$GLOBALS['CORRESPONDENCE_RESTORE_INIT_SHUTDOWN_REGISTERED']=true;}
         $store->beginRestoreEpoch($epoch,is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS'])?$GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS']:'0');
     }catch(Throwable){
         $GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']=true;
+        if(!$markerWritten&&$store instanceof CorrespondencePgStore)try{$store->quarantineRequestRestoreEpoch($priorRestoreToken,$priorRestoreEpoch);}catch(Throwable){}
         if(!$markerWritten)error_log('[CORRESPONDENCE] restore_init_marker_unavailable');
         if($runtime!==null&&empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_SHUTDOWN_REGISTERED'])){register_shutdown_function('correspondenceCompletePendingInit');$GLOBALS['CORRESPONDENCE_RESTORE_INIT_SHUTDOWN_REGISTERED']=true;}
     }

@@ -198,10 +198,38 @@ final class CorrespondenceService
             if (!is_array($close) || ($close['sess']??null)!=='correspondence_v1'
                 || !in_array($close['type']??null,['info','correspondence_operator_closed'],true)
                 || ($close['people']??null)!==''
-                || ($close['data']??null)!==correspondenceJson(['document_id'=>$id,'operation_id'=>$doc['operation_id'],'reason'=>'operator_closed'])
-                || !$this->store->eventMatches($close)) throw new DomainException('document_unavailable');
+                || ($close['data']??null)!==correspondenceJson(['document_id'=>$id,'operation_id'=>$doc['operation_id'],'reason'=>'operator_closed'])) throw new DomainException('document_unavailable');
+            try {
+                correspondenceKeys($close,['rowid','ts','gamets','type','data','sess','localts','people']);
+                $rowid=$close['rowid'];
+                if ((!is_int($rowid)&&(!is_string($rowid)||!ctype_digit($rowid))) || (int)$rowid<1
+                    || !is_numeric($close['ts']) || !is_numeric($close['gamets']) || !is_numeric($close['localts'])) throw new DomainException('document_unavailable');
+            } catch (InvalidArgumentException) {
+                throw new DomainException('document_unavailable');
+            }
         }
         return $doc;
+    }
+    private function dispatchAnchorMatches(array $doc,array $op):bool
+    {
+        $anchor=$op['dispatch_anchor']??null;
+        if (($op['document_id']??null)!==$doc['document_id'] || ($op['operation_id']??null)!==$doc['operation_id']
+            || ($op['playthrough_id']??null)!==$doc['playthrough_id'] || !is_array($anchor)) return false;
+        try {
+            correspondenceKeys($anchor,['rowid','ts','gamets','type','data','sess','localts','people']);
+            $rowid=$anchor['rowid'];
+            if ((!is_int($rowid)&&(!is_string($rowid)||!ctype_digit($rowid))) || (int)$rowid<1
+                || !is_numeric($anchor['ts']) || !is_numeric($anchor['gamets']) || !is_numeric($anchor['localts'])
+                || !in_array($anchor['type'],['info','correspondence_dispatch'],true) || $anchor['sess']!=='correspondence_v1'
+                || $anchor['people']!=='' || !is_string($anchor['data'])) return false;
+            $data=json_decode($anchor['data'],true,64,JSON_THROW_ON_ERROR);
+            if (!is_array($data)) return false;
+            correspondenceKeys($data,['document_id','operation_id']);
+            if ($data['document_id']!==$doc['document_id'] || $data['operation_id']!==$doc['operation_id']) return false;
+        } catch (Throwable) {
+            return false;
+        }
+        return $this->store->eventMatches($anchor);
     }
     private function document(string $id, bool $effect = false): array
     {
@@ -213,9 +241,10 @@ final class CorrespondenceService
     {
         if ($doc['operation_id']===null) return 'queued';
         $op=$operation??$this->store->loadOperation($doc['operation_id']);
-        if (!$op || !$this->store->eventMatches($op['dispatch_anchor'])) return 'unknown';
-        if ($op['receipt']!==null && (!$op['receipt_anchor'] || !$this->store->eventMatches($op['receipt_anchor']))) return 'unknown';
-        if ($op['receipt']===null) return 'dispatched';
+        if (!$op || !$this->dispatchAnchorMatches($doc,$op)) return 'unknown';
+        if (($op['receipt']??null)!==null && (!is_array($op['receipt_anchor']??null) || !$this->store->eventMatches($op['receipt_anchor']))) return 'unknown';
+        if (($op['receipt']??null)===null) return 'dispatched';
+        if (!is_array($op['receipt'])) return 'unknown';
         if($op['receipt']['status']==='failed'&&!correspondenceRetryableReason($op['receipt']['reason']))return 'unknown';
         if ($op['receipt']['status']!=='delivered') return $op['receipt']['status'];
         if ($op['source']!==null && $this->store->eventMatches($op['source'])) return 'exposed';
@@ -296,12 +325,16 @@ final class CorrespondenceService
             $doc=$this->document($id,true); $state=$this->state($doc);
             if (!$reconcile && isset($doc['operator_close'])) throw new DomainException('operator_closed');
             if ($doc['operation_id']!==null && !$reconcile) return ['document_id'=>$id,'state'=>$state,'operation_id'=>$doc['operation_id']];
-            $executor=$this->store->managedExecutor();
-            if ($executor===null || $executor==='' || preg_match('/[|@\r\n]/',$executor)) return ['document_id'=>$id,'state'=>$state,'reason'=>'executor_unavailable'];
+            $op=null;
             if ($reconcile) {
                 if ($doc['operation_id']===null) throw new DomainException('operation_unavailable');
-                $op=$this->store->loadOperation($doc['operation_id']); if (!$op) throw new DomainException('operation_unavailable');
-            } else {
+                $op=$this->store->loadOperation($doc['operation_id']);
+                if (!$op) throw new DomainException('operation_unavailable');
+                if (!$this->dispatchAnchorMatches($doc,$op)) throw new DomainException('dispatch_anchor_unavailable');
+            }
+            $executor=$this->store->managedExecutor();
+            if ($executor===null || $executor==='' || preg_match('/[|@\r\n]/',$executor)) return ['document_id'=>$id,'state'=>$state,'reason'=>'executor_unavailable'];
+            if (!$reconcile) {
                 $items=[]; foreach($doc['attachments'] as $item) $items[]=$this->store->physicalItem($item);
                 $payload=['protocol_version'=>1,'document_id'=>$id,'operation_id'=>correspondenceUuid(),'receipt_id'=>correspondenceUuid(),'playthrough_id'=>$doc['playthrough_id'],'scope_token'=>correspondenceUuid(),'nonce'=>bin2hex(random_bytes(32)),'recipient'=>$this->store->physicalActor($doc['recipient']),'payer'=>$this->store->physicalActor($doc['payer']),'title'=>$doc['title'],'renderer_key'=>md5(strtolower(trim($doc['title']))),'attachments'=>$items];
                 $this->store->prepareNote($doc['title'],"From: ".$doc['claimed_sender']['name']."\nTo: ".$doc['recipient']['name']."\n\n".$doc['body']);
@@ -381,8 +414,9 @@ final class CorrespondenceService
         return $this->store->transaction(function()use($receipt){
             $doc=$this->document($receipt['document_id'],true); $op=$this->store->loadOperation($receipt['operation_id']);
             if (!$op || $doc['operation_id']!==$op['operation_id']) throw new DomainException('operation_unavailable');
-            foreach(['document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce'] as $key) if (!is_string($receipt[$key]) || !hash_equals($op[$key],$receipt[$key])) throw new DomainException('receipt_identity_mismatch');
-            if ($op['receipt']!==null && $this->store->eventMatches($op['receipt_anchor']) && ($op['receipt']['status']==='delivered'||($op['receipt']['status']==='failed'&&correspondenceRetryableReason($op['receipt']['reason'])))) {
+            if (!$this->dispatchAnchorMatches($doc,$op)) throw new DomainException('dispatch_anchor_unavailable');
+            foreach(['document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce'] as $key) if (!is_string($op[$key]??null) || !is_string($receipt[$key]) || !hash_equals($op[$key],$receipt[$key])) throw new DomainException('receipt_identity_mismatch');
+            if (is_array($op['receipt']??null) && is_array($op['receipt_anchor']??null) && $this->store->eventMatches($op['receipt_anchor']) && ($op['receipt']['status']==='delivered'||($op['receipt']['status']==='failed'&&correspondenceRetryableReason($op['receipt']['reason'])))) {
                 if ($op['receipt']!=$receipt) throw new DomainException('receipt_conflict');
                 return ['document_id'=>$doc['document_id'],'state'=>$this->state($doc),'operation_id'=>$op['operation_id']];
             }
@@ -482,6 +516,7 @@ final class CorrespondenceService
                         'attachments'=>$doc['attachments'],
                         'source_event_id'=>$sourceEventId,
                         'operator_closed'=>isset($doc['operator_close']),
+                        'operator_close_evidence_unavailable'=>isset($doc['operator_close']) && !$this->store->eventMatches($doc['operator_close']),
                     ];
                 } catch (DomainException|InvalidArgumentException) {
                     continue;

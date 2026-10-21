@@ -360,6 +360,9 @@ class PackageTest(unittest.TestCase):
     def test_dev19_release_has_only_current_four_assets_deterministically(self):
         self.assert_current_release('0.1.0-dev.19')
 
+    def test_dev20_release_has_only_current_four_assets_deterministically(self):
+        self.assert_current_release('0.1.0-dev.20')
+
     def assert_current_release(self, version):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
@@ -423,7 +426,7 @@ class PackageTest(unittest.TestCase):
     def test_release_rejects_unsupported_version(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        manifest['version'] = '0.1.0-dev.20'
+        manifest['version'] = '0.1.0-dev.21'
         manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
         original_root = release.ROOT
         release.ROOT = self.root

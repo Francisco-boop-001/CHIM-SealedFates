@@ -1,0 +1,17 @@
+# Dev.20 recovery evidence and limits
+
+The courier can lose a filing stamp without losing the entire letter. I regard this as a breakthrough in public administration, which is why nobody lets me run a hold.
+
+F-01 normalizes unusable personalities only at prompt projection. F-02 resets the age of a clean re-claimed decision to the new attempt. F-03 keeps an otherwise valid closed letter visible after its close event is pruned, flags the unavailable proof, and still blocks dispatch/retry. Correctly correlated receipts or read-only reconciliation require surviving original document and dispatch evidence. A genuine late delivery may still cause exposure, social effects and replies; closure is not a recall or refund.
+
+F-04 saves the validated clear marker epoch before attempting its marker write. On failure, a matching request token and serialized exact-epoch update can persist database quarantine without changing the native floor or a newer initializer. A newer init completed before token capture is preserved too. Inherited transactions remain untouched. Recovery requires another supported init, not deleting the marker or resetting a row.
+
+Accepted disposable evidence: 28 PostgreSQL jobs and 35 Linux pure cases. Both targeted PG regressions fail at the intended assertions against pre-fix source and pass against the candidate. The F-04 test observes A waiting on a real advisory lock while B completes; an independent connection rejects quarantine after A releases its fence, and a later supported init recovers. One older synthetic operation needed its missing playthrough identity added to match real dispatch; the identity-race assertion is unchanged. Its initial failure remains excluded from acceptance. The accepted follow-up changes that fixture only; executable server bytes are identical.
+
+The portable [verification summary](evidence/dev20-verification.json) records source/receipt hashes. Publication rehashes these retained results and adds fresh host/package checks plus deterministic builds from the clean annotated tag. PostgreSQL is not rerun merely to publish the same bytes. Only server manifest version metadata changes from the tested candidate. This does not establish provider/model quality, actual Skyrim inventory/co-save/native gameplay, campaign-scale performance or exact Department dev.20 compatibility.
+
+**The Skyrim interface is optional; the existing web plugin page still works.** The paired delivery bridge remains required for physical notes/items/gold and is byte-identical to dev.17, with its original compilation receipt. Use the web page until an exact Department dev.20 pairing is verified. No sibling plugin is bundled and the coordinator is not contacted for this publication.
+
+Historical dev.14–17 release pages now warn about the old clock fence; dev.18 warns about overlapping-init ownership. Their tags/downloads and all older releases remain unchanged. No live server, installed game, core or provider is modified. TEST remains stopped throughout publication. Protected live-VHD metadata is checked before and after; this is a metadata guard, not a whole-volume content hash.
+
+If there is no trustworthy prior clear epoch/token, or both persistence channels fail while core continues, plugin-wide quarantine still cannot be guaranteed. Restore prerequisites and perform another supported init. Full forwarded letters, original operations, strict identity/restore checks and unknown/no-resend rules are preserved. See [installation and recovery](INSTALL.md).

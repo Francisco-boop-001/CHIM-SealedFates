@@ -67,9 +67,31 @@ $badMetadata = $row;
 $badMetadata['metadata']='[1]';
 $badDeadFlag = $row;
 $badDeadFlag['metadata']='{"stats":{"is_dead":"unknown"}}';
-foreach ([$badName,$badPersonality,$badSettings,$missingSettings,$badSettingValue,$badMetadata,$badDeadFlag] as $invalid) {
+foreach ([$badName,$badSettings,$missingSettings,$badSettingValue,$badMetadata,$badDeadFlag] as $invalid) {
     offscreenDev19ProfileCheck($classifier->invoke($engine,$invalid)===false,
-        'invalid actor name, personality, settings, or metadata must be recheckable rather than inferred disabled');
+        'invalid actor name, settings, or metadata must be recheckable rather than inferred disabled');
+}
+
+// npcMap() treats an unusable personality as an empty one and keeps the actor
+// eligible and addressable. Construction must agree, or that actor's mail is
+// deferred forever and its sender can never initiate again.
+$npcMap = new ReflectionMethod($engine,'npcMap');
+$nullPersonality = $row;
+$nullPersonality['personality']=null;
+$longPersonality = $row;
+$longPersonality['personality']=str_repeat('é',2001);
+$invalidUtf8Personality = $row;
+$invalidUtf8Personality['personality']="Lydia\xC3";
+$nulPersonality = $row;
+$nulPersonality['personality']="Lydia\0bio";
+foreach (['null'=>$nullPersonality,'over-long'=>$longPersonality,'oversized'=>$badPersonality,'invalid UTF-8'=>$invalidUtf8Personality,'NUL'=>$nulPersonality] as $label=>$profile) {
+    $projected = $npcMap->invoke($engine,[$profile])[900001] ?? null;
+    offscreenDev19ProfileCheck(is_array($projected) && $projected['personality']==='' && $projected['enabled']===true && $projected['letters']===true,
+        "a {$label} personality must be projected as an empty personality on an eligible actor");
+    offscreenDev19ProfileCheck($classifier->invoke($engine,$profile)===true,
+        "a {$label} personality must stay constructible because npcMap already normalizes it");
+    offscreenDev19ProfileCheck($deferral->invoke($engine,$profile)===false,
+        "a {$label} personality must not defer mail forever");
 }
 $explicitOptOutWithBadPersonality = $badPersonality;
 $explicitOptOutWithBadPersonality['extended_data']='{"background_life_enabled":false,"background_life_letters":true}';
@@ -79,7 +101,7 @@ $explicitDeadWithBadPersonality = $badPersonality;
 $explicitDeadWithBadPersonality['metadata']='{"stats":{"is_dead":true}}';
 offscreenDev19ProfileCheck($deferral->invoke($engine,$explicitDeadWithBadPersonality)===false,
     'an explicit dead status remains terminal even when unrelated profile text is malformed');
-offscreenDev19ProfileCheck($deferral->invoke($engine,$badPersonality)===true,
+offscreenDev19ProfileCheck($deferral->invoke($engine,$badSettingValue)===true,
     'a mutable profile defect without explicit ineligibility must be recheckable');
 
 offscreenDev19ProfileCheck($recheckValidator->invoke($engine,(string)PHP_INT_MAX)===true,

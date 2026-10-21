@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0-dev.20 — PRE-ALPHA
+
+- Normalize unusable personalities at the existing prompt boundary and age clean re-claims from the new attempt.
+- Keep closed letters visible after close-proof pruning; preserve closure and require original document/dispatch proof for recovery.
+- Persist marker-failure quarantine for the previously observed epoch without altering a newer initializer or the native floor.
+- Add dated historical release warnings; preserve full forwarded letters and strict no-resend transfer rules.
+- Bind 28 disposable PostgreSQL jobs and 35 Linux pure cases to this source; retain the unchanged source-bound dev.17 bridge.
+- Keep the Skyrim interface optional and the web page available; exact Department dev.20 compatibility remains unverified.
+
 ## 0.1.0-dev.19 — PRE-ALPHA
 
 - Protect overlapping restore intent with stable marker locking and epoch ownership checks.

@@ -120,7 +120,7 @@ function correspondencePage(array $actors,array $choices,array $letters,string $
         $closed=($letter['operator_closed']??false)===true;
         $rows.='<tr><td>'.$h($letter['claimed_sender']['name']).'</td><td>'.$h($letter['recipient']['name']).'</td><td>'.$h($letter['state']).'</td><td>'.$h($socialText).'</td><td><form method="post"><input type="hidden" name="csrf" value="'.$token.'"><input type="hidden" name="document_id" value="'.$id.'">';
         $rows.='<button name="action" value="read">Open letter</button>';
-        if($closed)$rows.='<span>Closed by operator; delivery outcome unchanged.</span>';
+        if($closed)$rows.=($letter['operator_close_evidence_unavailable']??false)===true?'<span>Closure evidence unavailable; remains closed.</span>':'<span>Closed by operator; delivery outcome unchanged.</span>';
         elseif($letter['recipient']['kind']==='player'&&$letter['state']==='failed')$rows.='<button name="action" value="retry">Retry failed letter (new operation)</button>';
         elseif($letter['state']==='queued'&&$managedChild)$rows.='<span>Awaiting autonomous scheduler</span>';
         elseif($letter['state']==='queued')$rows.='<button name="action" value="dispatch">Dispatch queued letter</button>';

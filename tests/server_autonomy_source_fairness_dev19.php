@@ -210,4 +210,12 @@ foreach ($store->decisionSql as $sql) {
 autonomySourceFairnessDev19Check($writesAreGuarded,
     'terminal-stale and claim upserts require an evidence-free retry row');
 
+// The abandoned-claim sweep ages claims by created_at. A retry-lane re-claim reuses
+// the deferred row, so it must restart that clock or a concurrent tick can retire
+// the claim while its model call is still running.
+$claimSql = $store->decisionSql[1] ?? '';
+autonomySourceFairnessDev19Check(
+    preg_match('/DO UPDATE SET[^;]*\bcreated_at\s*=\s*(now\(\)|clock_timestamp\(\))/i', $claimSql) === 1,
+    'a retry-lane re-claim must restart the abandoned-claim age');
+
 echo "PASS autonomy source fairness selection\n";

@@ -32,3 +32,15 @@ These are synthetic server recovery and packaging results. Actual providers/mode
 ## Publication follow-up
 
 Publication is separately authorized after the repair verification above. Fresh host checks, clean-tag source verification and exact asset rebuild/download checks bind this release to that frozen evidence. The earlier no-publication statement describes the repair phase; it does not certify a Department adapter or installed runtime. This follow-up does not access TEST, live, game, core or providers.
+
+
+## Local F-03/F-04 follow-up — 2026-10-21 (unpublished)
+
+Pruned close-event proof no longer hides an otherwise valid letter. It remains closed, with a visible warning; receipt/reconcile recovery still needs the original document and dispatch proof. A failed marker write now attempts exact-prior-epoch database quarantine without altering a newer initializer or the native floor. See the updated [recovery instructions](INSTALL.md). Both regressions and all 28 PostgreSQL jobs pass in a fresh disposable cluster; 35 Linux pure cases and the host checks also pass. The evidence is in `artifacts/chim-sealed-fates-f03-f05-repair-20261021/verification-final.json`.
+
+The published dev.19 source/assets remain unchanged. Historical dev.14–18 release pages now carry dated advisories; their tags and downloads are unchanged. TEST is stopped, live data is untouched, and the coordinator was not contacted. The earlier verification and publication sections describe their own historical phases. No new native gameplay, model-quality or Department compatibility claim follows from this repair.
+
+
+## Dev.20 publication follow-up — 2026-10-21
+
+The previously unpublished F-01/F-02 and F-03/F-04 repairs now form the separately authorized dev.20 release. Earlier local-only statements describe their repair phase. See [dev.20 evidence and limits](DEV20-RECOVERY.md); dev.19 tags/assets remain immutable. This publication does not start TEST, contact the coordinator or modify live/game/core/providers.

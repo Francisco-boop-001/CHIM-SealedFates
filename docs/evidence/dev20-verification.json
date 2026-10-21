@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "release": "0.1.0-dev.20",
+  "status": "VERIFIED_REPAIR_SOURCE",
+  "postgres_jobs": 28,
+  "linux_pure_cases": 35,
+  "repair_verification_sha256": "3e44367ae5378f7b847f8a046973880d52120866af9b3a7bbd6d97a26aa7c487",
+  "green_manifest_sha256": "af437fd5e30efce91a018b727496256b4121ef9713c6a826c487009745a69aac",
+  "fixture_followup_manifest_sha256": "92b07d128fd3063c61a94044bcc53dbd3393675cfe72741b46c46bd734fd19fe",
+  "accepted_pg_receipts": {
+    "execution-green-0.json": "8ea1ab4b648e0d67039a02d417299fae9df09654b5b8ce4170e68dfcf9524425",
+    "execution-green-1.json": "3deb6ebbbe0f2f65e36f08f77337584bb3790e68396953b0cae9cac4d64cf985",
+    "execution-green-2.json": "0866d0b6f5ff329d02f1eb4dbdb06f6b5f9d9eea9bbc3fd85c6ce56e1e6efbc2",
+    "execution-green-3.json": "c686934ed7b48440078f491a20d114a79030c5b6577f0eb255decda26d7c95ee",
+    "execution-followup2-4.json": "a790e3009a8156e256d69e8a5ddff5abea8f6e8da083a916312bc1f300f14848",
+    "execution-green-5.json": "2a119e19044dd39793fc079cfbdc05711df314afb17c421875fd013ea6082234",
+    "execution-green-6.json": "4f642abefabd2ce063b053f55c19342b91bd550aa522ba183fed9100471f6cd9",
+    "execution-green-7.json": "591bb057494ddd4e943f875cd3eeb20dc41572c950745e20af87778ecbb5e836",
+    "execution-green-8.json": "3ee15e67d5f5edbc2680888daefba22e0445aef334740c1f2c85a17ce2acff3a",
+    "execution-green-9.json": "41c5fc4af66a0becc36546246f378568d7b78d7ad3a9579d27cc08bc3beadda9",
+    "execution-green-10.json": "a87dcc70bc09d69f174a2e233e5722cf51900f41b53691f38221f2169cbe056e",
+    "execution-green-11.json": "c17269b389a1b9772c5e1d321e01751bcbc34ffee5fa03dca23c1469c122e6ef",
+    "execution-green-12.json": "736f4443d4cf0f374bc135cba056abcd6f004e96b1de3e5a611d208a773d4a16",
+    "execution-green-13.json": "205745729c0187b7917eb8ab97c3092c7caf6e206c5ba8b1955c1bba540e41f2",
+    "execution-green-14.json": "0efd10a1afb9c18ae63ffb7f425eb09d47201e375341f243cc68ec043acf2a85",
+    "execution-green-15.json": "5110e770d71164ab1cf1758a6cf9183b46a882f11fcf3e7b13b686fc115fcb4f",
+    "execution-green-16.json": "7351397557c60698c421d0934f5319ee6ef12f8351d4130b6f8a9ece93ed1d2c",
+    "execution-green-17.json": "97bbb68710354c35b0716c9526e09428aa5c1e76de26aea3480a64276a1fbd53",
+    "execution-green-18.json": "b6565de78bd09d9e7ee96d504cce776dd154a50ddddd7d25458e5ab9aea04988",
+    "execution-green-19.json": "a080fe3812a8c22c3c88ed52a8f166a2b129f6a2f94fbd9f207be836c1eab0e9",
+    "execution-green-20.json": "de41568f73d6292bb5ea3b520842ef17101d1d2658c5e6d657b5cdff924a117f",
+    "execution-green-21.json": "c64442bd75d77aa7a94e7558d6ec259211612b74b275b7522bb2d65724c8d0d0",
+    "execution-green-22.json": "537b2d1071fdbf8559ceec6802f7259d0da4ae51609b09e518aa92589bfad1f8",
+    "execution-green-23.json": "8bff8e0bb1eea4ab7b8a629302d12baa9e0d69f676f333f237179a336fc5583c",
+    "execution-green-24.json": "4d45f0d2755ba8166971f307b6ddbedbe6d9da0aa12d74d1fa5221c178028b1b",
+    "execution-green-25.json": "a49ae37278a83e8cc7a29da0fc8ff4c39fc79261a6e1a8fee028ff0391a06578",
+    "execution-green-26.json": "5837509f1c66d6351f6c7be63ff8be511d6aa2c664fe293efd4df0b00429337c",
+    "execution-green-27.json": "df54a980c3da2c2ad0f4df73280a847d444a13a444f04f30c9eafa650c64682a"
+  },
+  "tested_server_files": {
+    "server/preprocessing.php": "0f1420e661cba4f3b5d8810d88c864b21448df632bbdd460151eb2d9b83355ad",
+    "server/context_pre.php": "6345e1c7d98c4dd1f9f56b098b692db86789b310ee6084b680d00f04b40547ed",
+    "server/index.php": "4f762f3901b3a8d9065d018dfb9244e020452601cd77a9851421287548be7a43",
+    "server/.htaccess": "d410901a2696bbbf835f13b9f1da90a7914f6d7e6f4634cd05ad6681ae012be2",
+    "server/postrequest.php": "ddff0a6c8f8bf9b07022a6a9a0b2696b15e4d2df8d8e42bd185a94cae7f1b5ee",
+    "server/manifest.json": "e638a39e1ad19bf47e171e4b79f68b399d100d2751ba9319fc06bfeaf6b512c3",
+    "server/offscreen-service.php": "b27dd4d12b59244c23aae97aa10c8ef97e25f3aac321b8fbd177852058c9b629",
+    "server/offscreen-worker.php": "c5fa4916a9a0e098298dd6c53fccfbeac8b74ecb8f1cbdeceaceb1ca25579cd9",
+    "server/dashboard-art.webp": "43aee0fb45404314a5ab9f8ed6a9259e29543e032bc7582ca591a6e49f0a40c5",
+    "server/lib/runtime.php": "fc95fde88d422a70c5eb3caafcfdba5f3089cf05d4d5ec73d98faeea4e6b2c15",
+    "server/lib/store.php": "84d0b6b3e9719dba8ddd0dc724a1c1e10bf14d3f0897c81edb758f8deaf5ee8c",
+    "server/lib/view.php": "e5e05e450094ad4a0995d0354cc1ec645fcfd06617ff50ffaf256ea3f37b37db",
+    "server/lib/boundaries.php": "21034b79e36d208b30ed0ea5aa6892581ae6749c5a9190a3b4a422f4f74b7d0f",
+    "server/lib/bootstrap.php": "284b0b27eabe2f7d9139bef99743f9213a2a6a57f99c138bfc66ca3cffa5650f",
+    "server/lib/consumers.php": "b3621800a80ce366700385ea5c7717cb591c36ed57460d2ba81b1ebc8877040f",
+    "server/lib/autonomy_policy.php": "db83aa3f1bc85c80c12c57294262ee7d4c93dc4bfcbd9eef4de8ced31b6fba18",
+    "server/lib/autonomy_host.php": "dfa257dbb68f1ade87b7f13750e4fb25dd306c695b3c4ddd070e7ca1a4140a61",
+    "server/lib/offscreen_policy.php": "23639437e41eafaebd98ec85ce81cf3815ac51365f036c9e33b373fc17504058",
+    "server/lib/offscreen_host.php": "7c036bf86978acc8349742ba4a172d0dcc4a8ef9b8ab8b2b97b321686bc09bdb",
+    "server/lib/offscreen.php": "ba1405b262a60f913c2ec4a7349464a6b5400de59802a247844d8a34d2446a41",
+    "server/lib/autonomy_store.php": "3ba80aede8d294439c56f9ed92c35cdfd7d1fac2684cbd28b0fb8dc8d8987a26",
+    "server/migrations/001_initial.sql": "b2052570036697147dacb5d041c0a692294af78a83f946e7819d83235e16dc99",
+    "server/migrations/002_autonomy.sql": "20e0ba2901f9ff352311e00a706c976c793e1e1185c224afcb599f426acb63d3",
+    "server/migrations/003_offscreen.sql": "245ae41800da5d9d291cf25df9e4766059677710241a086c15ca6999d7500855",
+    "server/migrations/004_restore_state.sql": "d6a13622ece3af538996558d892852c5126581d99b4964eec0203a5b5b1a559e",
+    "server/assets/style.css": "f4d5ad6a20d6b2a75fa8679d47e0156422d07f035a43ee351e0536876ffc2642"
+  },
+  "metadata_only_delta": "server/manifest.json version 0.1.0-dev.19 to 0.1.0-dev.20",
+  "department20": "NOT CERTIFIED",
+  "native_gameplay_or_new_model_quality": "NOT RETESTED",
+  "released_server_manifest_sha256": "5ca4a5f2ef5bf0521a73b4e31ee3a44c82946b1f669496108219d4d46b48a843",
+  "release_assets": {
+    "CHIM-Sealed-Fates-0.1.0-dev.20.zip": {
+      "sha256": "3674e2eba435a947bf17e6be733bae202830ea11446ece36c57011327a9aa89f",
+      "bytes": 2828316
+    },
+    "SHA256SUMS.txt": {
+      "sha256": "f398aaea3773ff5adbb96391acfaf32908c2c9a915357f4c3b71ba3c2c210f91",
+      "bytes": 289
+    },
+    "correspondence-0.1.0-dev.20.dwpkg": {
+      "sha256": "4ba2336d7a5fe2bea9b1120f06557fe8c4197006bd449e4e4b64f097ea0ebb14",
+      "bytes": 2808125
+    },
+    "correspondence.tar.gz": {
+      "sha256": "1acbbb4c85edf71733f8fb805f7cc8b887a00811a61abe9131e99fdf48f650ac",
+      "bytes": 2426039
+    }
+  }
+}

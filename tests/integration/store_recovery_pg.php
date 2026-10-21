@@ -577,6 +577,7 @@ $raceStore->transaction(function () use ($raceStore, $raceDocument, $raceOperati
     $raceStore->saveOperation([
         'document_id'=>$raceDocument['document_id'],
         'operation_id'=>$raceOperationId,
+        'playthrough_id'=>$raceDocument['playthrough_id'],
         'receipt_id'=>$raceReceiptId,
         'scope_token'=>$raceScopeToken,
         'nonce'=>bin2hex(random_bytes(32)),

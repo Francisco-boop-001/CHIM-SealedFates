@@ -1,5 +1,9 @@
 # Verification and limits
 
+## Dev.20 PRE-ALPHA release
+
+The accepted repair evidence covers 28 PostgreSQL jobs and 35 Linux pure cases against the exact executable server bytes. The release changes only manifest version metadata. Fresh host checks and clean-tag deterministic builds bind the distributed assets. See [dev.20 evidence and limits](DEV20-RECOVERY.md). This publication does not start TEST or access live/game/core/providers; Department dev.20 compatibility remains unverified.
+
 ## Dev.19 PRE-ALPHA release
 
 The dev.19 source passed 27 PostgreSQL jobs, 29 Linux pure suites (32 cases), eight causal RED comparisons and reproducible package checks. See [dev.19 evidence and limits](DEV19-RECOVERY.md). TEST was stopped and returned with protected live metadata unchanged. Publication binds these exact server bytes and matching assets; installed-game and Department dev.19 compatibility remain unverified.
