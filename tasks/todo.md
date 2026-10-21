@@ -30,6 +30,17 @@ Goal: verify the exact optional Department adapter against dev.17, then publish 
 - [x] Obtain Department owner evidence for dev.17 exact pins and signed unknown/no-resend behavior; respect its TEST lease.
 - [x] Update current release documentation with the precise verified boundary and remaining gameplay limits; preserve historical notes.
 - [x] Re-run host package/parser/state checks, bind final source to prior disposable receipts, and review the release diff.
-- [ ] Commit intended source, export the immutable tag and reproduce all four assets byte-for-byte.
-- [ ] Push the tag, create/upload a draft release, download and verify each asset, then publish PRE-ALPHA.
-- [ ] Advance main without force only after publication; verify public tag/main/assets and record final review.
+- [x] Commit intended source, export the immutable tag and reproduce all four assets byte-for-byte.
+- [x] Push the tag, create/upload a draft release, download and verify each asset, then publish PRE-ALPHA.
+- [x] Advance main without force only after publication; verify public tag/main/assets and record final review.
+
+
+### Publication review
+
+Published PRE-ALPHA `correspondence-v0.1.0-dev.17` from source commit `254f65ab1583957050848a2c1ef9e899f2442fe3` after exact Department owner/adapter acceptance on disposable Linux PHP 8.2.29, including full correspondence dev.14–17 coverage. The Department change was local/unpublished at verification time; its precise adapter digest and synthetic in-memory/SQL limits are recorded in docs/VERIFICATION.md.
+
+All 110 tagged source files match the final snapshot. Four assets reproduced from the clean annotated-tag export; 25 package checks passed. Every uploaded draft and anonymous public download matches its expected digest. The prerelease, annotated tag, main manifest and unchanged dev.14–16 releases/assets/tags were read back successfully. This follow-up updates the task ledger only; tagged runtime and packages stay unchanged.
+
+Release: https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.17
+
+No live/game/core/provider deployment occurred. Sealed Fates made no WSL call after returning TEST; Department retains its separate active lease. Native gameplay, actual inventory/co-save behavior and shipped Department DLL compatibility remain unverified.
