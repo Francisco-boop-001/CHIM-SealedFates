@@ -136,7 +136,15 @@ The Skyrim interface stays optional; the existing web page works. Department dev
 
 - [x] Rehash accepted recovery receipts and preserve canonical/public preimages and protected-live metadata.
 - [x] Package exact tested runtime under dev.20, update honest PRE-ALPHA docs and run fresh host/package checks.
-- [ ] Commit reviewed source, annotate tag and reproduce all assets from a clean tag export.
-- [ ] Verify draft/public downloads before advancing main; preserve old releases and record review.
+- [x] Commit reviewed source, annotate tag and reproduce all assets from a clean tag export.
+- [x] Verify draft/public downloads before advancing main; preserve old releases and record review.
 
 Publication only: no TEST start, coordinator contact, live/game/core/provider changes or installation.
+
+### Dev.20 publication review
+
+Published `correspondence-v0.1.0-dev.20` as PRE-ALPHA from source commit `39d797673dbede1147cc990dd7b23f25668bb4c6`. All 135 clean-tag files match the precommit freeze. All four assets reproduce the reviewed candidate; 30 package tests pass on the clean export. Draft and anonymous public downloads match every checksum before main advances without force.
+
+Accepted disposable evidence was rehashed: 28 PostgreSQL jobs, 35 Linux pure cases and two targeted causal PG REDs. Executable server/contract bytes are unchanged; only manifest version metadata advances. Fresh host checks passed 91 PHP lints, 34 pure cases, 60 translated parser and 41 fake-native state checks. The final public packaging adapter and clean tag each passed all 30 package tests. No new model/gameplay or Department dev.20 certification is claimed. Full forwarded letters, strict unknown/no-resend safety, original bridge provenance and older release bodies/tags/assets are preserved.
+
+Publication was Windows-only. TEST and live stayed stopped, protected live-VHD metadata is unchanged, and no installed game/core/provider or coordinator operation occurred. The Skyrim interface remains optional; the existing web plugin page works. No trustworthy prior epoch or simultaneous persistence failure remains a documented quarantine limit.
