@@ -24,8 +24,10 @@ try{
             if($request['action']==='compose'){$result=$service->compose($request['input']);$result=$service->dispatch($result['document_id']);}
             elseif($request['action']==='read'){$opened=correspondenceOperatorRead($service->list(),$request['document_id']);$result=['state'=>'read'];}
             elseif($request['action']==='retry')$result=$service->retry($request['document_id']);
+            elseif($request['action']==='close')$result=$service->close($request['document_id']);
             else $result=$service->dispatch($request['document_id'],$request['action']==='reconcile');
             $message=match($result['state']){'queued'=>'Letter queued; a recent managed game actor is needed before dispatch.','dispatched'=>'Letter dispatched; physical receipt is pending.','read'=>'Letter opened in the operator view; no NPC exposure was created.','delivered'=>'Physical delivery confirmed.','exposed'=>'Recipient context has received this letter.','unknown'=>'Outcome unknown. Use the read-only check; do not send another copy.','failed'=>'Delivery failed; no social result has been claimed.',default=>'Request recorded.'};
+            if(($result['operator_closed']??false)===true)$message='Closed by operator. The delivery outcome is unchanged; nothing was resent or refunded. Read-only checks remain available for pending or unknown delivery.';
         }
     }
     $letters=$service->list();$references=[];foreach($letters as$letter)if($letter['recipient']['kind']==='npc'&&is_int($letter['source_event_id']??null))$references[]=$letter['source_event_id'];
@@ -37,7 +39,7 @@ try{
     header('Content-Type: text/html; charset=UTF-8');echo str_replace('</main>',$panel.'</main>',$html);
 }catch(DomainException|InvalidArgumentException $e){
     correspondenceDiagnostic('ui_rejected');http_response_code(400);header('Content-Type: text/html; charset=UTF-8');
-    $known=['csrf_failed','invalid_body','invalid_attachments','invalid_quantity','invalid_enabled','item_unavailable','renderer_content_overflow','renderer_dependency_unavailable','document_unavailable','delivery_unconfirmed','scope_unavailable','actor_unavailable','autonomous_dispatch_owned','autonomy_status_unavailable'];
+    $known=['csrf_failed','invalid_body','invalid_attachments','invalid_quantity','invalid_enabled','item_unavailable','renderer_content_overflow','renderer_dependency_unavailable','document_unavailable','delivery_unconfirmed','scope_unavailable','actor_unavailable','autonomous_dispatch_owned','autonomy_status_unavailable','operator_closed','closure_unavailable'];
     $message=in_array($e->getMessage(),$known,true)?str_replace('_',' ',$e->getMessage()):'The request could not be accepted.';
     echo correspondenceErrorPage($message);
 }catch(Throwable){correspondenceDiagnostic('runtime_unavailable');http_response_code(503);header('Content-Type: text/html; charset=UTF-8');echo correspondenceErrorPage('Sealed Fates is unavailable. Check installation, migrations and core compatibility.');}

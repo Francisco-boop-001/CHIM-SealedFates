@@ -8,10 +8,18 @@ final class RestoreLockFakePgResult
 
 $GLOBALS['restoreLockMode']='success';
 $GLOBALS['restoreLockClosed']=0;
+$GLOBALS['restoreLockTransaction']=0;
+$GLOBALS['restoreLockTimeout']='250ms';
+if(!defined('PGSQL_TRANSACTION_IDLE'))define('PGSQL_TRANSACTION_IDLE',0);
+if(!function_exists('pg_transaction_status')){function pg_transaction_status(mixed $connection):int{return $GLOBALS['restoreLockTransaction'];}}
 
 if(!function_exists('pg_query_params')){
     function pg_query_params(mixed $connection,string $sql,array $parameters=[]):mixed
     {
+        if(str_starts_with($sql,"SELECT current_setting('lock_timeout')"))return new RestoreLockFakePgResult([['lock_timeout'=>$GLOBALS['restoreLockTimeout']]]);
+        if(str_starts_with($sql,"SELECT set_config('lock_timeout'")){$GLOBALS['restoreLockTimeout']=$parameters[0];return new RestoreLockFakePgResult([['set_config'=>$parameters[0]]]);}
+        if($sql==='BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY'){$GLOBALS['restoreLockTransaction']=1;return new RestoreLockFakePgResult([]);}
+        if($sql==='COMMIT'||$sql==='ROLLBACK'){$GLOBALS['restoreLockTransaction']=PGSQL_TRANSACTION_IDLE;return new RestoreLockFakePgResult([]);}
         if(str_contains($sql,'pg_advisory_unlock_shared')){
             if($GLOBALS['restoreLockMode']==='query_failure')return false;
             return new RestoreLockFakePgResult([['released'=>$GLOBALS['restoreLockMode']==='false'?'f':'t']]);

@@ -1,5 +1,9 @@
 # Verification and limits
 
+## Dev.19 PRE-ALPHA release
+
+The dev.19 source passed 27 PostgreSQL jobs, 29 Linux pure suites (32 cases), eight causal RED comparisons and reproducible package checks. See [dev.19 evidence and limits](DEV19-RECOVERY.md). TEST was stopped and returned with protected live metadata unchanged. Publication binds these exact server bytes and matching assets; installed-game and Department dev.19 compatibility remain unverified.
+
 ## Dev.18 PRE-ALPHA release
 
 All 21 integrated PostgreSQL jobs and 23 pure suites (25 cases) passed from the same frozen `followup11` stage on exclusively leased disposable TEST. Tests include unrelated/newer events, future-clock poisoning, same-output completion retry, concurrent observations, interaction-lock contention, retained-anchor epoch changes, stale handles, null/uninitialized ingress, missing epoch state, aborted init and failed-fence recovery. Full source bodies and no-resend uncertainty rules remain strict.

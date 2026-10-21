@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.0-dev.19 — PRE-ALPHA
+
+- Protect overlapping restore intent with stable marker locking and epoch ownership checks.
+- Let later eligible mail progress past cooled recipients and mutable profile/context failures; validate prompts before claiming.
+- Reconsider clean deferred sources without erasing prior attempts, anchors, counters or effects; fetch one NPC map per attempt.
+- Enforce idle/writer transaction boundaries and preserve exact diagnostics.
+- Add auditable manual closure without resend/refund permission; retain unknown transfers and full forwarded letters.
+- Verify 27 disposable PostgreSQL jobs, 32 Linux pure cases, eight causal RED comparisons and deterministic assets.
+- Keep the optional Skyrim interface separate from the working web page; Department dev.19 compatibility remains unverified.
+
 ## 0.1.0-dev.18 — PRE-ALPHA
 
 - Replace global event-clock freshness with restore epochs/native floors; accept unrelated concurrent events without admitting stale requests.

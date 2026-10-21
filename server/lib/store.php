@@ -81,41 +81,45 @@ final class CorrespondencePgStore implements CorrespondenceStore
     public function beginRestoreEpoch(?string $epoch=null,?string $nativeTsFloor=null):string
     {
         if($this->active)throw new LogicException('restore_epoch_during_transaction');
+        $this->assertConnectionIdle();
         $epoch=$epoch??correspondenceUuid();
         correspondenceUuidCheck($epoch);
         $nativeTsFloor=$nativeTsFloor??$this->requestNativeTs??'0';
         if(preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/D',$nativeTsFloor)!==1||filter_var($nativeTsFloor,FILTER_VALIDATE_INT,['options'=>['min_range'=>0]])===false)throw new DomainException('invalid_restore_native_floor');
-        $sentinelWritten=$this->writeRestoreSentinel('pending',$epoch);
+        if(!$this->restoreSentinelMatches('pending',$epoch))throw new DomainException('restore_epoch_changed');
         $this->restoreAdmin=true;
         try{
             $this->queryRaw('BEGIN');
             try{
                 $this->queryRaw("SET LOCAL lock_timeout='3s'");
                 $this->queryRaw('SELECT pg_advisory_xact_lock(18459814, 1)');
+                if(!$this->restoreSentinelMatches('pending',$epoch))throw new DomainException('restore_epoch_changed');
                 $rows=$this->queryRaw('UPDATE plugins.correspondence_restore_state SET epoch=$1::uuid,pending=TRUE,native_ts_floor=$2::bigint,updated_at=now() WHERE singleton IS TRUE RETURNING epoch::text',[$epoch,$nativeTsFloor]);
                 if(count($rows)!==1)throw new DomainException('restore_epoch_state_unavailable');
                 $this->queryRaw('COMMIT');
             }catch(Throwable $e){try{$this->queryRaw('ROLLBACK');}catch(Throwable){}throw $e;}
         }finally{$this->restoreAdmin=false;}
-        if(!$sentinelWritten&&$this->restoreSentinelPath!==null)error_log('[CORRESPONDENCE] restore_sentinel_unavailable');
         return $epoch;
     }
     public function completeRestoreEpoch(string $epoch):void
     {
         correspondenceUuidCheck($epoch);
         if($this->active)throw new LogicException('restore_epoch_during_transaction');
+        $this->assertConnectionIdle();
+        if(!$this->restoreSentinelMatches('pending',$epoch))throw new DomainException('restore_epoch_changed');
         $this->restoreAdmin=true;
         try{
             $this->queryRaw('BEGIN');
             try{
                 $this->queryRaw("SET LOCAL lock_timeout='3s'");
                 $this->queryRaw('SELECT pg_advisory_xact_lock(18459814, 1)');
+                if(!$this->restoreSentinelMatches('pending',$epoch))throw new DomainException('restore_epoch_changed');
                 $rows=$this->queryRaw('UPDATE plugins.correspondence_restore_state SET pending=FALSE,updated_at=now() WHERE singleton IS TRUE AND epoch=$1::uuid AND pending IS TRUE RETURNING epoch::text',[$epoch]);
                 if(count($rows)!==1)throw new DomainException('restore_epoch_state_changed');
                 $this->queryRaw('COMMIT');
             }catch(Throwable $e){try{$this->queryRaw('ROLLBACK');}catch(Throwable){}throw $e;}
         }finally{$this->restoreAdmin=false;}
-        if(!$this->writeRestoreSentinel('clear',$epoch)&&$this->restoreSentinelPath!==null)throw new DomainException('restore_sentinel_unavailable');
+        if(!$this->compareAndWriteRestoreSentinel('pending',$epoch,'clear',$epoch))throw new DomainException('restore_epoch_changed');
     }
     public function initMarkerAfter(int $rowid,string $gamets):bool
     {
@@ -133,6 +137,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
     public function ensureSchema():void
     {
         if($this->active)throw new LogicException('schema_during_transaction');
+        $this->assertConnectionIdle();
         $this->schemaSetup=true;$schemaComplete=false;
         try{
             $ready=$this->queryRaw("SELECT to_regclass('plugins.correspondence_documents') IS NOT NULL AS documents,to_regclass('plugins.correspondence_operations') IS NOT NULL AS operations,to_regclass('plugins.correspondence_presence') IS NOT NULL AS presence,to_regclass('plugins.correspondence_restore_state') IS NOT NULL AS restore_state,EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='plugins' AND table_name='correspondence_restore_state' AND column_name='native_ts_floor') AS restore_floor")[0]??[];
@@ -155,19 +160,33 @@ final class CorrespondencePgStore implements CorrespondenceStore
                 $epoch=is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_EPOCH']??null)?$GLOBALS['CORRESPONDENCE_RESTORE_INIT_EPOCH']:correspondenceUuid();$pending=$initStarting;
                 if($this->restoreSentinelPath!==null){
                     try{$sentinel=$this->readRestoreSentinel();}catch(Throwable){$sentinel=null;$pending=true;}
-                    if($initStarting){if($sentinel!==null&&!is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_EPOCH']??null))$epoch=$sentinel['epoch'];$pending=true;if(!$this->writeRestoreSentinel('pending',$epoch))$pending=true;}
-                    else{
-                        // A sentinel can outlive a database restore. Without the row's
-                        // native floor, even a previously clear sentinel is not enough
-                        // evidence to re-admit requests at an old clock.
-                        if($sentinel!==null){$epoch=$sentinel['epoch'];$pending=true;}
-                        elseif(!$pending)$epoch=correspondenceUuid();
-                        if(!$this->writeRestoreSentinel($pending?'pending':'clear',$epoch))$pending=true;
+                    if($sentinel!==null){
+                        $epoch=$sentinel['epoch'];
+                        $pending=true;
                     }
+                    $pending=true;
                 }
                 $floor=$initStarting&&is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS']??null)?$GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS']:'0';
                 if(preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/D',$floor)!==1||filter_var($floor,FILTER_VALIDATE_INT,['options'=>['min_range'=>0]])===false)$floor='0';
-                $this->transaction(fn()=>$this->queryRaw('INSERT INTO plugins.correspondence_restore_state(singleton,epoch,pending,native_ts_floor) VALUES(TRUE,$1::uuid,$2::boolean,$3::bigint) ON CONFLICT(singleton) DO NOTHING',[$epoch,$pending?'true':'false',$floor]));
+                $this->transaction(function()use(&$epoch,&$pending,$floor,$initStarting):void{
+                    // Another initializer may have created and completed the row
+                    // while this request waited for the writer lock. Preserve it.
+                    if($this->restoreStateRow()!==null)return;
+                    if($this->restoreSentinelPath!==null){
+                        try{$sentinel=$this->readRestoreSentinel();}catch(Throwable){$sentinel=null;}
+                        if($sentinel!==null){
+                            $epoch=$sentinel['epoch'];$pending=true;
+                            // A missing row cannot restore authority from an old clear
+                            // marker. Revalidate under the database writer lock, then
+                            // make that exact marker pending with a short file CAS.
+                            if(!$initStarting&&$sentinel['state']==='clear'&&!$this->compareAndWriteRestoreSentinel('clear',$epoch,'pending',$epoch)){
+                                try{$latest=$this->readRestoreSentinel();}catch(Throwable){$latest=null;}
+                                if($latest!==null)$epoch=$latest['epoch'];
+                            }
+                        }else{$pending=true;}
+                    }
+                    $this->queryRaw('INSERT INTO plugins.correspondence_restore_state(singleton,epoch,pending,native_ts_floor) VALUES(TRUE,$1::uuid,$2::boolean,$3::bigint) ON CONFLICT(singleton) DO NOTHING',[$epoch,$pending?'true':'false',$floor]);
+                });
             }
             $this->restoreStateReady=true;$schemaComplete=true;
         }finally{
@@ -196,8 +215,12 @@ final class CorrespondencePgStore implements CorrespondenceStore
     private function readRestoreSentinel():?array
     {
         if($this->restoreSentinelPath===null)return null;
-        if(!is_file($this->restoreSentinelPath))return null;
-        $raw=@file_get_contents($this->restoreSentinelPath);
+        return self::readRestoreSentinelFile($this->restoreSentinelPath);
+    }
+    private static function readRestoreSentinelFile(string $path):?array
+    {
+        if(!is_file($path))return null;
+        $raw=@file_get_contents($path);
         if(!is_string($raw))throw new DomainException('restore_sentinel_unavailable');
         try{$value=json_decode($raw,true,8,JSON_THROW_ON_ERROR);}catch(Throwable){throw new DomainException('restore_sentinel_unavailable');}
         if(!is_array($value)||($value['schema']??null)!=='correspondence.restore.v1'||!in_array($value['state']??null,['clear','pending'],true)||!is_string($value['epoch']??null))throw new DomainException('restore_sentinel_unavailable');
@@ -208,6 +231,10 @@ final class CorrespondencePgStore implements CorrespondenceStore
     {
         if(!in_array($state,['clear','pending'],true))return false;
         try{correspondenceUuidCheck($epoch);}catch(Throwable){return false;}
+        return self::withRestoreSentinelLock($path,fn()=>self::writeRestoreSentinelFileUnlocked($path,$state,$epoch));
+    }
+    private static function writeRestoreSentinelFileUnlocked(string $path,string $state,string $epoch):bool
+    {
         $directory=dirname($path);
         if(!is_dir($directory)||!is_writable($directory))return false;
         try{$temporary=$path.'.'.bin2hex(random_bytes(8)).'.tmp';}catch(Throwable){return false;}
@@ -223,9 +250,53 @@ final class CorrespondencePgStore implements CorrespondenceStore
         if(!$ok||!@rename($temporary,$path)){@unlink($temporary);return false;}
         clearstatcache(true,$path);return true;
     }
-    private function writeRestoreSentinel(string $state,string $epoch):bool
+    private static function withRestoreSentinelLock(string $path,Closure $work):bool
     {
-        return $this->restoreSentinelPath===null||self::writeRestoreSentinelFile($this->restoreSentinelPath,$state,$epoch);
+        $lock=@fopen($path.'.lock','c+b');if($lock===false)return false;
+        $acquired=false;
+        try{
+            for($attempt=0;$attempt<20;$attempt++){
+                if(@flock($lock,LOCK_EX|LOCK_NB)){$acquired=true;break;}
+                usleep(10000);
+            }
+            if(!$acquired)return false;
+            return $work()===true;
+        }catch(Throwable){return false;}
+        finally{if($acquired)@flock($lock,LOCK_UN);fclose($lock);}
+    }
+    private function restoreSentinelMatches(string $state,string $epoch):bool
+    {
+        if($this->restoreSentinelPath===null)return true;
+        return self::withRestoreSentinelLock($this->restoreSentinelPath,function()use($state,$epoch):bool{
+            try{$sentinel=self::readRestoreSentinelFile($this->restoreSentinelPath);}catch(Throwable){return false;}
+            return $sentinel!==null&&$sentinel['state']===$state&&hash_equals($epoch,$sentinel['epoch']);
+        });
+    }
+    private function compareAndWriteRestoreSentinel(string $expectedState,string $expectedEpoch,string $state,string $epoch):bool
+    {
+        if($this->restoreSentinelPath===null)return true;
+        try{correspondenceUuidCheck($epoch);}catch(Throwable){return false;}
+        return self::withRestoreSentinelLock($this->restoreSentinelPath,function()use($expectedState,$expectedEpoch,$state,$epoch):bool{
+            try{$sentinel=self::readRestoreSentinelFile($this->restoreSentinelPath);}catch(Throwable){return false;}
+            if($sentinel===null||$sentinel['state']!==$expectedState||!hash_equals($expectedEpoch,$sentinel['epoch']))return false;
+            return self::writeRestoreSentinelFileUnlocked($this->restoreSentinelPath,$state,$epoch);
+        });
+    }
+    private function assertConnectionIdle():void
+    {
+        if(!function_exists('pg_transaction_status')||!defined('PGSQL_TRANSACTION_IDLE'))throw new DomainException('connection_transaction_status_unavailable');
+        if(pg_transaction_status($this->connection)!==PGSQL_TRANSACTION_IDLE)throw new DomainException('connection_transaction_active');
+    }
+    private function requireWriterTransaction():void
+    {
+        if(!$this->active)throw new LogicException('transaction_required');
+        if(!$this->writerActive)throw new LogicException('writer_in_reader');
+    }
+    private function closeConnection():void
+    {
+        if($this->connectionClosed)return;
+        $this->connectionClosed=true;
+        try{@pg_close($this->connection);}catch(Throwable){}
     }
     private function restoreStateRow():?array
     {
@@ -256,7 +327,8 @@ final class CorrespondencePgStore implements CorrespondenceStore
     }
     private function writerTransaction(callable $work,?string $expectedRestoreToken):mixed
     {
-        if($this->active){$this->assertRestoreToken($expectedRestoreToken);return $work();}
+        if($this->active){if(!$this->writerActive)throw new LogicException('writer_in_reader');$this->assertRestoreToken($expectedRestoreToken);return $work();}
+        $this->assertConnectionIdle();
         $this->clearTransactionCache();
         $this->queryRaw('BEGIN'); $this->active=true; $this->writerActive=true;
         try{
@@ -278,11 +350,19 @@ final class CorrespondencePgStore implements CorrespondenceStore
     private function readTransactionInternal(callable $work,bool $checkToken):mixed
     {
         if($this->active){if($checkToken)$this->assertRestoreToken();return $work();}
+        $this->assertConnectionIdle();
         $this->clearTransactionCache();
         $begun=false;
         try{
-            $this->queryRaw("SET lock_timeout='3s'");
-            $this->queryRaw('SELECT pg_advisory_lock_shared(18459814, 1)');$this->sessionSharedLock=true;
+            $timeoutRows=$this->queryRaw("SELECT current_setting('lock_timeout') AS lock_timeout");
+            $priorLockTimeout=$timeoutRows[0]['lock_timeout']??null;
+            if(!is_string($priorLockTimeout)||$priorLockTimeout==='')throw new DomainException('lock_timeout_unavailable');
+            $this->queryRaw("SELECT set_config('lock_timeout',$1,FALSE)",['3s']);
+            try{$this->queryRaw('SELECT pg_advisory_lock_shared(18459814, 1)');$this->sessionSharedLock=true;}
+            finally{
+                try{$this->queryRaw("SELECT set_config('lock_timeout',$1,FALSE)",[$priorLockTimeout]);}
+                catch(Throwable $error){$this->closeConnection();$this->sessionSharedLock=false;throw new RuntimeException('storage_failed',0,$error);}
+            }
             $this->queryRaw('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');$begun=true;$this->active=true;$this->writerActive=false;
             $this->queryRaw("SET LOCAL lock_timeout='3s'");
             if($checkToken)$this->assertRestoreToken();
@@ -296,8 +376,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
                 try{$rows=$this->queryRaw('SELECT pg_advisory_unlock_shared(18459814, 1) AS released');$released=($rows[0]['released']??null)==='t';}catch(Throwable){}
                 $this->sessionSharedLock=false;
                 if(!$released){
-                    $this->connectionClosed=true;
-                    try{@pg_close($this->connection);}catch(Throwable){}
+                    $this->closeConnection();
                     error_log('[CORRESPONDENCE] restore_read_unlock_failed');
                     throw new RuntimeException('storage_failed');
                 }
@@ -364,7 +443,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
     public function loadDocument(string $id):?array{return $this->payload($this->query('SELECT payload FROM plugins.correspondence_documents WHERE document_id=$1',[$id]));}
     public function saveDocument(array $document):void
     {
-        $rows=$this->query("INSERT INTO plugins.correspondence_documents(document_id,playthrough_id,request_id,payload) VALUES($1,$2,$3,$4::jsonb) ON CONFLICT(document_id) DO UPDATE SET payload=EXCLUDED.payload WHERE plugins.correspondence_documents.payload-'operation_id'=EXCLUDED.payload-'operation_id' RETURNING document_id",[$document['document_id'],$document['playthrough_id'],$document['request_id'],correspondenceJson($document)]);
+        $rows=$this->query("INSERT INTO plugins.correspondence_documents(document_id,playthrough_id,request_id,payload) VALUES($1,$2,$3,$4::jsonb) ON CONFLICT(document_id) DO UPDATE SET payload=EXCLUDED.payload WHERE plugins.correspondence_documents.payload-ARRAY['operation_id','operator_close']=EXCLUDED.payload-ARRAY['operation_id','operator_close'] AND (NOT (EXCLUDED.payload ? 'operator_close') OR plugins.correspondence_documents.payload->>'operation_id' IS NOT DISTINCT FROM EXCLUDED.payload->>'operation_id') AND (NOT (plugins.correspondence_documents.payload ? 'operator_close') OR plugins.correspondence_documents.payload->'operator_close'=EXCLUDED.payload->'operator_close') RETURNING document_id",[$document['document_id'],$document['playthrough_id'],$document['request_id'],correspondenceJson($document)]);
         if(count($rows)!==1)throw new DomainException('immutable_document_conflict');
     }
     public function documents(string $scope, ?int $recipientId=null):array
@@ -387,8 +466,8 @@ final class CorrespondencePgStore implements CorrespondenceStore
     }
     public function appendEvent(string $type,string $data,string $people,string $sess):array
     {
-        if(!$this->active)throw new LogicException('transaction_required');
-        if(!in_array($type,['written_evidence','correspondence_anchor','correspondence_dispatch','correspondence_receipt_confirmed','correspondence_presence'],true)||$sess!==($type==='written_evidence'?'written_evidence_v1':'correspondence_v1'))throw new InvalidArgumentException('invalid_event_carrier');
+        $this->requireWriterTransaction();
+        if(!in_array($type,['written_evidence','correspondence_anchor','correspondence_dispatch','correspondence_receipt_confirmed','correspondence_presence','correspondence_operator_closed'],true)||$sess!==($type==='written_evidence'?'written_evidence_v1':'correspondence_v1'))throw new InvalidArgumentException('invalid_event_carrier');
         if(in_array($type,['written_evidence','correspondence_receipt_confirmed','correspondence_presence'],true)&&$this->requestClock===null)throw new DomainException('request_clock_unavailable');
         if($type==='written_evidence'){
             $source=json_decode($data,true,512,JSON_THROW_ON_ERROR);
@@ -412,13 +491,14 @@ final class CorrespondencePgStore implements CorrespondenceStore
     }
     public function prepareNote(string $title,string $body):void
     {
+        $this->requireWriterTransaction();
         if(($this->notePreparer)($title,$body)!==true)throw new DomainException('renderer_unavailable');
         $this->query("INSERT INTO public.books(ts,gamets,content,sess,localts,title) VALUES(0,0,$1,'generated',$2,$3)",[$body,time(),$title]);
         $this->queueCommand('rolemaster','rolecommand|generateLetter@'.$title);
     }
     public function queueCommand(string $actor,string $action):void
     {
-        if(!$this->active)throw new LogicException('transaction_required');
+        $this->requireWriterTransaction();
         $this->query("INSERT INTO public.responselog(localts,sent,actor,text,action,tag) VALUES($1,0,$2,'',$3,'')",[time(),$actor,$action]);
     }
     private function pluginRows():array{return $this->query('SELECT plugin_name,formid_prefix FROM public.game_plugins');}

@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace ChimMindPoisoning;
+require_once __DIR__.'/correspondence_idle_pg_fixture.php';
 interface StoreDb{}
 final class PostgresStoreDb implements StoreDb
 {

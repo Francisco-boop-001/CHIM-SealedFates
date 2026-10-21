@@ -1,6 +1,6 @@
 # Installation and removal
 
-**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The checked package is a matched pair: the server package and Papyrus bridge must stay on the same release package. Dev.18 includes the byte-identical, source-bound dev.17 bridge; install the server and bridge from the dev.18 paired archive together.
+**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The package is a matched pair: server package and Papyrus bridge must come from the same paired archive. Dev.19 retains the byte-identical, source-bound dev.17 bridge and its original build provenance. Install the server and bridge from the dev.19 paired archive together; do not relabel an older archive.
 
 ## Pick your interface
 
@@ -8,17 +8,17 @@
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The Department Skyrim interface is optional. Published Department prealpha.1 targets dev.17 and refuses dev.18. A separate dev.18 adapter candidate is being developed and requires its own restore-fencing and signed-unknown receipt tests. Use the existing web plugin page until an exact dev.18 Department pairing is verified; adding version hashes alone is insufficient. No sibling plugins are bundled. Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
+The Department Skyrim interface is optional. Its published prealpha.1 targets dev.17; a separate dev.18 adapter candidate does not certify dev.19. Use the existing web plugin page until an exact dev.19 Department pairing is verified. No sibling plugins are bundled. Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
 
 ## Main paired install
 
-Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.18.zip**, and verify it against **SHA256SUMS.txt**.
+Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.19.zip**, and verify it against **SHA256SUMS.txt**.
 
 1. Stop the offscreen service before replacing files (see **Updating** below). Install that ZIP as an MO2 mod. Confirm that exactly one active mod supplies **Data/Scripts/CHIMCorrespondenceBridge.pex** and exactly one correspondence **.dwpkg** remains in the merged **CHIM/server-plugins/correspondence/** directory. Disable older playtest/recovery mods that supply either file.
-2. From the same ZIP, install **correspondence-0.1.0-dev.18.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
-3. Keep the bridge and server package from the dev.18 paired archive. Do not pair the server package with a bridge from another release.
+2. From the same ZIP, install **correspondence-0.1.0-dev.19.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
+3. Keep the bridge and server package from the dev.19 paired archive. Do not pair the server package with a bridge from another release.
 
-The paired ZIP includes the unchanged, hash-verified MO2 bridge PEX and the dev.18 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.18 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
+The paired ZIP includes the unchanged, hash-verified MO2 bridge PEX and the dev.19 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.19 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
 
 CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Older playtest ZIPs contain 2026 timestamps; current reproducible archives use a fixed 1980 timestamp. With both enabled, the courier may diligently install the older package. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
 
@@ -54,11 +54,23 @@ An older adapter can fail during class loading, including a read-only adapter. R
 
 Disable the global correspondence control in the web page; that requests an offscreen-service stop. Let the current child finish and confirm the service lock has been released, or stop your own server environment through its normal procedure. Stop the game before replacing the bridge. Back up persistent data and keep the matching server package/bridge pair together. Ensure only one correspondence DWPkg and one bridge PEX are active before restarting. Restart/resume deliberately; the UI's paused label alone is not proof the old worker has exited.
 
+For a dev.17-or-older upgrade, keep a matched backup of the server database, its runtime files and the game's save/co-save before applying migration 004. The plugin creates `plugins.correspondence_restore_state` (one epoch/pending/native-floor row) and `log/playthrough_runtime/correspondence.restore.json` under the engine root. Dev.19 also uses the persistent sibling `correspondence.restore.json.lock`; do not replace or remove that lock while any plugin process can run. Preserve these files with the database backup. A code-only downgrade does not undo migration or restore authority.
+
+Published dev.18 has the overlapping-init ownership defect fixed in dev.19. Serialize game init/load operations when using dev.18; the fix is not in the immutable dev.18 download. If loads have overlapped, pause correspondence and complete a fresh supported init before resuming. Older dev.14–17 releases also used a global timestamp fence that can reject boot-scoped timestamps after reboot; do not delete history to work around that older design.
+
+After installing dev.18 or later, run CHIM's normal supported game init/load cycle. The production bootstrap initializes schema and captures restore authority; custom adapters must use that lifecycle rather than invoking a constructor alone. Clearance requires a successful restore fence and post-prune completion, not elapsed time. A pending, missing, malformed or mismatched marker/row keeps correspondence unavailable. Fix the failed prerequisite and complete another supported init; do not manually write `clear`, delete the marker or reset the epoch row.
+
+The native timestamp floor rejects packets older than or equal to the clearing init. These client timestamps are boot-scoped high-resolution counts, not Unix dates. A packet at the same count is refused until a later native event; after a restart/load, complete a new supported init. An old queued request is not evidence of a new game observation.
+
 Historical sibling packages are exact development fixtures, not current dependency pins. Their original build-time labels remain inside the immutable kit; see [historical provenance](../release-inputs/README.md). Do not use CHIM update checks as proof that an old three-plugin pairing remains compatible.
 
 ## Recovery and diagnostics
 
 A storage-failed receipt gets one intake retry with the same packet. This does not repeat delivery or move inventory. If the packet still cannot be accepted, keep the operation pending/unknown and use read-only Reconcile with the original dispatch wire; never compose or dispatch a replacement as a recovery shortcut. A missing or untrusted native journal cannot prove delivery. Reconcile reads an existing journal; it cannot repair missing or unsupported JContainers, a malformed dispatch packet, or a missing journal. Fix the prerequisite first, keep the original operation and its evidence, then check that same operation. If its outcome still cannot be proven, abandon further delivery attempts and leave it pending/unknown. There is no safe clean-failure receipt or automatic resend for an unproven transfer, and no database deletion is required.
+
+Dev.19 adds **Close without resending or refunding** to the web page for manual letters. This records an idempotent administrative closure and blocks dispatch/retry for that document. The physical outcome remains queued, dispatched, failed or unknown as actually supported by evidence. It does not remove a queued game command, recover money, prove that nothing moved, or stop a genuine late receipt. The read-only outcome check remains available for dispatched/unknown operations. Autonomous child dispatch stays owned by its scheduler; pause autonomous correspondence through its normal control rather than closing its children manually.
+
+If JContainers or another native dependency is missing, restore the supported dependency in the disposable profile first and retry only the original read-only check. If its journal is missing, corrupt or cannot be correlated with the original operation, preserve unknown and close further attempts if desired. No clean-failure receipt is invented to make the UI look reassuring. The courier is many things; a forensic accountant is not currently one of them.
 
 Structured diagnostics record UTC time, bounded status/reason, elapsed time and available claim/source correlation. Autonomy records callback attempts and input/output character counts independently of effect-bearing completion. These are operational measurements, not token totals or provider billing receipts. A failure can legitimately retain an attempted call while producing no letter or social effect.
 
@@ -69,3 +81,5 @@ Offscreen transient reactions may be reconsidered once only when the saved claim
 Pause the feature and stop the server/game through your deployment's normal procedure. Back up the installation and persistent data, then remove only package files you have confirmed belong to Sealed Fates and disable the MO2 bridge separately.
 
 Code removal does not automatically remove Correspondence tables or rows, eventlog anchors, written-evidence records, **public.books** rows, rendered PNGs, diagnostics and worker state under **log/correspondence/offscreen-***, JContainers co-save state, or in-game notes and items. Installer removal behavior for those states is not verified. SQL savepoints do not clean files or undo native inventory changes. Do not delete database rows, evidence files, or game items as part of ordinary code removal.
+
+That retained state also includes `plugins.correspondence_restore_state`, `log/playthrough_runtime/correspondence.restore.json` and its stable `.lock` sibling, plus operator-close evidence. Archive them with their matching database/save before any separately planned cleanup. Do not remove one side of restore authority while retaining the other, and do not use uninstall/reinstall as a way to clear an unknown transfer or quarantine.

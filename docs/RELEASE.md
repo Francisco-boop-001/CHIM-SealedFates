@@ -1,3 +1,32 @@
+# CHIM Sealed Fates 0.1.0-dev.19 — PRE-ALPHA
+
+Skyrim has one courier. I gave him more paperwork, then discovered the paperwork had learned to block the queue. He has filed a grievance. I have fixed the queue. Neither of us has received a raise.
+
+Overlapping initializers can no longer clear another initializer's pending restore intent. Cooling-down recipients and temporarily invalid sources no longer pin later eligible correspondence. Deferred sources get bounded fresh/recheck capacity, canonical contact names and prompt validation before a model claim. Reconsideration cannot erase prior claim anchors, counters or effects.
+
+Transaction and connection boundaries are checked, initialization failures are bounded, and diagnostics retain exact refusal reasons. The web page adds **Close without resending or refunding** for manual letters: an anchored administrative closure that preserves the actual physical state. It cannot refund money, cancel a queued game command, invent failure, or make an unknown transfer safe to resend. Genuine late receipts remain valid. Full forwarded letters are preserved.
+
+**The Skyrim interface is optional, and the existing web plugin page still works.** The matching delivery bridge is still required for physical notes, items and gold; its compiled PEX is unchanged from dev.17. The Department Skyrim interface is optional. Its published prealpha.1 targets dev.17; a separate dev.18 adapter candidate does not certify dev.19. Use the existing web plugin page until an exact dev.19 Department pairing is verified. No sibling plugins are bundled.
+
+Verification: 27 PostgreSQL jobs against the exact final server bytes, 29 Linux pure suites (32 cases), and eight causal RED comparisons. Fresh host checks and a clean annotated-tag rebuild bind these assets to the tested source. Two legacy/coverage PostgreSQL fixtures were strengthened and rerun; setup errors and superseded runs are excluded. See [recovery and evidence](DEV19-RECOVERY.md), [upgrade/removal instructions](INSTALL.md) and [verification limits](VERIFICATION.md).
+
+Actual providers/model quality, Skyrim inventory/co-save/gameplay, campaign-scale performance and an exact Department dev.19 adapter remain unverified. If an init can persist neither filesystem intent nor its database transition while core continues, cross-process quarantine cannot be guaranteed; restore the prerequisites and complete a supported init. No live server, installed game, core or provider was changed.
+
+## Dev.19 assets
+
+[Download this PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.19). Use the paired ZIP or the server package for its documented route; keep only one correspondence version enabled.
+
+| File | SHA-256 | Bytes |
+| --- | --- | ---: |
+| [CHIM-Sealed-Fates-0.1.0-dev.19.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.19/CHIM-Sealed-Fates-0.1.0-dev.19.zip) | `d70b4f74b83678722a632581faf970a4b92dba2e7f1f4cb532449e8756c0188e` | 2823285 |
+| [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.19/SHA256SUMS.txt) | `c332b95db1e4506f6329fd10e498de7610df4cc92e7fe06c2dd321b6dcd9d1ae` | 289 |
+| [correspondence-0.1.0-dev.19.dwpkg](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.19/correspondence-0.1.0-dev.19.dwpkg) | `8035df863bb442453af6683675f07fa1d1d9b811cb479cf8464f7a9a4289db99` | 2803094 |
+| [correspondence.tar.gz](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.19/correspondence.tar.gz) | `b0ea4dbc1a4c003159ff1112b1d0bd2a3959996e1c60f85353203656d467ad4b` | 2425380 |
+
+The older release sections below retain their original evidence and checksums.
+
+---
+
 # CHIM Sealed Fates 0.1.0-dev.18 — PRE-ALPHA
 
 The courier has learned to survive simultaneous paperwork. I still have not learned to hire a second courier.

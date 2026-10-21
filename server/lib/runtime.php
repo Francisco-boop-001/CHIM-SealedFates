@@ -193,6 +193,14 @@ final class CorrespondenceService
             throw new DomainException('document_unavailable');
         }
         if (!$this->store->eventMatches($anchor)) throw new DomainException('document_unavailable');
+        if (array_key_exists('operator_close',$doc)) {
+            $close=$doc['operator_close'];
+            if (!is_array($close) || ($close['sess']??null)!=='correspondence_v1'
+                || !in_array($close['type']??null,['info','correspondence_operator_closed'],true)
+                || ($close['people']??null)!==''
+                || ($close['data']??null)!==correspondenceJson(['document_id'=>$id,'operation_id'=>$doc['operation_id'],'reason'=>'operator_closed'])
+                || !$this->store->eventMatches($close)) throw new DomainException('document_unavailable');
+        }
         return $doc;
     }
     private function document(string $id, bool $effect = false): array
@@ -286,6 +294,7 @@ final class CorrespondenceService
     {
         return $this->store->transaction(function()use($id,$reconcile){
             $doc=$this->document($id,true); $state=$this->state($doc);
+            if (!$reconcile && isset($doc['operator_close'])) throw new DomainException('operator_closed');
             if ($doc['operation_id']!==null && !$reconcile) return ['document_id'=>$id,'state'=>$state,'operation_id'=>$doc['operation_id']];
             $executor=$this->store->managedExecutor();
             if ($executor===null || $executor==='' || preg_match('/[|@\r\n]/',$executor)) return ['document_id'=>$id,'state'=>$state,'reason'=>'executor_unavailable'];
@@ -309,10 +318,22 @@ final class CorrespondenceService
     public function retry(string $id):array
     {
         return $this->store->transaction(function()use($id){
-            $doc=$this->document($id,true);if($this->state($doc)!=='failed')throw new DomainException('retry_unsafe');
+            $doc=$this->document($id,true);if(isset($doc['operator_close'])||$this->state($doc)!=='failed')throw new DomainException('retry_unsafe');
             $op=$this->store->loadOperation($doc['operation_id']);if(!$op||$op['receipt']['note_form_id']!==0||!correspondenceRetryableReason($op['receipt']['reason']))throw new DomainException('retry_unsafe');
             foreach($op['receipt']['attachments']as$item)if($item['quantity']!==0||$item['before_source']!==$item['after_source']||$item['before_recipient']!==$item['after_recipient'])throw new DomainException('retry_unsafe');
             $doc['operation_id']=null;$this->store->saveDocument($doc);return $this->dispatch($id);
+        });
+    }
+    public function close(string $id):array
+    {
+        return $this->store->transaction(function()use($id){
+            $doc=$this->document($id,true);$state=$this->state($doc);
+            if (!isset($doc['operator_close']) && !in_array($state,['queued','dispatched','unknown','failed'],true)) throw new DomainException('closure_unavailable');
+            if (!isset($doc['operator_close'])) {
+                $doc['operator_close']=$this->store->appendEvent('correspondence_operator_closed',correspondenceJson(['document_id'=>$id,'operation_id'=>$doc['operation_id'],'reason'=>'operator_closed']),'','correspondence_v1');
+                $this->store->saveDocument($doc);
+            }
+            return ['document_id'=>$id,'state'=>$state,'operator_closed'=>true];
         });
     }
     private function matchingWrittenSourceAfterReceiptLoss(array $doc,array $operation,array $receipt):bool
@@ -460,6 +481,7 @@ final class CorrespondenceService
                         'body'=>$doc['body'],
                         'attachments'=>$doc['attachments'],
                         'source_event_id'=>$sourceEventId,
+                        'operator_closed'=>isset($doc['operator_close']),
                     ];
                 } catch (DomainException|InvalidArgumentException) {
                     continue;

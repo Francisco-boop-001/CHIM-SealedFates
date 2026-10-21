@@ -9,6 +9,7 @@ function autonomySourceRejected(callable $work, string $reason): void
 }
 require_once $root . '/server/lib/runtime.php';
 require_once __DIR__ . '/support/correspondence_memory_store.php';
+require_once __DIR__ . '/support/correspondence_idle_pg_fixture.php';
 if (!function_exists('pg_query_params')) {
     final class AutonomyFakePgResult
     {
@@ -16,6 +17,7 @@ if (!function_exists('pg_query_params')) {
     }
     function pg_query_params(mixed $connection, string $sql, array $parameters): mixed
     {
+        if(str_contains($sql,"current_setting('lock_timeout')"))return new AutonomyFakePgResult([['lock_timeout'=>'0']]);
         $adapter = $GLOBALS['autonomyFakePg'] ?? null;
         if (!is_callable($adapter)) return false;
         $rows = $adapter($sql, $parameters);
@@ -156,6 +158,8 @@ $restoreGeneration = $lostPg->requestRestoreToken();
 autonomySourceCheck($restoreGeneration === $lostRestoreGeneration, 'lost claim fixture carries a valid current restore token');
 $activeProperty = new ReflectionProperty(CorrespondencePgStore::class, 'active');
 $activeProperty->setValue($lostPg, true);
+$writerProperty = new ReflectionProperty(CorrespondencePgStore::class, 'writerActive');
+$writerProperty->setValue($lostPg, true);
 $lostAutonomy = new CorrespondenceAutonomyPg($lostPg, new CorrespondenceService($lostPg));
 $bglBoolean = new ReflectionMethod(CorrespondenceAutonomyPg::class, 'bglBoolean');
 $dbBoolean = new ReflectionMethod(CorrespondenceAutonomyPg::class, 'dbBoolean');

@@ -192,16 +192,16 @@ final class CorrespondenceOffscreenPg
                 if ($existing !== []) return $idle('already_claimed');
                 if ($this->globalCooldown($scope, $observation['gamets']) > $observation['gamets']) return $idle('cooldown');
 
-                $actors = $this->npcMap($this->npcRows());
-                if ($this->retireIneligibleArrivals($scope, $actors)) {
+                $actorRows = $this->npcRows();
+                $actors = $this->npcMap($actorRows);
+                if ($this->retireIneligibleArrivals($scope, $actors, $actorRows, (int)$observation['gamets'])) {
                     $this->consumeObservation($scope, $observation['anchor']['rowid'], $observation['gamets']);
                     return ['result_kind'=>'processed','reason'=>'actor_ineligible'];
                 }
-                $reaction = $this->reactionCandidate($scope, $observation['gamets'], $actors);
+                $reaction = $this->reactionCandidate($scope, $observation['gamets'], $actors, $actorRows);
                 if ($reaction !== null) {
                     $mail = $reaction['mail'];
                     $self = $actors[(int)$mail['recipient_id']];
-                    if ($this->actorCooldown($scope, (int)$self['id'], $observation['gamets']) > $observation['gamets']) return $idle('cooldown');
                     $context = ['self'=>$reaction['self'],'contacts'=>$reaction['contacts'],'source'=>$reaction['source'],'messages'=>$reaction['messages']];
                     $return = $this->claim($scope, $observation, $self, 'react', $mail, null, $context);
                     return $return ?? $idle('already_claimed');
@@ -210,10 +210,7 @@ final class CorrespondenceOffscreenPg
                 $candidate = $this->initiationCandidate($scope, $observation['gamets'], $actors);
                 if ($candidate === null) return $idle('no_eligible_source');
                 $self = $candidate['self'];
-                if ($this->actorCooldown($scope, (int)$self['id'], $observation['gamets']) > $observation['gamets']) return $idle('cooldown');
-                $contacts = $this->contacts($self, $actors);
-                if ($contacts === []) return $idle('no_eligible_contact');
-                $context = ['self'=>$this->selfProjection($self, $contacts),'contacts'=>$contacts,'goal'=>$candidate['goal']];
+                $context = ['self'=>$candidate['projection'],'contacts'=>$candidate['contacts'],'goal'=>$candidate['goal'],'messages'=>$candidate['messages']];
                 return $this->claim($scope, $observation, $self, 'initiate', null, $candidate['goal'], $context) ?? $idle('already_claimed');
             });
         } catch (DomainException) {
@@ -231,9 +228,7 @@ final class CorrespondenceOffscreenPg
         $modelCalled = false;
         $outputChars = 0;
         try {
-            $messages = $work['kind_of_job'] === 'react'
-                ? ($work['messages'] ?? correspondenceAutonomyMessages($work['source'], $work['self'], $work['contacts']))
-                : correspondenceOffscreenInitiateMessages($work['self'], $work['goal'], $work['contacts']);
+            $messages = $work['messages'] ?? throw new UnexpectedValueException('prompt_not_prepared');
             $modelCalled = true;
             $raw = $requestModel($messages);
             if (!is_string($raw)) throw new UnexpectedValueException('invalid_model_output');
@@ -780,28 +775,87 @@ final class CorrespondenceOffscreenPg
         if (count($changed) !== 1) throw new DomainException('mail_quarantine_conflict');
     }
 
-    private function reactionCandidate(string $scope, int $gamets, array $actors): ?array
+    private function reactionCandidate(string $scope, int $gamets, array $actors, array $actorRows = []): ?array
     {
+        $rawActors = $this->actorRowsById($actorRows);
         $retryableIds = array_keys($this->retryableSourceIds);
         $retryableArray = '{'.implode(',', $retryableIds).'}';
-        $rows = $this->store->query("SELECT m.playthrough_id,m.message_id::text,m.sender_id::text,m.recipient_id::text,m.root_message_id::text,m.depth,m.status,m.body,m.created_gamets::text,m.due_gamets::text,m.arrived_gamets::text,m.source_event_id::text,m.source_event_sha256,m.payload::text FROM plugins.correspondence_offscreen_mail m WHERE m.playthrough_id=$1 AND m.status='arrived' AND m.due_gamets<=$2 AND (NOT EXISTS(SELECT 1 FROM plugins.correspondence_offscreen_jobs j WHERE j.playthrough_id=m.playthrough_id AND j.source_message_id=m.message_id) OR m.message_id=ANY($3::uuid[])) ORDER BY m.due_gamets,m.created_gamets,m.message_id LIMIT 16", [$scope,(string)$gamets,$retryableArray]);
+        $columns = 'SELECT m.playthrough_id,m.message_id::text,m.sender_id::text,m.recipient_id::text,m.root_message_id::text,m.depth,m.status,m.body,m.created_gamets::text,m.due_gamets::text,m.arrived_gamets::text,m.source_event_id::text,m.source_event_sha256,m.payload::text FROM plugins.correspondence_offscreen_mail m';
+        $recheckText = "(m.payload->>'recheck_after_gamets')";
+        $recheckAt = "CASE WHEN {$recheckText} ~ '^[0-9]{1,19}$' THEN CASE WHEN {$recheckText}::numeric<=".PHP_INT_MAX." THEN {$recheckText}::numeric ELSE 0 END ELSE 0 END";
+        $fetch = function (string $lane, int $limit, int $offset) use ($scope, $gamets, $retryableArray, $columns, $recheckAt): array {
+            $common = "m.playthrough_id=$1 AND m.status='arrived' AND m.due_gamets<=$2 AND (NOT EXISTS(SELECT 1 FROM plugins.correspondence_offscreen_jobs j WHERE j.playthrough_id=m.playthrough_id AND j.source_message_id=m.message_id) OR m.message_id=ANY($3::uuid[]))";
+            if ($lane === 'fresh') {
+                $filter = "NOT EXISTS(SELECT 1 FROM plugins.correspondence_offscreen_jobs j WHERE j.playthrough_id=m.playthrough_id AND j.source_message_id=m.message_id) AND m.payload->>'reconsiderable' IS DISTINCT FROM 'true'";
+                $order = 'm.due_gamets,m.created_gamets,m.message_id';
+            } else {
+                $filter = "((m.payload->>'reconsiderable'='true' AND {$recheckAt}<=$2::numeric) OR (m.message_id=ANY($3::uuid[]) AND m.payload->>'reconsiderable' IS DISTINCT FROM 'true'))";
+                $order = "{$recheckAt},m.due_gamets,m.created_gamets,m.message_id";
+            }
+            return $this->store->query("{$columns} WHERE {$common} AND {$filter} ORDER BY {$order} LIMIT $4 OFFSET $5", [$scope,(string)$gamets,$retryableArray,$limit,$offset]);
+        };
+        $fresh = $fetch('fresh', 8, 0);
+        $recheck = $fetch('recheck', 8, 0);
+        if (count($fresh) < 8 && count($recheck) >= 8) {
+            $recheck = array_merge($recheck, $fetch('recheck', 16 - count($fresh) - count($recheck), 8));
+        } elseif (count($recheck) < 8 && count($fresh) >= 8) {
+            $fresh = array_merge($fresh, $fetch('fresh', 16 - count($fresh) - count($recheck), 8));
+        }
+        $rows = array_merge($fresh, $recheck);
+        usort($rows, function (array $left, array $right): int {
+            foreach (['due_gamets','created_gamets'] as $field) {
+                $comparison = $this->intValue($left[$field] ?? null) <=> $this->intValue($right[$field] ?? null);
+                if ($comparison !== 0) return $comparison;
+            }
+            return strcmp((string)($left['message_id'] ?? ''), (string)($right['message_id'] ?? ''));
+        });
         foreach ($rows as $row) {
+            $mail = $this->normalizeMail($row);
+            $this->assertMailArrival($mail);
+            $mailPayload = $mail['payload_array'];
+            $reconsiderable = $mailPayload['reconsiderable'] ?? false;
+            if (($reconsiderable === true || $reconsiderable === 'true')
+                && ($reconsiderable !== true || !$this->validRecheckAfterGamets($mailPayload['recheck_after_gamets'] ?? null))) {
+                $this->deferArrival($scope, $mail, 'recheck_metadata_invalid', $this->recheckAfterGamets($gamets));
+                continue;
+            }
+            $senderRaw = $rawActors[(int)$mail['sender_id']] ?? null;
+            $selfRaw = $rawActors[(int)$mail['recipient_id']] ?? null;
+            if ((is_array($senderRaw) && $this->actorProfileNeedsDeferral($senderRaw))
+                || (is_array($selfRaw) && $this->actorProfileNeedsDeferral($selfRaw))) {
+                $this->deferArrival($scope, $mail, 'profile_construction_failed', $this->recheckAfterGamets($gamets));
+                continue;
+            }
             $sender = $actors[(int)$row['sender_id']] ?? null;
             $self = $actors[(int)$row['recipient_id']] ?? null;
             if (!$this->eligible($sender) || !$this->eligible($self)) continue;
-            $mail = $this->normalizeMail($row);
-            $this->assertMailArrival($mail);
             $arrived = $this->intValue($mail['arrived_gamets'] ?? null);
             $delay = correspondenceAutonomyGamets(2);
-            if ($arrived < 1 || $arrived > PHP_INT_MAX - $delay || $gamets < $arrived + $delay) continue;
+            if ($arrived < 1 || $arrived > PHP_INT_MAX - $delay) continue;
+            if ($gamets < $arrived + $delay) {
+                $this->deferArrival($scope, $mail, 'reaction_delay', $arrived + $delay);
+                continue;
+            }
+            $cooldown = $this->actorCooldown($scope, (int)$self['id'], $gamets);
+            if ($cooldown > $gamets) {
+                $this->deferArrival($scope, $mail, 'actor_cooldown', $cooldown);
+                continue;
+            }
             $source = $this->sourceForMail($mail, $actors);
-            if ($source === null) continue;
+            if ($source === null) {
+                $this->deferArrival($scope, $mail, 'source_unavailable', $this->recheckAfterGamets($gamets));
+                continue;
+            }
             $contacts = $this->contacts($self, $actors, (int)$mail['sender_id']);
-            if ($contacts === []) continue;
-            $selfProjection = $this->selfProjection($self, $contacts);
+            if ($contacts === []) {
+                $this->deferArrival($scope, $mail, 'no_eligible_contact', $this->recheckAfterGamets($gamets));
+                continue;
+            }
             try {
+                $selfProjection = $this->selfProjection($self, $contacts);
                 $messages = correspondenceAutonomyMessages($source, $selfProjection, $contacts);
             } catch (Throwable) {
+                $this->deferArrival($scope, $mail, 'prompt_construction_failed', $this->recheckAfterGamets($gamets));
                 continue;
             }
             return ['mail'=>$mail,'source'=>$source,'self'=>$selfProjection,'contacts'=>$contacts,'messages'=>$messages];
@@ -809,10 +863,78 @@ final class CorrespondenceOffscreenPg
         return null;
     }
 
-    private function retireIneligibleArrivals(string $scope, array $actors): bool
+    private function recheckAfterGamets(int $gamets): int
     {
+        $delay = correspondenceAutonomyGamets(1);
+        return $gamets > PHP_INT_MAX - $delay ? PHP_INT_MAX : $gamets + $delay;
+    }
+
+    private function validRecheckAfterGamets(mixed $value): bool
+    {
+        if (!is_string($value) || preg_match('/\A[0-9]{1,19}\z/D',$value)!==1) return false;
+        $normalized = ltrim($value,'0');
+        if ($normalized === '') return false;
+        $maximum = (string)PHP_INT_MAX;
+        return strlen($normalized) < strlen($maximum)
+            || (strlen($normalized) === strlen($maximum) && strcmp($normalized,$maximum) <= 0);
+    }
+
+    private function hasFutureProfileRecheck(array $mail, int $gamets): bool
+    {
+        $payload = $mail['payload_array'] ?? null;
+        if (!is_array($payload)
+            || !in_array($payload['reconsiderable'] ?? null, [true,'true'], true)
+            || ($payload['reason_code'] ?? null) !== 'profile_construction_failed') return false;
+        $deadline = $payload['recheck_after_gamets'] ?? null;
+        if (!$this->validRecheckAfterGamets($deadline)) return false;
+        $deadline = ltrim($deadline,'0');
+        $current = (string)max(0,$gamets);
+        return strlen($deadline) > strlen($current)
+            || (strlen($deadline) === strlen($current) && strcmp($deadline,$current) > 0);
+    }
+
+    private function deferArrival(string $scope, array $mail, string $reason, int $recheckAt): bool
+    {
+        if (!in_array($reason, ['reaction_delay','actor_cooldown','source_unavailable','no_eligible_contact','prompt_construction_failed','profile_construction_failed','recheck_metadata_invalid'], true)
+            || $recheckAt < 1) return false;
+        $mail = $this->normalizeMail($mail);
+        if (($mail['status'] ?? null) !== 'arrived' || ($mail['source_event_id'] ?? null) !== null
+            || ($mail['source_event_sha256'] ?? null) !== null) return false;
+        $payload = $mail['payload_array'];
+        $creationAnchor = $payload['creation_anchor'] ?? null;
+        $arrivalAnchor = $payload['arrival_anchor'] ?? null;
+        if (!is_array($creationAnchor) || !is_array($arrivalAnchor)) return false;
+        $rows = $this->store->query("UPDATE plugins.correspondence_offscreen_mail SET payload=payload||jsonb_build_object('reconsiderable',TRUE,'reason_code',$11::text,'recheck_after_gamets',$12::text) WHERE playthrough_id=$1 AND message_id=$2 AND sender_id=$3 AND recipient_id=$4 AND root_message_id=$5 AND depth=$6 AND status='arrived' AND body=$7 AND created_gamets=$8 AND due_gamets=$9 AND arrived_gamets=$10 AND source_event_id IS NULL AND source_event_sha256 IS NULL AND payload->'creation_anchor'=$13::jsonb AND payload->'arrival_anchor'=$14::jsonb RETURNING message_id::text", [
+            $scope,$mail['message_id'],$mail['sender_id'],$mail['recipient_id'],$mail['root_message_id'],(string)$mail['depth'],
+            $mail['body'],$mail['created_gamets'],$mail['due_gamets'],$mail['arrived_gamets'],$reason,(string)$recheckAt,
+            correspondenceJson($creationAnchor),correspondenceJson($arrivalAnchor),
+        ]);
+        return count($rows) === 1;
+    }
+
+    private function retireIneligibleArrivals(string $scope, array $actors, array $actorRows, int $gamets): bool
+    {
+        $rawActors = $this->actorRowsById($actorRows);
         $rows = $this->store->query("SELECT playthrough_id,message_id::text,sender_id::text,recipient_id::text,root_message_id::text,depth,status,body,created_gamets::text,due_gamets::text,arrived_gamets::text,source_event_id::text,source_event_sha256,payload::text FROM plugins.correspondence_offscreen_mail m WHERE m.playthrough_id=$1 AND m.status='arrived' AND NOT EXISTS(SELECT 1 FROM plugins.correspondence_offscreen_jobs j WHERE j.playthrough_id=m.playthrough_id AND j.source_message_id=m.message_id) ORDER BY m.due_gamets,m.created_gamets,m.message_id LIMIT 16", [$scope]);
         foreach ($rows as $row) {
+            $senderRaw = $rawActors[(int)$row['sender_id']] ?? null;
+            $recipientRaw = $rawActors[(int)$row['recipient_id']] ?? null;
+            $bothActorsPresent = is_array($senderRaw) && is_array($recipientRaw);
+            $explicitlyIneligible = (is_array($senderRaw) && $this->actorProfileExplicitlyIneligible($senderRaw))
+                || (is_array($recipientRaw) && $this->actorProfileExplicitlyIneligible($recipientRaw));
+            if ($bothActorsPresent && !$explicitlyIneligible
+                && ($this->actorProfileNeedsDeferral($senderRaw) || $this->actorProfileNeedsDeferral($recipientRaw))) {
+                try {
+                    $mail = $this->normalizeMail($row);
+                    $this->assertMailArrival($mail);
+                    if (!$this->hasFutureProfileRecheck($mail, $gamets)) {
+                        $this->deferArrival($scope, $mail, 'profile_construction_failed', $this->recheckAfterGamets($gamets));
+                    }
+                } catch (DomainException|InvalidArgumentException|JsonException) {
+                    continue;
+                }
+                continue;
+            }
             if ($this->eligible($actors[(int)$row['sender_id']] ?? null) && $this->eligible($actors[(int)$row['recipient_id']] ?? null)) continue;
             $mail = $this->normalizeMail($row);
             if ($this->retireIneligibleArrival($scope, $mail, 'actor_ineligible')) return true;
@@ -838,7 +960,21 @@ final class CorrespondenceOffscreenPg
         if (!is_array($creationAnchor) || !is_array($arrivalAnchor)) return false;
         if ($reason === 'actor_ineligible') {
             $locked = $this->store->lockActorRows([(int)$mail['sender_id'],(int)$mail['recipient_id']]);
-            $actors = $this->npcMap(array_values($locked['actors'] ?? []));
+            $lockedRows = array_values($locked['actors'] ?? []);
+            $lockedById = $this->actorRowsById($lockedRows);
+            $senderRaw = $lockedById[(int)$mail['sender_id']] ?? null;
+            $recipientRaw = $lockedById[(int)$mail['recipient_id']] ?? null;
+            $bothActorsPresent = is_array($senderRaw) && is_array($recipientRaw);
+            $explicitlyIneligible = (is_array($senderRaw) && $this->actorProfileExplicitlyIneligible($senderRaw))
+                || (is_array($recipientRaw) && $this->actorProfileExplicitlyIneligible($recipientRaw));
+            if ($bothActorsPresent && !$explicitlyIneligible
+                && ($this->actorProfileNeedsDeferral($senderRaw) || $this->actorProfileNeedsDeferral($recipientRaw))) {
+                $gamets = $this->intValue($this->clock()['gamets'] ?? null);
+                if ($this->hasFutureProfileRecheck($mail, $gamets)) return false;
+                $this->deferArrival($scope, $mail, 'profile_construction_failed', $this->recheckAfterGamets($gamets));
+                return true;
+            }
+            $actors = $this->npcMap($lockedRows);
             if ($this->eligible($actors[(int)$mail['sender_id']] ?? null)
                 && $this->eligible($actors[(int)$mail['recipient_id']] ?? null)) return false;
         }
@@ -1014,8 +1150,15 @@ final class CorrespondenceOffscreenPg
             if ($this->actorCooldown($scope, (int)$npc['id'], $gamets) > $gamets) continue;
             $pending = $this->store->query("SELECT 1 FROM plugins.correspondence_offscreen_mail m WHERE m.playthrough_id=$1 AND m.sender_id=$2 AND m.depth=0 AND m.status IN ('in_transit','arrived') AND NOT (m.status='arrived' AND m.source_event_id IS NULL AND m.source_event_sha256 IS NULL AND EXISTS (SELECT 1 FROM plugins.correspondence_offscreen_jobs j WHERE j.playthrough_id=m.playthrough_id AND j.source_message_id=m.message_id AND j.status IN ('failed','stale') AND j.action IS NULL AND j.payload->>'kind'='react')) LIMIT 1", [$scope,(string)$npc['id']]);
             if ($pending !== []) continue;
-            if ($this->contacts($npc, $actors) === []) continue;
-            return ['self'=>$npc,'goal'=>['id'=>$goalId,'text'=>$goalText]];
+            $contacts = $this->contacts($npc, $actors);
+            if ($contacts === []) continue;
+            try {
+                $projection = $this->selfProjection($npc, $contacts);
+                $messages = correspondenceOffscreenInitiateMessages($projection, ['id'=>$goalId,'text'=>$goalText], $contacts);
+            } catch (Throwable) {
+                continue;
+            }
+            return ['self'=>$npc,'goal'=>['id'=>$goalId,'text'=>$goalText],'projection'=>$projection,'contacts'=>$contacts,'messages'=>$messages];
         }
         return null;
     }
@@ -1048,7 +1191,6 @@ final class CorrespondenceOffscreenPg
 
     private function selfProjection(array $self, array $contacts): array
     {
-        $allowed = array_fill_keys(array_column($contacts,'key'), true);
         $relationships = [];
         foreach (($self['relationships'] ?? []) as $name => $relationship) {
             $contact = null;
@@ -1056,14 +1198,101 @@ final class CorrespondenceOffscreenPg
             if ($contact === null || !is_array($relationship) || !array_key_exists('aff',$relationship)) continue;
             $affinity = $relationship['aff'];
             if ((!is_int($affinity) && !is_float($affinity)) || (is_float($affinity) && !is_finite($affinity)) || $affinity < -100 || $affinity > 100) continue;
-            $relationships[] = ['key'=>$contact['key'],'affinity'=>$affinity];
+            $key = $contact['key'];
+            if (!array_key_exists($key, $relationships) || $affinity < $relationships[$key]) $relationships[$key] = $affinity;
         }
-        return ['key'=>$self['key'],'name'=>$self['name'],'personality'=>$self['personality'],'relationships'=>$relationships];
+        ksort($relationships, SORT_STRING);
+        $projectedRelationships = [];
+        foreach ($relationships as $key => $affinity) $projectedRelationships[] = ['key'=>$key,'affinity'=>$affinity];
+        return ['key'=>$self['key'],'name'=>$self['name'],'personality'=>$self['personality'],'relationships'=>$projectedRelationships];
     }
 
     private function npcRows(): array
     {
         return $this->store->offscreenActors();
+    }
+
+    private function actorRowsById(array $rows): array
+    {
+        $result = [];
+        foreach ($rows as $row) {
+            if (!is_array($row)) continue;
+            $id = $this->intValue($row['id'] ?? null);
+            if ($id > 0 && $id <= 2147483647) $result[$id] = $row;
+        }
+        return $result;
+    }
+
+    private function actorProfileConstructible(array $row): bool
+    {
+        $id = $this->intValue($row['id'] ?? null);
+        $personality = $row['personality'] ?? null;
+        if ($id < 1 || $id > 2147483647 || !correspondenceActorName($row['npc_name'] ?? null)
+            || !is_string($personality) || strlen($personality) > 8000 || preg_match('//u',$personality)!==1
+            || str_contains($personality,"\0") || preg_match_all('/./us',$personality)>2000) return false;
+
+        $extended = $this->profileJsonObject($row['extended_data'] ?? null);
+        $metadataRaw = $row['metadata'] ?? null;
+        $metadata = $this->profileJsonObject($metadataRaw);
+        $metadataMissing = $metadataRaw === null || $metadataRaw === []
+            || (is_string($metadataRaw) && (trim($metadataRaw) === '' || trim($metadataRaw) === 'null' || trim($metadataRaw) === '[]'));
+        if (!($extended instanceof stdClass) || (!($metadata instanceof stdClass) && !$metadataMissing)
+            || !property_exists($extended,'background_life_enabled')
+            || !property_exists($extended,'background_life_letters')
+            || !$this->validProfileBoolean($extended->background_life_enabled)
+            || !$this->validProfileBoolean($extended->background_life_letters)) return false;
+
+        if (property_exists($extended,'relationships')
+            && !($extended->relationships instanceof stdClass)
+            && $extended->relationships !== null && $extended->relationships !== []) return false;
+        if ($metadata instanceof stdClass && property_exists($metadata,'stats')) {
+            $stats = $metadata->stats;
+            if (!($stats instanceof stdClass) && $stats !== null && $stats !== []) return false;
+            if ($stats instanceof stdClass
+                && property_exists($stats,'is_dead') && !$this->validProfileBoolean($stats->is_dead)) return false;
+        }
+        return true;
+    }
+
+    private function actorProfileNeedsDeferral(array $row): bool
+    {
+        return !$this->actorProfileExplicitlyIneligible($row) && !$this->actorProfileConstructible($row);
+    }
+
+    private function actorProfileExplicitlyIneligible(array $row): bool
+    {
+        $extended = $this->profileJsonObject($row['extended_data'] ?? null);
+        if ($extended instanceof stdClass) {
+            foreach (['background_life_enabled','background_life_letters'] as $setting) {
+                if (property_exists($extended,$setting) && $this->profileBooleanValue($extended->{$setting}) === false) return true;
+            }
+        }
+        $metadata = $this->profileJsonObject($row['metadata'] ?? null);
+        if ($metadata instanceof stdClass && property_exists($metadata,'stats') && ($metadata->stats instanceof stdClass)
+            && property_exists($metadata->stats,'is_dead') && $this->profileBooleanValue($metadata->stats->is_dead) === true) return true;
+        return false;
+    }
+
+    private function profileJsonObject(mixed $raw): ?stdClass
+    {
+        if (!is_string($raw) || $raw === '') return null;
+        try { $value = json_decode($raw,false,64,JSON_THROW_ON_ERROR); } catch (JsonException) { return null; }
+        return $value instanceof stdClass ? $value : null;
+    }
+
+    private function validProfileBoolean(mixed $value): bool
+    {
+        return $this->profileBooleanValue($value) !== null;
+    }
+
+    private function profileBooleanValue(mixed $value): ?bool
+    {
+        if (is_bool($value)) return $value;
+        if ($value === 0 || $value === 1) return $value === 1;
+        if (!is_string($value)) return null;
+        if (in_array($value,['true','1','t','on'],true)) return true;
+        if (in_array($value,['false','0','f','off'],true)) return false;
+        return null;
     }
 
     private function npcMap(array $rows): array

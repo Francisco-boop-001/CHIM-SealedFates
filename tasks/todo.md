@@ -86,3 +86,40 @@ Department owns its separate integration/publication. No TEST, live, game, core 
 Published correspondence-v0.1.0-dev.18 as PRE-ALPHA from source commit da09ddc46cece79a06e22671f3de69238cd3cd71. All 117 clean-tag source files match; 28 package checks passed on the export, and all four assets reproduce the frozen disposable-tested candidate exactly. Fresh host checks passed (28 package,60 parser,41 fake-native state,76 PHP lints); all 21 PostgreSQL/25 pure-case execution evidence was rehashed against unchanged runtime. Draft and anonymous public downloads matched every expected checksum before main advanced without force.
 
 Department received immutable owner pins and remains responsible for its separate dev.18 integration. Published Department prealpha.1 remains dev.17-pinned; dev.18 compatibility is not claimed. The web interface remains available. A dated publication-note/main-README clarification corrects a retained historical timestamp-scan sentence without changing the release tag or asset bytes. Published dev.14-17 bodies, asset IDs/digests and tag objects were reverified unchanged. No TEST/live/game/core/provider operation occurred in this publication follow-up.
+
+## Dev.19 latest-critique repairs
+
+Goal: repair the confirmed overlap race and scheduling starvation without weakening restore, claim, identity or unknown-transfer safety. Local candidate only; published dev.18 and all older evidence remain immutable.
+
+- [x] Freeze baseline, critique and preservation inventory; assign exclusive file ownership.
+- [x] Reproduce and fix restore marker ownership, factory/connection hygiene and writer-in-reader failures; expose exact diagnostic reasons.
+- [x] Fix recipient cooldown starvation, canonical relationship keys and pre-claim prompt validation.
+- [x] Fix bounded autonomy source-window starvation and repeated NPC-map queries using recheckable deferral.
+- [x] Add safe auditable operator closure without inventing delivery failure, refund or retry permission; complete recovery/upgrade documentation.
+- [x] Review integrated code and run host regressions before freezing the runtime candidate.
+- [x] Wait for Department's explicit TEST release; run guarded isolated PostgreSQL overlap/concurrent-event/failure-recovery regressions.
+- [x] Verify packages, synchronize intended canonical files preserving local provenance, stop owned runtime and release TEST.
+- [x] Record final review, exact evidence and remaining limits.
+
+Acceptance: newer pending restore intent cannot be cleared by an older initializer; eligible other actors and later valid sources progress; deferred mutable sources can be reconsidered; model/prompt construction does not claim invalid work; uncertain transfers stay unknown and never acquire blind resend permission. No live/game/core/provider deployment or publication.
+
+
+### Dev.19 repair review
+
+All 27 PostgreSQL jobs passed against the exact final server bytes on exclusively leased, network-isolated disposable TEST. Receipts bind 24 jobs to frozen `followup2` and three accounting paths to `followup3`, which changes only a legacy test oracle: it now requires a clean persisted deferral rather than zero ledger rows. Product bytes are identical in both stages. All 29 Linux pure suites (32 cases) passed. Six exact dev.18 baseline failures, one pre-guard local candidate failure and one exact evidence-guard-removal mutation failure reached their required regression assertions; setup errors do not count as RED proof. The additional anchors-only case proves that prior attempt evidence remains protected even when action, child and due columns are empty.
+
+Host verification passed 90 PHP lints, 31 pure cases, 60 bridge parser checks, 41 fake-native state checks and 29 package checks. Two PostgreSQL-only fixtures were strengthened after that host run; both were separately linted and executed in the frozen PostgreSQL runs. Canonical package checks also pass all 29 cases. Four final local assets reproduce byte-for-byte twice, contain the tested 26-file server payload, and retain the unchanged source-bound dev.17 bridge.
+
+Both owned private clusters were stopped after identity verification; TEST was explicitly returned to Department with unchanged protected live-VHD size, timestamp and file identity. Canonical runtime/contracts match the tested source; artwork, historical files and local bridge/test provenance remain preserved. Window one and intermediate setup/oracle failures are retained and excluded from final acceptance. See `artifacts/chim-sealed-fates-critique-dev19-20261021/verification-final.json`.
+
+These are synthetic server recovery and packaging results. Actual providers/model quality, Skyrim inventory/co-save/native gameplay, campaign-scale query/retention behavior and an exact Department dev.19 adapter remain unverified. The documented dual filesystem/database persistence failure limit remains. No live/game/core/provider installation, commit, push, tag or publication occurred.
+
+
+## Dev.19 publication follow-up (explicitly authorized)
+
+- [x] Reverify frozen runtime/receipt hashes and run fresh host checks; finalize release documentation.
+- [ ] Commit intended source, annotate dev.19 tag, export clean source and reproduce four verified assets.
+- [ ] Push tag, upload draft assets, verify downloads and publish PRE-ALPHA.
+- [ ] Advance main without force after publication; verify public assets, refs and historical preservation; record review.
+
+Department holds TEST. This publication stays Windows-only and authorizes no live/game/core/provider change.

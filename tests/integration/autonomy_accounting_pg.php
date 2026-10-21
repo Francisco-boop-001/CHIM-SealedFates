@@ -189,11 +189,22 @@ $renameCalls = 0;
 $renameResult = $runNative(400, $renameGamets, static function () use (&$renameCalls): callable {
     return static function (array $messages) use (&$renameCalls): string { $renameCalls++; return autonomyAccountingReply('npc:900002'); };
 });
-$renameDecisions = autonomyAccountingSql($connection, 'SELECT count(*)::int amount FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', [$renameScope,$renamedSource])[0]['amount'] ?? null;
+$renameDecisionRows = autonomyAccountingSql($connection, "SELECT status,action,child_document_id::text child,due_gamets::text due,payload->>'reason_code' reason,(payload->'reconsiderable'='true'::jsonb)::int reconsiderable,(payload ? 'claim_anchor')::int has_claim_anchor,(payload ? 'completion_anchor')::int has_completion_anchor,(payload ?| ARRAY['model_calls','input_chars','output_chars']::text[])::int has_model_counters FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2", [$renameScope,$renamedSource]);
+$renameDecisionCount = count($renameDecisionRows);
+$renameDecision = $renameDecisionRows[0] ?? [];
+$renameAnchorCounts = autonomyAccountingSql($connection, "SELECT count(*) FILTER (WHERE data::jsonb->>'kind'='autonomy_claim')::int claims,count(*) FILTER (WHERE data::jsonb->>'kind'='autonomy_completion')::int completions FROM public.eventlog WHERE sess='correspondence_v1' AND data::jsonb->>'source_document_id'=$1", [$renamedSource])[0] ?? [];
+$renameDecisionIsCleanDeferral = $renameDecisionCount === 1
+    && ($renameDecision['status'] ?? null) === 'stale'
+    && ($renameDecision['reason'] ?? null) === 'actor_identity_changed'
+    && ($renameDecision['reconsiderable'] ?? null) === '1'
+    && ($renameDecision['action'] ?? null) === null && ($renameDecision['child'] ?? null) === null && ($renameDecision['due'] ?? null) === null
+    && ($renameDecision['has_claim_anchor'] ?? null) === '0' && ($renameDecision['has_completion_anchor'] ?? null) === '0'
+    && ($renameDecision['has_model_counters'] ?? null) === '0'
+    && ($renameAnchorCounts['claims'] ?? null) === '0' && ($renameAnchorCounts['completions'] ?? null) === '0';
 $laterDecision = autonomyAccountingSql($connection, 'SELECT status FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', [$renameScope,$laterSource])[0] ?? [];
 autonomyAccountingCheck(($renameResult['status'] ?? null) === 'queued' && ($renameResult['reason'] ?? null) === 'queued_for_transit'
-    && $renameCalls === 1 && $renameDecisions === '0' && ($laterDecision['status'] ?? null) === 'queued',
-    'temporary_first_source_must_be_deferred_without_a_claim_while_the_next_valid_source_proceeds');
+    && $renameCalls === 1 && $renameDecisionIsCleanDeferral && ($laterDecision['status'] ?? null) === 'queued',
+    'temporary_first_source_must_record_clean_deferral_while_next_valid_source_proceeds');
 $maintenanceGamets = $renameGamets + correspondenceAutonomyGamets(7);
 $maintenance = $runNative(500, $maintenanceGamets, static fn() => null);
 autonomyAccountingCheck(($maintenance['status'] ?? null) === 'dispatched' && ($maintenance['reason'] ?? null) === 'dispatch_queued',
@@ -212,7 +223,18 @@ $r2FailureDiagnostics = [
     'later_source_id'=>$laterSource,
     'rename_result'=>autonomyAccountingSafeOutcome($renameResult),
     'rename_model_calls'=>$renameCalls,
-    'renamed_source_decision_count'=>(int)$renameDecisions,
+    'renamed_source_decision_count'=>$renameDecisionCount,
+    'renamed_source_decision_status'=>in_array($renameDecision['status'] ?? null, ['claimed','silent','queued','dispatched','failed','unknown','stale'], true) ? $renameDecision['status'] : null,
+    'renamed_source_decision_reason'=>in_array($renameDecision['reason'] ?? null, ['actor_identity_changed','context_unavailable','source_unavailable','recheck_metadata_invalid','actor_cooldown'], true) ? $renameDecision['reason'] : null,
+    'renamed_source_reconsiderable'=>($renameDecision['reconsiderable'] ?? null) === '1',
+    'renamed_source_has_claim_anchor'=>($renameDecision['has_claim_anchor'] ?? null) !== '0',
+    'renamed_source_has_completion_anchor'=>($renameDecision['has_completion_anchor'] ?? null) !== '0',
+    'renamed_source_has_model_counters'=>($renameDecision['has_model_counters'] ?? null) !== '0',
+    'renamed_source_action_present'=>($renameDecision['action'] ?? null) !== null,
+    'renamed_source_child_present'=>($renameDecision['child'] ?? null) !== null,
+    'renamed_source_due_present'=>($renameDecision['due'] ?? null) !== null,
+    'renamed_source_claim_anchor_events'=>(int)($renameAnchorCounts['claims'] ?? -1),
+    'renamed_source_completion_anchor_events'=>(int)($renameAnchorCounts['completions'] ?? -1),
     'later_source_decision_status'=>in_array($laterDecision['status'] ?? null, ['claimed','silent','queued','dispatched','failed','unknown','stale'], true) ? $laterDecision['status'] : null,
     'maintenance_result'=>autonomyAccountingSafeOutcome($maintenance),
     'recovered_result'=>autonomyAccountingSafeOutcome($recovered),

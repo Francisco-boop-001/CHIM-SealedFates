@@ -127,37 +127,61 @@ final class CorrespondenceAutonomyPg
                 $age = correspondenceAutonomyGamets(2);
                 $rows = $this->sourceCandidates($scope, $clock['gamets'], $age);
                 if ($rows === []) return ['kind'=>'idle','status'=>'idle','reason'=>'no_eligible_source'];
+                $byId = $this->npcMap($this->npcRows());
                 $deferredReason = null;
                 foreach ($rows as $candidate) {
                     $eventId = (int)($candidate['source_event_id'] ?? 0);
                     $documentId = (string)($candidate['source_document_id'] ?? '');
                     $recipientId = (int)($candidate['recipient_id'] ?? 0);
                     if ($eventId < 1 || $recipientId < 1 || preg_match('/\A[0-9a-f-]{36}\z/D', $documentId) !== 1) return ['kind'=>'idle','status'=>'idle','reason'=>'invalid_candidate'];
+                    if ($this->dbBoolean($candidate['reconsiderable'] ?? false)
+                        && !$this->dbBoolean($candidate['recheck_after_valid'] ?? false)) {
+                        $deferredReason ??= 'recheck_metadata_invalid';
+                        $this->deferSource($scope, $documentId, $eventId, $candidate, $clock['gamets'], 'recheck_metadata_invalid');
+                        continue;
+                    }
                     try {
                         $exposed = $this->service->readExposedSource($eventId, $recipientId);
                     } catch (DomainException|InvalidArgumentException $error) {
                         $sourceReason = $error->getMessage();
                         if (in_array($sourceReason, ['player_unavailable','actor_unavailable','identity_changed','actor_identity_changed','source_not_due'], true)) {
                             $deferredReason ??= $sourceReason;
+                            $this->deferSource($scope, $documentId, $eventId, $candidate, $clock['gamets'], $sourceReason);
                             continue;
                         }
                         $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets']);
                         return ['kind'=>'idle','status'=>'idle','reason'=>'source_unavailable'];
                     }
                     $source = $exposed['source'];
-                    $byId = $this->npcMap($this->npcRows());
-                    $context = $this->contextForSource($source, $byId);
-                    if ($context === null) {
-                        $deferredReason ??= 'actor_unavailable';
+                    $context = null;
+                    $contextFailure = null;
+                    try {
+                        $context = $this->contextForSource($source, $byId);
+                    } catch (DomainException|InvalidArgumentException $error) {
+                        $contextFailure = in_array($error->getMessage(), ['player_unavailable','actor_unavailable','identity_changed','actor_identity_changed'], true)
+                            ? $error->getMessage() : 'context_unavailable';
+                    } catch (Throwable) {
+                        $contextFailure = 'context_unavailable';
+                    }
+                    if ($contextFailure !== null || $context === null) {
+                        $contextFailure ??= 'actor_unavailable';
+                        $deferredReason ??= $contextFailure;
+                        $this->deferSource($scope, $documentId, $eventId, $candidate, $clock['gamets'], $contextFailure);
                         continue;
                     }
                     try {
                         $messages = correspondenceAutonomyMessages($source, $context['self'], $context['contacts']);
                     } catch (Throwable) {
                         $deferredReason ??= 'context_unavailable';
+                        $this->deferSource($scope, $documentId, $eventId, $candidate, $clock['gamets'], 'context_unavailable');
                         continue;
                     }
-                    if ($this->actorCooldownUntil($scope, $recipientId, $clock['gamets']) > $clock['gamets']) return ['kind'=>'idle','status'=>'idle','reason'=>'cooldown'];
+                    $actorCooldown = $this->actorCooldownUntil($scope, $recipientId, $clock['gamets']);
+                    if ($actorCooldown > $clock['gamets']) {
+                        $deferredReason ??= 'cooldown';
+                        $this->deferSource($scope, $documentId, $eventId, $candidate, $clock['gamets'], 'actor_cooldown', $actorCooldown);
+                        continue;
+                    }
                     $context['messages'] = $messages;
                     $lineage = $this->lineage($scope, $documentId);
                     if ($lineage['depth'] >= 3 || $this->linkCount($scope, $lineage['root_document_id']) >= 3) {
@@ -687,11 +711,56 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
         return 'npc:'.$actor['id'];
     }
 
+    private function cleanReconsiderablePredicate(string $alias): string
+    {
+        if (!in_array($alias, ['retry','existing'], true)) throw new LogicException('invalid_retry_alias');
+        $evidenceKeys = "'claim_anchor','completion_anchor','claim_global_cooldown_until_gamets','claim_actor_cooldown_until_gamets','global_cooldown_until_gamets','actor_cooldown_until_gamets','self_id','source_body_sha256','context_sha256','restore_generation','model_calls','input_chars','output_chars','completed_status','completed_action','completed_child_document_id','completed_due_gamets','target_key'";
+        return "{$alias}.action IS NULL AND {$alias}.child_document_id IS NULL AND {$alias}.due_gamets IS NULL AND NOT ({$alias}.payload ?| ARRAY[{$evidenceKeys}]::text[])";
+    }
+
     private function sourceCandidates(string $scope, int $gamets, int $minimumAge): array
     {
-        $sql = <<<'SQL'
+        $cleanRetry = $this->cleanReconsiderablePredicate('retry');
+        $fetch = function(bool $recheck, int $limit, int $offset) use ($scope, $gamets, $minimumAge, $cleanRetry): array {
+            $laneFilter = $recheck ? <<<'SQL'
+  AND retry.status='stale'
+  AND retry.payload->'reconsiderable'='true'::jsonb
+  AND CLEAN_RETRY_PREDICATE
+  AND CASE
+      WHEN COALESCE(retry.payload->>'recheck_after_gamets','') ~ '^[1-9][0-9]{0,18}$'
+      THEN CASE
+          WHEN (retry.payload->>'recheck_after_gamets')::numeric <= 9223372036854775807::numeric
+          THEN (retry.payload->>'recheck_after_gamets')::numeric <= $2::numeric
+          ELSE TRUE
+      END
+      ELSE TRUE
+  END
+SQL
+                : <<<'SQL'
+  AND retry.source_document_id IS NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM plugins.correspondence_autonomy_decisions prior
+      WHERE prior.playthrough_id=d.playthrough_id
+        AND (prior.source_document_id=d.document_id OR prior.source_event_id=e.rowid)
+  )
+  AND e.people=('|'||n.npc_name||'|')
+  AND COALESCE(n.extended_data->>'background_life_enabled','') IN ('true','1','t','on')
+  AND COALESCE(n.extended_data->>'background_life_letters','') IN ('true','1','t','on')
+  AND COALESCE(n.metadata->'stats'->>'is_dead','') NOT IN ('true','1','t','on')
+SQL;
+            if ($recheck) $laneFilter = str_replace('CLEAN_RETRY_PREDICATE', $cleanRetry, $laneFilter);
+            $ordering = $recheck
+                ? "ORDER BY CASE WHEN COALESCE(retry.payload->>'recheck_after_gamets','') ~ '^[1-9][0-9]{0,18}$' THEN CASE WHEN (retry.payload->>'recheck_after_gamets')::numeric <= 9223372036854775807::numeric THEN 0 ELSE 1 END ELSE 1 END ASC,CASE WHEN COALESCE(retry.payload->>'recheck_after_gamets','') ~ '^[1-9][0-9]{0,18}$' THEN CASE WHEN (retry.payload->>'recheck_after_gamets')::numeric <= 9223372036854775807::numeric THEN (retry.payload->>'recheck_after_gamets')::numeric ELSE 9223372036854775807::numeric END ELSE 9223372036854775807::numeric END ASC,retry.created_at ASC,e.rowid ASC"
+                : 'ORDER BY e.rowid ASC';
+            $sql = <<<SQL
 SELECT e.rowid::text AS source_event_id,e.gamets::text AS source_gamets,e.data AS source_data,
-       d.document_id::text AS source_document_id,d.payload->'recipient'->>'id' AS recipient_id
+       d.document_id::text AS source_document_id,d.payload->'recipient'->>'id' AS recipient_id,
+       COALESCE(retry.root_document_id,parent.root_document_id,d.document_id)::text AS root_document_id,
+       COALESCE(retry.depth,parent.depth+1,0) AS source_depth,
+       retry.payload->>'reconsiderable' AS reconsiderable,
+       CASE WHEN COALESCE(retry.payload->>'recheck_after_gamets','') ~ '^[1-9][0-9]{0,18}$'
+            THEN CASE WHEN (retry.payload->>'recheck_after_gamets')::numeric <= 9223372036854775807::numeric THEN TRUE ELSE FALSE END
+            ELSE FALSE END AS recheck_after_valid
 FROM public.eventlog e
 JOIN plugins.correspondence_operations o
   ON e.rowid=CASE WHEN COALESCE(o.payload->'source'->>'rowid','') ~ '^[1-9][0-9]{0,17}$' THEN (o.payload->'source'->>'rowid')::bigint END
@@ -713,25 +782,22 @@ JOIN public.eventlog xa ON xa.rowid=CASE WHEN COALESCE(o.payload->'dispatch_anch
 JOIN public.eventlog ra ON ra.rowid=CASE WHEN COALESCE(o.payload->'receipt_anchor'->>'rowid','') ~ '^[1-9][0-9]{0,17}$' THEN (o.payload->'receipt_anchor'->>'rowid')::bigint END
  AND ra.type='info' AND ra.sess='correspondence_v1'
  AND ra.data LIKE ('{"document_id":"'||d.document_id::text||'","operation_id":"'||o.operation_id::text||'","receipt_hash":"%')
+LEFT JOIN plugins.correspondence_autonomy_decisions retry
+  ON retry.playthrough_id=d.playthrough_id AND retry.source_document_id=d.document_id AND retry.source_event_id=e.rowid
 LEFT JOIN plugins.correspondence_autonomy_decisions parent
   ON parent.playthrough_id=d.playthrough_id AND parent.child_document_id=d.document_id
 WHERE d.playthrough_id=$1
   AND d.payload->>'operation_id'=o.operation_id::text
   AND e.type='info' AND e.sess='written_evidence_v1'
   AND left(e.data,length('{"schema_version":1,"document_id":"'||d.document_id::text||'",'))='{"schema_version":1,"document_id":"'||d.document_id::text||'",'
-  AND e.people=('|'||n.npc_name||'|')
   AND e.gamets <= $2::numeric - $3::numeric
   AND o.payload->'receipt'->>'status'='delivered'
   AND d.payload->'recipient'->>'kind'='npc'
-  AND COALESCE(n.extended_data->>'background_life_enabled','') IN ('true','1','t','on')
-  AND COALESCE(n.extended_data->>'background_life_letters','') IN ('true','1','t','on')
-  AND COALESCE(n.metadata->'stats'->>'is_dead','') NOT IN ('true','1','t','on')
   AND (parent.depth IS NULL OR (parent.depth<3 AND (
       SELECT count(*) FROM plugins.correspondence_autonomy_decisions chain
       WHERE chain.playthrough_id=d.playthrough_id AND chain.root_document_id=parent.root_document_id AND chain.child_document_id IS NOT NULL
   )<3))
-  AND NOT EXISTS (SELECT 1 FROM plugins.correspondence_autonomy_decisions a WHERE a.playthrough_id=d.playthrough_id AND a.source_document_id=d.document_id)
-  AND NOT EXISTS (SELECT 1 FROM plugins.correspondence_autonomy_decisions a WHERE a.playthrough_id=d.playthrough_id AND a.source_event_id=e.rowid)
+  {$laneFilter}
   AND NOT EXISTS (
       SELECT 1 FROM plugins.correspondence_autonomy_decisions c
       JOIN public.eventlog cca ON cca.rowid=CASE WHEN COALESCE(c.payload->'claim_anchor'->>'rowid','') ~ '^[1-9][0-9]{0,17}$' THEN (c.payload->'claim_anchor'->>'rowid')::bigint END
@@ -769,10 +835,49 @@ WHERE d.playthrough_id=$1
               AND COALESCE(cco.data::jsonb->>'actor_cooldown_until_gamets','') ~ '^[0-9]{1,18}$'
               AND (cco.data::jsonb->>'actor_cooldown_until_gamets')::numeric>$2::numeric))
   )
-ORDER BY e.rowid ASC
-LIMIT 64
+{$ordering}
+LIMIT $4 OFFSET $5
 SQL;
-        return $this->store->query($sql, [$scope, (string)$gamets, (string)$minimumAge]);
+            return $this->store->query($sql, [$scope, (string)$gamets, (string)$minimumAge, $limit, $offset]);
+        };
+
+        $fresh = $fetch(false, 32, 0);
+        $recheckable = $fetch(true, 32, 0);
+        $rows = array_merge($fresh, $recheckable);
+        $remaining = 64 - count($rows);
+        if ($remaining > 0 && count($fresh) < 32 && count($recheckable) === 32) {
+            $rows = array_merge($rows, $fetch(true, $remaining, 32));
+        } elseif ($remaining > 0 && count($recheckable) < 32 && count($fresh) === 32) {
+            $rows = array_merge($rows, $fetch(false, $remaining, 32));
+        }
+        usort($rows, static fn(array $left, array $right): int =>
+            ((int)($left['source_event_id'] ?? 0)) <=> ((int)($right['source_event_id'] ?? 0)));
+        return $rows;
+    }
+
+    private function deferSource(string $scope, string $documentId, int $eventId, array $candidate, int $gamets, string $reason, ?int $recheckAfter = null): void
+    {
+        if ($eventId < 1 || preg_match('/\A[0-9a-f-]{36}\z/D', $documentId) !== 1) return;
+        $delay = correspondenceAutonomyGamets(1);
+        if ($recheckAfter === null || $recheckAfter <= $gamets) {
+            $recheckAfter = $gamets > PHP_INT_MAX - $delay ? PHP_INT_MAX : $gamets + $delay;
+        }
+        $rootDocumentId = is_string($candidate['root_document_id'] ?? null)
+            && preg_match('/\A[0-9a-f-]{36}\z/D', $candidate['root_document_id']) === 1
+                ? $candidate['root_document_id'] : $documentId;
+        $depth = filter_var($candidate['source_depth'] ?? 0, FILTER_VALIDATE_INT, ['options'=>['min_range'=>0,'max_range'=>3]]);
+        if ($depth === false) $depth = 0;
+        $claim = correspondenceUuid();
+        $payload = [
+            'reason_code'=>$reason,
+            'reconsiderable'=>true,
+            'recheck_after_gamets'=>(string)$recheckAfter,
+            'claim_gamets'=>(string)$gamets,
+            'completed_gamets'=>(string)$gamets,
+            'source_event_sha256'=>is_string($candidate['source_data'] ?? null) ? hash('sha256', $candidate['source_data']) : '',
+        ];
+        $cleanRetry = $this->cleanReconsiderablePredicate('existing');
+        $this->store->query("INSERT INTO plugins.correspondence_autonomy_decisions AS existing(playthrough_id,source_document_id,source_event_id,claim_id,request_id,root_document_id,depth,status,action,payload) VALUES($1,$2,$3,$4,$4,$5,$6,'stale',NULL,$7::jsonb) ON CONFLICT(playthrough_id,source_document_id) DO UPDATE SET source_event_id=EXCLUDED.source_event_id,claim_id=EXCLUDED.claim_id,request_id=EXCLUDED.request_id,root_document_id=EXCLUDED.root_document_id,depth=EXCLUDED.depth,status='stale',action=NULL,child_document_id=NULL,due_gamets=NULL,payload=EXCLUDED.payload WHERE existing.status='stale' AND existing.payload->'reconsiderable'='true'::jsonb AND {$cleanRetry} RETURNING source_document_id::text", [$scope,$documentId,$eventId,$claim,$rootDocumentId,$depth,correspondenceJson($payload)]);
     }
 
     private function recordStaleSource(string $scope, string $documentId, int $eventId, mixed $data, int $gamets, string $reason='source_unavailable'): void
@@ -786,7 +891,8 @@ SQL;
             'completed_gamets'=>$gamets,
             'source_event_sha256'=>is_string($data) ? hash('sha256', $data) : '',
         ];
-        $this->store->query("INSERT INTO plugins.correspondence_autonomy_decisions(playthrough_id,source_document_id,source_event_id,claim_id,request_id,root_document_id,depth,status,action,payload) VALUES($1,$2,$3,$4,$4,$5,$6,'stale',NULL,$7::jsonb) ON CONFLICT DO NOTHING", [$scope,$documentId,$eventId,$claim,$lineage['root_document_id'],$lineage['depth'],correspondenceJson($payload)]);
+        $cleanRetry = $this->cleanReconsiderablePredicate('existing');
+        $this->store->query("INSERT INTO plugins.correspondence_autonomy_decisions AS existing(playthrough_id,source_document_id,source_event_id,claim_id,request_id,root_document_id,depth,status,action,payload) VALUES($1,$2,$3,$4,$4,$5,$6,'stale',NULL,$7::jsonb) ON CONFLICT(playthrough_id,source_document_id) DO UPDATE SET status='stale',action=NULL,child_document_id=NULL,due_gamets=NULL,payload=EXCLUDED.payload WHERE existing.status='stale' AND existing.payload->'reconsiderable'='true'::jsonb AND {$cleanRetry}", [$scope,$documentId,$eventId,$claim,$lineage['root_document_id'],$lineage['depth'],correspondenceJson($payload)]);
     }
 
     private function claim(string $scope, string $documentId, int $eventId, int $gamets, array $lineage, array $context, string $eventData, string $restoreGeneration): ?array
@@ -809,7 +915,8 @@ SQL;
             'restore_generation'=>$restoreGeneration,
             'claim_anchor'=>null,
         ];
-        $rows = $this->store->query("INSERT INTO plugins.correspondence_autonomy_decisions(playthrough_id,source_document_id,source_event_id,claim_id,request_id,root_document_id,depth,status,action,payload) VALUES($1,$2,$3,$4,$4,$5,$6,'claimed',NULL,$7::jsonb) ON CONFLICT DO NOTHING RETURNING claim_id::text", [$scope,$documentId,$eventId,$claim,$lineage['root_document_id'],$lineage['depth'],correspondenceJson($payload)]);
+        $cleanRetry = $this->cleanReconsiderablePredicate('existing');
+        $rows = $this->store->query("INSERT INTO plugins.correspondence_autonomy_decisions AS existing(playthrough_id,source_document_id,source_event_id,claim_id,request_id,root_document_id,depth,status,action,payload) VALUES($1,$2,$3,$4,$4,$5,$6,'claimed',NULL,$7::jsonb) ON CONFLICT(playthrough_id,source_document_id) DO UPDATE SET source_event_id=EXCLUDED.source_event_id,claim_id=EXCLUDED.claim_id,request_id=EXCLUDED.request_id,root_document_id=EXCLUDED.root_document_id,depth=EXCLUDED.depth,status='claimed',action=NULL,child_document_id=NULL,due_gamets=NULL,payload=EXCLUDED.payload WHERE existing.status='stale' AND existing.payload->'reconsiderable'='true'::jsonb AND {$cleanRetry} AND CASE WHEN COALESCE(existing.payload->>'recheck_after_gamets','') ~ '^[1-9][0-9]{0,18}$' THEN (existing.payload->>'recheck_after_gamets')::numeric <= 9223372036854775807::numeric AND (existing.payload->>'recheck_after_gamets')::numeric <= $8::numeric ELSE FALSE END RETURNING claim_id::text", [$scope,$documentId,$eventId,$claim,$lineage['root_document_id'],$lineage['depth'],correspondenceJson($payload),(string)$gamets]);
         if ($rows === []) return null;
         $claimData = [
             'kind'=>'autonomy_claim','playthrough_id'=>$scope,'claim_id'=>$claim,'request_id'=>$claim,

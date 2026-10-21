@@ -46,7 +46,7 @@ function correspondencePost(array $post,string $csrf,array $choices):array
 {
     if(!is_string($post['csrf']??null)||$csrf===''||!hash_equals($csrf,$post['csrf']))throw new DomainException('csrf_failed');
     $action=$post['action']??null;
-    if(in_array($action,['dispatch','reconcile','read','retry'],true)){
+    if(in_array($action,['dispatch','reconcile','read','retry','close'],true)){
         correspondenceKeys($post,['csrf','action','document_id']);return ['action'=>$action,'document_id'=>correspondenceUuidCheck($post['document_id'])];
     }
     if($action==='autonomy'){
@@ -80,7 +80,7 @@ function correspondenceOperatorRead(array $letters,string $id):array
 }
 function correspondenceAutonomyGuardManualDispatch(array $request,array $managedChildren):array
 {
-    if(($request['action']??null)!=='dispatch')return $request;
+    if(!in_array($request['action']??null,['dispatch','close'],true))return $request;
     if(!array_is_list($managedChildren))throw new DomainException('autonomy_status_unavailable');
     foreach($managedChildren as$id)if(!is_string($id)||preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/D',$id)!==1)throw new DomainException('autonomy_status_unavailable');
     if(in_array($request['document_id']??null,$managedChildren,true))throw new DomainException('autonomous_dispatch_owned');
@@ -117,12 +117,15 @@ function correspondencePage(array $actors,array $choices,array $letters,string $
         $socialText=($letter['state']??null)==='identity_changed'?'Identity changed; actions unavailable':($social===[]?($letter['recipient']['kind']==='player'?'NPC interpretation not applicable':'Awaiting recipient exposure'):implode('; ',$social));
         $id=$h($letter['document_id']);
         $managedChild=in_array($letter['document_id'],$managedChildren,true);
+        $closed=($letter['operator_closed']??false)===true;
         $rows.='<tr><td>'.$h($letter['claimed_sender']['name']).'</td><td>'.$h($letter['recipient']['name']).'</td><td>'.$h($letter['state']).'</td><td>'.$h($socialText).'</td><td><form method="post"><input type="hidden" name="csrf" value="'.$token.'"><input type="hidden" name="document_id" value="'.$id.'">';
         $rows.='<button name="action" value="read">Open letter</button>';
-        if($letter['recipient']['kind']==='player'&&$letter['state']==='failed')$rows.='<button name="action" value="retry">Retry failed letter (new operation)</button>';
+        if($closed)$rows.='<span>Closed by operator; delivery outcome unchanged.</span>';
+        elseif($letter['recipient']['kind']==='player'&&$letter['state']==='failed')$rows.='<button name="action" value="retry">Retry failed letter (new operation)</button>';
         elseif($letter['state']==='queued'&&$managedChild)$rows.='<span>Awaiting autonomous scheduler</span>';
         elseif($letter['state']==='queued')$rows.='<button name="action" value="dispatch">Dispatch queued letter</button>';
-        elseif(in_array($letter['state'],['unknown','dispatched'],true))$rows.='<button name="action" value="reconcile">Check outcome (read only)</button>';
+        if(in_array($letter['state'],['unknown','dispatched'],true))$rows.='<button name="action" value="reconcile">Check outcome (read only)</button>';
+        if(!$closed&&!$managedChild&&in_array($letter['state'],['queued','dispatched','unknown','failed'],true))$rows.='<button name="action" value="close">Close without resending or refunding</button>';
         $rows.='</form></td></tr>';
     }
     if($rows==='')$rows='<tr><td colspan="5" class="empty-state">No letters yet.</td></tr>';

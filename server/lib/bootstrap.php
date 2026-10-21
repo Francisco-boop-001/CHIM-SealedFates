@@ -125,11 +125,19 @@ function correspondenceHoldInitFence():void
 function correspondenceProduction():array
 {
     static $runtime=null;if($runtime!==null){correspondenceCaptureRequestIngress($runtime['store']);return $runtime;}
-    $root=correspondenceEngineRoot();$connection=correspondenceNativeConnection();
-    $store=new CorrespondencePgStore($connection,fn($s)=>$s->observedExecutor(),fn($title,$body)=>correspondencePrepareCoreNote($root,$title,$body),$root.'/log/playthrough_runtime/correspondence.restore.json');
-    $store->ensureSchema();
-    correspondenceCaptureRequestIngress($store);
-    return $runtime=['service'=>new CorrespondenceService($store),'store'=>$store,'connection'=>$connection];
+    $failure=$GLOBALS['CORRESPONDENCE_PRODUCTION_FAILURE']??null;if($failure instanceof Throwable)throw $failure;
+    $connection=null;
+    try{
+        $root=correspondenceEngineRoot();$connection=correspondenceNativeConnection();
+        $store=new CorrespondencePgStore($connection,fn($s)=>$s->observedExecutor(),fn($title,$body)=>correspondencePrepareCoreNote($root,$title,$body),$root.'/log/playthrough_runtime/correspondence.restore.json');
+        $store->ensureSchema();
+        correspondenceCaptureRequestIngress($store);
+        return $runtime=['service'=>new CorrespondenceService($store),'store'=>$store,'connection'=>$connection];
+    }catch(Throwable $error){
+        if($connection!==null)try{@pg_close($connection);}catch(Throwable){}
+        $GLOBALS['CORRESPONDENCE_PRODUCTION_FAILURE']=$error;
+        throw $error;
+    }
 }
 function correspondenceAutonomyProduction():array
 {
@@ -172,7 +180,7 @@ function correspondenceDiagnostic(string $code, array $details = []):void
     $workerResult=$code==='offscreen_worker_result';
     $autonomyOutcome=$code==='autonomy_outcome';
     $autonomyStatuses=['idle','paused','skipped','failed','stale','silent','queued','dispatched','unknown'];
-    $autonomyReasons=['native_request_required','native_clock_unavailable','host_unavailable','model_response_unavailable','model_unavailable','policy_unavailable','disabled','abandoned_claim_retired','cooldown','no_eligible_source','invalid_candidate','source_unavailable','actor_unavailable','player_unavailable','identity_changed','actor_identity_changed','source_identity_changed','source_not_due','chain_limit','already_claimed','invalid_decision','model_error','storage_error','queued_for_transit','decision_missing','dispatch_already_claimed','dispatch_uncertain','dispatch_queued','executor_unavailable','dispatch_unknown','child_missing','decision_anchor_invalid','source_changed','child_changed','actor_changed','claim_anchor_invalid','clock_changed','setting_changed','cooldown_changed','silence','invalid_delay','abandoned_claim_expired','restore_changed','context_unavailable'];
+    $autonomyReasons=['native_request_required','native_clock_unavailable','host_unavailable','model_response_unavailable','model_unavailable','policy_unavailable','disabled','abandoned_claim_retired','cooldown','no_eligible_source','invalid_candidate','source_unavailable','actor_unavailable','player_unavailable','identity_changed','actor_identity_changed','source_identity_changed','source_not_due','chain_limit','already_claimed','invalid_decision','model_error','storage_error','queued_for_transit','decision_missing','dispatch_already_claimed','dispatch_uncertain','dispatch_queued','executor_unavailable','dispatch_unknown','child_missing','decision_anchor_invalid','source_changed','child_changed','actor_changed','claim_anchor_invalid','clock_changed','setting_changed','cooldown_changed','silence','invalid_delay','abandoned_claim_expired','restore_changed','context_unavailable','claim_changed','restore_unavailable','recheck_metadata_invalid','actor_cooldown'];
     $status=$workerResult&&in_array($details['status']??null,['processed','idle','paused','stale','failed','unavailable'],true)?$details['status']:($autonomyOutcome&&in_array($details['status']??null,$autonomyStatuses,true)?$details['status']:'failed');
     $reason=$workerResult&&is_string($details['reason']??null)&&preg_match('/\A[a-z][a-z0-9_]{0,63}\z/D',$details['reason'])===1?$details['reason']:($autonomyOutcome&&in_array($details['reason']??null,$autonomyReasons,true)?$details['reason']:($autonomyOutcome?'reason_unavailable':$code));
     $record=['schema'=>'correspondence.diagnostic.v1','event'=>$workerResult?'offscreen_worker_result':($autonomyOutcome?'autonomy_outcome':'diagnostic_failure'),'status'=>$status,'reason'=>$reason,'at_utc'=>gmdate('Y-m-d\TH:i:s\Z')];
@@ -190,7 +198,7 @@ function correspondenceDiagnostic(string $code, array $details = []):void
         if($safeOutcomes!==[])$record['social_outcomes']=$safeOutcomes;
     }
       if($workerResult&&in_array($status,['idle','paused'],true))return;
-    $visibleIdleReasons=['model_unavailable','policy_unavailable','actor_identity_changed','identity_changed','source_identity_changed','player_unavailable','actor_unavailable','source_not_due','source_unavailable','chain_limit','abandoned_claim_retired','context_unavailable','restore_changed'];
+    $visibleIdleReasons=['model_unavailable','policy_unavailable','actor_identity_changed','identity_changed','source_identity_changed','player_unavailable','actor_unavailable','source_not_due','source_unavailable','chain_limit','abandoned_claim_retired','context_unavailable','restore_changed','restore_unavailable','recheck_metadata_invalid'];
     if($autonomyOutcome&&($status==='paused'||$status==='idle'&&!in_array($reason,$visibleIdleReasons,true)))return;
     if(!class_exists('Logger'))return;
     $json=json_encode($record,JSON_UNESCAPED_SLASHES);if(!is_string($json))return;$message='[CORRESPONDENCE] '.$json;
