@@ -1,6 +1,7 @@
 """Reproduce the pinned dev.14 release and bounded later package candidates."""
 from pathlib import Path
 from zipfile import ZipFile
+import argparse
 import gzip
 import hashlib
 import importlib.util
@@ -13,6 +14,9 @@ ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('package', ROOT / 'scripts/build-package.py')
 pkg = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pkg)
+gate_spec = importlib.util.spec_from_file_location('release_preflight', ROOT / 'scripts/release-preflight.py')
+gate = importlib.util.module_from_spec(gate_spec)
+gate_spec.loader.exec_module(gate)
 EXPECTED = {
     'correspondence-0.1.0-dev.14.dwpkg': '20d3da4117479957471491d502126154e054b4543fdf32b03d4fb3f35ab6bd8c',
     'CHIM-Sealed-Fates-0.1.0-dev.14.zip': 'e6ef362295da9ffa1a22959f2ab7714ac18fc172f6404a4d930f458626937b1f',
@@ -149,5 +153,17 @@ def build():
     save(out / 'SHA256SUMS.txt', checksums)
     return {n: {'sha256': sha((out / n).read_bytes()), 'bytes': (out / n).stat().st_size} for n in names + ['SHA256SUMS.txt']}
 
+def main(argv=None):
+    parser = argparse.ArgumentParser(description='Build release assets after an explicit Department compatibility decision.')
+    parser.add_argument('--department-interface', choices=('web-only', 'tested-paired'), required=True)
+    parser.add_argument('--receipt', type=Path)
+    args = parser.parse_args(argv)
+    try:
+        compatibility = gate.preflight(ROOT, args.department_interface, args.receipt)
+    except (ValueError, OSError) as error:
+        parser.error(str(error))
+    print(json.dumps({'compatibility': compatibility, 'assets': build()}, indent=2))
+
+
 if __name__ == '__main__':
-    print(json.dumps(build(), indent=2))
+    main()

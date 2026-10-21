@@ -3,12 +3,14 @@
 Run these commands from a clean checkout with Python 3 and a new **dist/** directory. The builder refuses to overwrite different release bytes; retained outputs from another release are not current build inputs.
 
     python scripts/build-package.py
-    python scripts/release-assets.py
+    python scripts/release-assets.py --department-interface web-only
     python -B tests/package_test.py
     python -B tests/bridge-parser.py
     python -B tests/bridge-state.py
 
 These package, parser, and host-state commands run with the repository's Python files and do not require WSL. The parser and host-state checks use fake native/JContainers boundaries.
+
+The release command requires an explicit Department/PRISMA compatibility decision before it creates assets. `web-only` records the exact owner version and source identity without claiming the optional Skyrim interface works. A tested pairing instead uses `--department-interface tested-paired --receipt <verified-pairing.json>`; the gate rejects missing, changed or mismatched proof. Ordinary `build-package.py` builds remain independent of Department and its test server. See [the pairing procedure](PRISMA-COMPATIBILITY.md) before preparing a release.
 
 When --pex is omitted, the CLI and release builder both use the manifest to select the exact source-bound PEX in either the portable checkout or canonical evidence layout. The first command builds the schema-4 server package and paired MO2 ZIP in **dist/**. For dev.15 through dev.20, the second builds those two assets, server-only **correspondence.tar.gz**, and **SHA256SUMS.txt**. The four-file output allowlist is version-specific; unexpected names, unsafe paths and conflicting bytes are rejected before replacement. The explicit payload includes the web stylesheet and artwork. It verifies the source-bound, sanitized compiled bridge. The dev.14 tag retains its historical exact-kit reproduction path; dev.15 through dev.20 do not repackage that old recovery kit as new evidence.
 

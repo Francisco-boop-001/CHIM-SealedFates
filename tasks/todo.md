@@ -148,3 +148,12 @@ Published `correspondence-v0.1.0-dev.20` as PRE-ALPHA from source commit `39d797
 Accepted disposable evidence was rehashed: 28 PostgreSQL jobs, 35 Linux pure cases and two targeted causal PG REDs. Executable server/contract bytes are unchanged; only manifest version metadata advances. Fresh host checks passed 91 PHP lints, 34 pure cases, 60 translated parser and 41 fake-native state checks. The final public packaging adapter and clean tag each passed all 30 package tests. No new model/gameplay or Department dev.20 certification is claimed. Full forwarded letters, strict unknown/no-resend safety, original bridge provenance and older release bodies/tags/assets are preserved.
 
 Publication was Windows-only. TEST and live stayed stopped, protected live-VHD metadata is unchanged, and no installed game/core/provider or coordinator operation occurred. The Skyrim interface remains optional; the existing web plugin page works. No trustworthy prior epoch or simultaneous persistence failure remains a documented quarantine limit.
+
+## PRISMA dev.20 compatibility repair and release gate — 2026-10-21
+
+- [x] Coordinate the exact adapter port and exclusive ownership with the Department author.
+- [ ] Review and test exact dev.20 adapter behavior on disposable TEST without weakening pins or no-resend safety.
+- [x] Add a repeatable source-bound release preflight and intentional paired/web-only decision.
+- [ ] Document the verified pairing and future release procedure; record review and limits.
+
+Department owns its source and TEST execution; Sealed Fates owns its release checks. Live/game/core/providers and immutable released assets stay untouched.
