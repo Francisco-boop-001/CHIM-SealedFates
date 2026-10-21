@@ -20,13 +20,91 @@ function correspondenceEnterRuntime(string $root):void
     if(!function_exists('ptr_runtime_enter'))throw new DomainException('core_restore_barrier_unavailable');
     ptr_runtime_enter();
 }
-function correspondenceReleaseInitFence():void
+function correspondenceReleaseInitFence():bool
 {
     $connection=$GLOBALS['CORRESPONDENCE_INIT_FENCE']??null;unset($GLOBALS['CORRESPONDENCE_INIT_FENCE']);
     if($connection!==null){
-        try{if(@pg_query_params($connection,'SELECT pg_advisory_unlock(18459814,1)',[])===false)correspondenceDiagnostic('init_fence_unavailable');}catch(Throwable){correspondenceDiagnostic('init_fence_unavailable');}
+        try{
+            $result=@pg_query_params($connection,'SELECT pg_advisory_unlock(18459814,1) AS released',[]);
+            if($result===false){$GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']=false;correspondenceDiagnostic('init_fence_unavailable');}
+            else{
+                $rows=pg_fetch_all($result)?:[];pg_free_result($result);
+                if(($rows[0]['released']??null)!=='t'){$GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']=false;correspondenceDiagnostic('init_fence_unavailable');}
+            }
+        }catch(Throwable){$GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']=false;correspondenceDiagnostic('init_fence_unavailable');}
         finally{try{pg_close($connection);}catch(Throwable){}}
     }
+    return empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE'])||!empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']);
+}
+function correspondenceRequestNativeTs(array $request):?string
+{
+    $raw=$request[1]??null;if(is_int($raw))$raw=(string)$raw;
+    if(!is_string($raw)||preg_match('/\A[1-9][0-9]{0,18}\z/D',$raw)!==1||filter_var($raw,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])===false)return null;
+    return $raw;
+}
+function correspondenceBeginRequestIngress(array $request):void
+{
+    $GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED']=false;
+    $GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']=null;
+    $GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']=correspondenceRequestNativeTs($request);
+}
+function correspondenceCaptureRequestIngress(CorrespondencePgStore $store):void
+{
+    if(!empty($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED'])){$store->captureRequestRestoreToken();return;}
+    $nativeTs=is_string($GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']??null)?$GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']:correspondenceRequestNativeTs(is_array($GLOBALS['gameRequest']??null)?$GLOBALS['gameRequest']:[]);
+    $GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']=$nativeTs;
+    $GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']=$store->captureRequestRestoreToken($nativeTs,true);
+    $GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED']=true;
+}
+function correspondencePrepareRestoreInit(array $request):void
+{
+    if((string)($request[2]??'')==='10000000')return;
+    $markerWritten=false;$runtime=null;
+    try{
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']=false;
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_START']=true;
+        $epoch=correspondenceUuid();$GLOBALS['CORRESPONDENCE_RESTORE_INIT_EPOCH']=$epoch;
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS']=correspondenceRequestNativeTs($request);
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_CLOCK_VALID']=is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS']);
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']=true;
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']=false;
+        $root=correspondenceEngineRoot();$sentinel=$root.'/log/playthrough_runtime/correspondence.restore.json';
+        $markerWritten=CorrespondencePgStore::writeRestoreSentinelFile($sentinel,'pending',$epoch);
+        $runtime=correspondenceProduction();$store=$runtime['store'];$GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']=$store;
+        try{$GLOBALS['CORRESPONDENCE_RESTORE_INIT_ROWID']=$store->initMarkerStart();}catch(Throwable){$GLOBALS['CORRESPONDENCE_RESTORE_INIT_ROWID']=null;}
+        $gamets=$request[2]??null;$GLOBALS['CORRESPONDENCE_RESTORE_INIT_GAMETS']=is_string($gamets)&&preg_match('/\A[0-9]{1,20}\z/D',$gamets)===1?$gamets:null;
+        if(empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_SHUTDOWN_REGISTERED'])){register_shutdown_function('correspondenceCompletePendingInit');$GLOBALS['CORRESPONDENCE_RESTORE_INIT_SHUTDOWN_REGISTERED']=true;}
+        $store->beginRestoreEpoch($epoch,is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS'])?$GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS']:'0');
+    }catch(Throwable){
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']=true;
+        if(!$markerWritten)error_log('[CORRESPONDENCE] restore_init_marker_unavailable');
+        if($runtime!==null&&empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_SHUTDOWN_REGISTERED'])){register_shutdown_function('correspondenceCompletePendingInit');$GLOBALS['CORRESPONDENCE_RESTORE_INIT_SHUTDOWN_REGISTERED']=true;}
+    }
+    if($runtime===null&&!$markerWritten)$GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']=true;
+    try{correspondenceHoldInitFence();}catch(Throwable){correspondenceDiagnostic('init_fence_unavailable');}
+}
+function correspondenceCompletePendingInit():bool
+{
+    if(empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']))return false;
+    correspondenceReleaseInitFence();
+    $store=$GLOBALS['CORRESPONDENCE_RESTORE_INIT_STORE']??null;$epoch=$GLOBALS['CORRESPONDENCE_RESTORE_INIT_EPOCH']??null;
+    if(!$store instanceof CorrespondencePgStore||!is_string($epoch))return false;
+    $rowid=$GLOBALS['CORRESPONDENCE_RESTORE_INIT_ROWID']??null;$gamets=$GLOBALS['CORRESPONDENCE_RESTORE_INIT_GAMETS']??null;
+    try{
+        $lastError=error_get_last();
+        if(is_array($lastError)&&in_array($lastError['type']??null,[E_ERROR,E_PARSE,E_CORE_ERROR,E_COMPILE_ERROR,E_USER_ERROR,E_RECOVERABLE_ERROR],true))return false;
+        if(empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK'])||empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_CLOCK_VALID'])||!empty($GLOBALS['pgr_sql_failed'])||!empty($GLOBALS['pgr_skip_rollback']))return false;
+        $marker=is_int($rowid)&&is_string($gamets)&&$store->initMarkerAfter($rowid,$gamets);
+        $mustEnd=!empty($GLOBALS['MUST_END']);
+        $narratorComplete=!empty($GLOBALS['TRIGGER_NARRATOR_WELCOME'])||defined('TRIGGER_NARRATOR_WELCOME')&&constant('TRIGGER_NARRATOR_WELCOME');
+        if(!$marker||(!$mustEnd&&!$narratorComplete))return false;
+        $store->completeRestoreEpoch($epoch);
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']=false;
+        $GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']=false;
+        $GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']=$store->refreshRequestRestoreTokenAfterInit();
+        $GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED']=true;
+        return true;
+    }catch(Throwable){error_log('[CORRESPONDENCE] restore_init_completion_pending');return false;}
 }
 function correspondenceHoldInitFence():void
 {
@@ -34,8 +112,10 @@ function correspondenceHoldInitFence():void
     $connection=correspondenceNativeConnection();
     try{
         if(@pg_query_params($connection,"SET lock_timeout='3s'",[])===false||@pg_query_params($connection,'SELECT pg_advisory_lock(18459814,1)',[])===false)throw new DomainException('init_fence_unavailable');
-        $GLOBALS['CORRESPONDENCE_INIT_FENCE']=$connection;register_shutdown_function('correspondenceReleaseInitFence');
-    }catch(Throwable $e){try{pg_close($connection);}catch(Throwable){}throw $e;}
+        $GLOBALS['CORRESPONDENCE_INIT_FENCE']=$connection;
+        if(!empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']))$GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']=true;
+        register_shutdown_function('correspondenceReleaseInitFence');
+    }catch(Throwable $e){if(!empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']))$GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']=false;try{pg_close($connection);}catch(Throwable){}throw $e;}
 }function correspondenceNativeConnection():mixed
 {
     $root=correspondenceEngineRoot();correspondenceEnterRuntime($root);if(!function_exists('ptp_connect'))require_once $root.'/lib/playthrough_preferences.php';
@@ -44,10 +124,11 @@ function correspondenceHoldInitFence():void
 }
 function correspondenceProduction():array
 {
-    static $runtime=null;if($runtime!==null)return $runtime;
+    static $runtime=null;if($runtime!==null){correspondenceCaptureRequestIngress($runtime['store']);return $runtime;}
     $root=correspondenceEngineRoot();$connection=correspondenceNativeConnection();
-    $store=new CorrespondencePgStore($connection,fn($s)=>$s->observedExecutor(),fn($title,$body)=>correspondencePrepareCoreNote($root,$title,$body));
+    $store=new CorrespondencePgStore($connection,fn($s)=>$s->observedExecutor(),fn($title,$body)=>correspondencePrepareCoreNote($root,$title,$body),$root.'/log/playthrough_runtime/correspondence.restore.json');
     $store->ensureSchema();
+    correspondenceCaptureRequestIngress($store);
     return $runtime=['service'=>new CorrespondenceService($store),'store'=>$store,'connection'=>$connection];
 }
 function correspondenceAutonomyProduction():array
@@ -91,7 +172,7 @@ function correspondenceDiagnostic(string $code, array $details = []):void
     $workerResult=$code==='offscreen_worker_result';
     $autonomyOutcome=$code==='autonomy_outcome';
     $autonomyStatuses=['idle','paused','skipped','failed','stale','silent','queued','dispatched','unknown'];
-    $autonomyReasons=['native_request_required','native_clock_unavailable','host_unavailable','model_response_unavailable','model_unavailable','policy_unavailable','disabled','abandoned_claim_retired','cooldown','no_eligible_source','invalid_candidate','source_unavailable','actor_unavailable','player_unavailable','identity_changed','actor_identity_changed','source_identity_changed','source_not_due','chain_limit','already_claimed','invalid_decision','model_error','storage_error','queued_for_transit','decision_missing','dispatch_already_claimed','dispatch_uncertain','dispatch_queued','executor_unavailable','dispatch_unknown','child_missing','decision_anchor_invalid','source_changed','child_changed','actor_changed','claim_anchor_invalid','clock_changed','setting_changed','cooldown_changed','silence','invalid_delay','abandoned_claim_expired'];
+    $autonomyReasons=['native_request_required','native_clock_unavailable','host_unavailable','model_response_unavailable','model_unavailable','policy_unavailable','disabled','abandoned_claim_retired','cooldown','no_eligible_source','invalid_candidate','source_unavailable','actor_unavailable','player_unavailable','identity_changed','actor_identity_changed','source_identity_changed','source_not_due','chain_limit','already_claimed','invalid_decision','model_error','storage_error','queued_for_transit','decision_missing','dispatch_already_claimed','dispatch_uncertain','dispatch_queued','executor_unavailable','dispatch_unknown','child_missing','decision_anchor_invalid','source_changed','child_changed','actor_changed','claim_anchor_invalid','clock_changed','setting_changed','cooldown_changed','silence','invalid_delay','abandoned_claim_expired','restore_changed','context_unavailable'];
     $status=$workerResult&&in_array($details['status']??null,['processed','idle','paused','stale','failed','unavailable'],true)?$details['status']:($autonomyOutcome&&in_array($details['status']??null,$autonomyStatuses,true)?$details['status']:'failed');
     $reason=$workerResult&&is_string($details['reason']??null)&&preg_match('/\A[a-z][a-z0-9_]{0,63}\z/D',$details['reason'])===1?$details['reason']:($autonomyOutcome&&in_array($details['reason']??null,$autonomyReasons,true)?$details['reason']:($autonomyOutcome?'reason_unavailable':$code));
     $record=['schema'=>'correspondence.diagnostic.v1','event'=>$workerResult?'offscreen_worker_result':($autonomyOutcome?'autonomy_outcome':'diagnostic_failure'),'status'=>$status,'reason'=>$reason,'at_utc'=>gmdate('Y-m-d\TH:i:s\Z')];
@@ -109,7 +190,7 @@ function correspondenceDiagnostic(string $code, array $details = []):void
         if($safeOutcomes!==[])$record['social_outcomes']=$safeOutcomes;
     }
       if($workerResult&&in_array($status,['idle','paused'],true))return;
-    $visibleIdleReasons=['model_unavailable','policy_unavailable','actor_identity_changed','identity_changed','source_identity_changed','player_unavailable','actor_unavailable','source_not_due','source_unavailable','chain_limit','abandoned_claim_retired'];
+    $visibleIdleReasons=['model_unavailable','policy_unavailable','actor_identity_changed','identity_changed','source_identity_changed','player_unavailable','actor_unavailable','source_not_due','source_unavailable','chain_limit','abandoned_claim_retired','context_unavailable','restore_changed'];
     if($autonomyOutcome&&($status==='paused'||$status==='idle'&&!in_array($reason,$visibleIdleReasons,true)))return;
     if(!class_exists('Logger'))return;
     $json=json_encode($record,JSON_UNESCAPED_SLASHES);if(!is_string($json))return;$message='[CORRESPONDENCE] '.$json;

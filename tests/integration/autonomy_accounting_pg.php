@@ -125,48 +125,55 @@ $runNative = static function (int $ts, int $gamets, callable $modelFactory) use 
     return correspondenceAutonomyRunNativePostrequest(['inputtext',(string)$ts,(string)$gamets,'synthetic native autonomy request'], $runtimeFactory, $modelFactory);
 };
 
-// F05: counters must commit separately from the stale, effect-bearing completion transaction and survive expiry sweep.
+// A later unrelated native event must not discard a valid reply or strand its claim.
 $enableScope('unprofiled');
 $failedSource = $makeSource('This source tests durable autonomy accounting.');
 $sourceCounts = autonomyAccountingCounts($connection);
 $requestGamets = 100 + correspondenceAutonomyGamets(4);
 $modelCalls = 0;
 $countersVisibleBeforeCall = false;
-$failed = $runNative(200, $requestGamets, static function () use ($connection, $failedSource, $requestGamets, &$modelCalls, &$countersVisibleBeforeCall): callable {
-    return static function (array $messages) use ($connection, $failedSource, $requestGamets, &$modelCalls, &$countersVisibleBeforeCall): string {
+$failed = $runNative(200, $requestGamets, static function () use ($connection, $store, $failedSource, $requestGamets, &$modelCalls, &$countersVisibleBeforeCall): callable {
+    return static function (array $messages) use ($connection, $store, $failedSource, $requestGamets, &$modelCalls, &$countersVisibleBeforeCall): string {
         $modelCalls++;
         $rows = autonomyAccountingSql($connection, 'SELECT claim_id::text,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2 AND status=$3', ['unprofiled',$failedSource,'claimed']);
         autonomyAccountingRequire(count($rows) === 1, 'claim_must_commit_before_model_call');
         $payload = json_decode((string)$rows[0]['payload'], true, 64, JSON_THROW_ON_ERROR);
         $countersVisibleBeforeCall = ($payload['model_calls'] ?? null) === 1 && is_int($payload['input_chars'] ?? null) && $payload['input_chars'] > 0;
-        autonomyAccountingSql($connection, "INSERT INTO public.eventlog(ts,gamets,type,data,sess,localts,people,location,party) VALUES(201,$1,'inputtext','later native event during model call','',201,'','','')", [$requestGamets+1]);
+        if (!in_array('--transient-completion-only',$GLOBALS['argv'],true)) autonomyAccountingSql($connection, "INSERT INTO public.eventlog(ts,gamets,type,data,sess,localts,people,location,party) VALUES(201,$1,'inputtext','later native event during model call','',201,'','','')", [$requestGamets+1]);
+        if (in_array('--transient-completion-only', $GLOBALS['argv'], true)) {
+            autonomyAccountingSql($connection, "CREATE SEQUENCE public.completion_fault_attempt");
+            autonomyAccountingSql($connection, "CREATE FUNCTION public.completion_fault() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF nextval('public.completion_fault_attempt')=1 THEN RAISE EXCEPTION 'synthetic transient completion failure'; END IF; RETURN NEW; END $$");
+            autonomyAccountingSql($connection, 'CREATE TRIGGER completion_fault BEFORE INSERT ON plugins.correspondence_documents FOR EACH ROW EXECUTE FUNCTION public.completion_fault()');
+        }
+        if (in_array('--restore-during-model-only', $GLOBALS['argv'], true)) {
+            $epoch=$store->beginRestoreEpoch();$store->completeRestoreEpoch($epoch);
+        }
         return autonomyAccountingReply('npc:900001');
     };
 });
 autonomyAccountingCheck($modelCalls === 1 && $countersVisibleBeforeCall, 'attempt_and_input_count_must_be_written_before_callback_invocation');
-autonomyAccountingCheck(($failed['status'] ?? null) === 'failed' && ($failed['reason'] ?? null) === 'storage_error'
-    && ($failed['model_calls'] ?? null) === 1 && ($failed['input_chars'] ?? 0) > 0 && ($failed['output_chars'] ?? 0) > 0,
-    'stale_completion_must_return_attempt_counters');
+if (in_array('--restore-during-model-only', $argv, true)) {
+    $row=autonomyAccountingSql($connection,'SELECT status,child_document_id::text child FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2',['unprofiled',$failedSource])[0] ?? [];
+    autonomyAccountingRequire(($failed['status'] ?? null)!=='queued' && ($row['child'] ?? null)===null && $modelCalls===1
+        && autonomyAccountingCounts($connection)===$sourceCounts,'retained_anchor_restore_must_reject_old_model_output_without_effects');
+    echo "PASS retained-anchor asynchronous restore: one model call, no child or physical effects\n";
+    exit;
+}
+autonomyAccountingRequire(($failed['status'] ?? null) === 'queued' && ($failed['reason'] ?? null) === 'queued_for_transit',
+    in_array('--transient-completion-only',$argv,true)?'transient_completion_must_retry_same_reply_once':'concurrent_event_must_commit_valid_autonomy_reply');
 $claimed = autonomyAccountingSql($connection, 'SELECT claim_id::text,source_event_id::text,status,child_document_id::text child,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', ['unprofiled',$failedSource])[0] ?? [];
 $claimedPayload = json_decode((string)($claimed['payload'] ?? '{}'), true, 64, JSON_THROW_ON_ERROR);
-autonomyAccountingCheck(($failed['correlation_id'] ?? null) === ($claimed['claim_id'] ?? null)
-    && ($failed['source_ids'] ?? null) === [(int)($claimed['source_event_id'] ?? 0)],
-    'post_claim_failure_result_must_carry_only_the_claim_correlation_and_source_event_id');
-autonomyAccountingCheck(($claimed['status'] ?? null) === 'claimed' && ($claimed['child'] ?? null) === null
+autonomyAccountingRequire(($claimed['status'] ?? null) === 'queued' && is_string($claimed['child'] ?? null)
     && ($claimedPayload['model_calls'] ?? null) === 1 && ($claimedPayload['input_chars'] ?? 0) > 0 && ($claimedPayload['output_chars'] ?? 0) > 0,
-    'failed_completion_must_leave_durable_counters_on_the_same_claim_without_a_child');
-
-autonomyAccountingSql($connection, "UPDATE plugins.correspondence_autonomy_decisions SET created_at=clock_timestamp()-interval '181 seconds' WHERE playthrough_id=$1 AND source_document_id=$2 AND claim_id=$3 AND status='claimed'", ['unprofiled',$failedSource,$claimed['claim_id']]);
-$swept = $runNative(202, $requestGamets+2, static fn() => null);
-$retired = autonomyAccountingSql($connection, 'SELECT status,child_document_id::text child,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', ['unprofiled',$failedSource])[0] ?? [];
-$retiredPayload = json_decode((string)($retired['payload'] ?? '{}'), true, 64, JSON_THROW_ON_ERROR);
-autonomyAccountingCheck(($swept['reason'] ?? null) === 'abandoned_claim_retired' && ($retired['status'] ?? null) === 'stale'
-    && ($retired['child'] ?? null) === null && ($retiredPayload['model_calls'] ?? null) === 1
-    && ($retiredPayload['input_chars'] ?? 0) > 0 && ($retiredPayload['output_chars'] ?? 0) > 0,
-    'claim_expiry_must_preserve_attempted_call_and_character_counters');
-autonomyAccountingCheck(!array_key_exists('correlation_id', $swept) && !array_key_exists('source_ids', $swept),
-    'pre_claim_retirement_result_must_not_report_claim_identifiers');
-autonomyAccountingCheck(autonomyAccountingCounts($connection) === $sourceCounts, 'accounting_failure_and_sweep_must_not_create_social_or_source_effects');
+    'concurrent_completion_must_close_same_claim_with_one_child_and_durable_counters');
+$afterCounts = autonomyAccountingCounts($connection);
+autonomyAccountingRequire((int)$afterCounts['documents'] === (int)$sourceCounts['documents']+1
+    && $afterCounts['operations'] === $sourceCounts['operations'] && $afterCounts['books'] === $sourceCounts['books']
+    && $afterCounts['commands'] === $sourceCounts['commands'], 'concurrent_completion_must_queue_one_child_without_physical_resend');
+if (in_array($argv[1] ?? null,['--concurrent-events-only','--transient-completion-only'],true)) {
+    echo "PASS concurrent-event autonomy completion: one model attempt, one queued child, no physical resend\n";
+    exit;
+}
 
 // R2: a transient first source is deferred while the next valid source can use the one-call tick.
 $renameScope = '700101';
@@ -214,8 +221,8 @@ $r2FailureDiagnostics = [
 ];
 if ($GLOBALS['autonomyAccountingFailures'] !== []) throw new RuntimeException('autonomy_accounting_failed:'.implode(',', $GLOBALS['autonomyAccountingFailures']).':'.json_encode($r2FailureDiagnostics, JSON_THROW_ON_ERROR));
 echo json_encode([
-    'status'=>'PASS','attempt_counters_persist_before_model_callback'=>true,'stale_completion_keeps_counters'=>true,
-    'claim_expiry_keeps_counters_without_effects'=>true,'temporary_first_source_does_not_pin_later_source'=>true,
+    'status'=>'PASS','attempt_counters_persist_before_model_callback'=>true,'concurrent_completion_keeps_counters'=>true,
+    'one_child_without_physical_resend'=>true,'temporary_first_source_does_not_pin_later_source'=>true,
     'temporary_actor_identity_change_retries'=>true,
     'model_calls_semantics'=>'attempted invocation, not provider billing confirmation',
 ], JSON_PRETTY_PRINT|JSON_THROW_ON_ERROR)."\n";

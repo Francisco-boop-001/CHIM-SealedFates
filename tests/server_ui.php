@@ -4,10 +4,10 @@ function uiCheck(bool $ok,string $why):void{if(!$ok)throw new RuntimeException($
 uiCheck(is_file(dirname(__DIR__).'/server/lib/view.php'),'RED: CSRF composer and recipient inbox view missing');
 require_once dirname(__DIR__).'/server/lib/view.php';
 $token=str_repeat('a',64);
-uiCheck(correspondenceAccess(['REMOTE_ADDR'=>'127.0.0.1']),'loopback should access');
+uiCheck(correspondenceAccess(['REMOTE_ADDR'=>'127.0.0.1','HTTP_HOST'=>'localhost']),'loopback should access');
 uiCheck(correspondenceAccess(['REMOTE_ADDR'=>'198.51.100.10','REMOTE_USER'=>'operator']),'server authenticated user should access');
 uiCheck(!correspondenceAccess(['REMOTE_ADDR'=>'192.168.1.4']),'private address is not authentication');
-uiCheck(!correspondenceAccess(['REMOTE_ADDR'=>'127.0.0.1','HTTP_X_FORWARDED_FOR'=>'127.0.0.1']),'forwarded headers must not confer trust');
+uiCheck(!correspondenceAccess(['REMOTE_ADDR'=>'127.0.0.1','HTTP_HOST'=>'localhost','HTTP_X_FORWARDED_FOR'=>'127.0.0.1']),'forwarded headers must not confer trust');
 try{correspondencePost(['csrf'=>'bad'],$token,[]);throw new RuntimeException('CSRF accepted');}catch(DomainException $e){uiCheck($e->getMessage()==='csrf_failed','CSRF must reject first');}
 $actors=[['key'=>'player','name'=>'Dragonborn'],['key'=>'npc:1','name'=>'<Camilla>'],['key'=>'npc:2','name'=>'Éldrin 🦙']];
 $html=correspondencePage($actors,[],[['document_id'=>'11111111-1111-4111-8111-111111111111','state'=>'delivered','recipient'=>['kind'=>'player','name'=>'Dragonborn'],'claimed_sender'=>['name'=>'<script>bad</script>'],'body'=>'<img src=x onerror=bad>','attachments'=>[],'social_status'=>['sworn_and_scorned'=>['status'=>'queued','reason'=>'awaiting_worker']]]],$token,'<unsafe>');

@@ -1,3 +1,28 @@
+# CHIM Sealed Fates 0.1.0-dev.18 — PRE-ALPHA
+
+The courier has learned to survive simultaneous paperwork. I still have not learned to hire a second courier.
+
+Ordinary concurrent events no longer eat valid replies. Abandoned claims recover or become safely inert; transient completion retries reuse the same model result without another model call or transfer. Restore epochs, native timestamp floors, exact source/body checks and unknown/no-resend rules remain strict. Sender/contact selection, receipt casing, operator-origin checks and the documented package command are repaired.
+
+The Department Skyrim interface is optional. Published Department prealpha.1 targets dev.17 and refuses dev.18. A separate dev.18 adapter candidate is being developed and requires its own restore-fencing and signed-unknown receipt tests. Use the existing web plugin page until an exact dev.18 Department pairing is verified; adding version hashes alone is insufficient. No sibling plugins are bundled.
+
+All 21 integrated PostgreSQL jobs and 23 pure suites (25 cases) passed on the exact frozen disposable candidate. Fresh host/package checks and clean-tag rebuilds bind this publication to those bytes. The bridge PEX is unchanged from dev.17; its original compile descriptor remains intact. No fresh native/gameplay, provider/model-quality or live-installation claim is added. See [recovery details](DEV18-RECOVERY.md), [installation](INSTALL.md) and [verification limits](VERIFICATION.md).
+
+## Dev.18 assets
+
+[Download this PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.18). Install the paired ZIP or use the server package for its intended route; avoid multiple enabled correspondence versions.
+
+| File | SHA-256 | Bytes |
+| --- | --- | ---: |
+| [CHIM-Sealed-Fates-0.1.0-dev.18.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.18/CHIM-Sealed-Fates-0.1.0-dev.18.zip) | `d5226ebe217e4801a95002bf7a620ca2da72a0fa18841bd5494eb1ec3ef85e70` | 2792708 |
+| [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.18/SHA256SUMS.txt) | `594c18099dfb2ec6020448162631bb72aef7443163fdeff82710d76bbc330158` | 289 |
+| [correspondence-0.1.0-dev.18.dwpkg](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.18/correspondence-0.1.0-dev.18.dwpkg) | `028161a4911c7ab3b33c61e7f109690c3ae1df2fcecc9e64f3e62a9290c3cbf1` | 2772517 |
+| [correspondence.tar.gz](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.18/correspondence.tar.gz) | `dfa832e70901994704d8fe5a1c40e87a1ca2cfde45277133d6f4cb92515f3083` | 2420407 |
+
+The web page remains available; the Skyrim interface is optional, while the matching delivery bridge remains required for physical notes/items/gold. Published dev.14–17 tags and assets are unchanged.
+
+---
+
 # CHIM Sealed Fates 0.1.0-dev.17 — PRE-ALPHA
 
 The courier has acquired a recovery procedure. I briefly considered giving him a pension, but apparently I am the villain in this quest.

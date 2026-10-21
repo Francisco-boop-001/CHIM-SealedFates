@@ -26,6 +26,7 @@ final class CorrespondenceOffscreenPg
     public function ensureSchema(): void
     {
         if ($this->schemaReady) return;
+        $this->store->ensureSchema();
         $autonomy = $this->store->query("SELECT to_regclass('plugins.correspondence_autonomy_settings') AS settings")[0] ?? [];
         if (!array_key_exists('settings', $autonomy)) throw new DomainException('schema_dependency_unavailable');
         if ($autonomy['settings'] === null) {
@@ -196,15 +197,13 @@ final class CorrespondenceOffscreenPg
                     $this->consumeObservation($scope, $observation['anchor']['rowid'], $observation['gamets']);
                     return ['result_kind'=>'processed','reason'=>'actor_ineligible'];
                 }
-                $candidate = $this->reactionCandidate($scope, $observation['gamets'], $actors);
-                if ($candidate !== null) {
-                    $self = $actors[(int)$candidate['recipient_id']];
+                $reaction = $this->reactionCandidate($scope, $observation['gamets'], $actors);
+                if ($reaction !== null) {
+                    $mail = $reaction['mail'];
+                    $self = $actors[(int)$mail['recipient_id']];
                     if ($this->actorCooldown($scope, (int)$self['id'], $observation['gamets']) > $observation['gamets']) return $idle('cooldown');
-                    $source = $this->sourceForMail($candidate, $actors);
-                    $contacts = $this->contacts($self, $actors);
-                    if ($source === null || $contacts === []) return $idle('source_unavailable');
-                    $context = ['self'=>$this->selfProjection($self, $contacts),'contacts'=>$contacts,'source'=>$source];
-                    $return = $this->claim($scope, $observation, $self, 'react', $candidate, null, $context);
+                    $context = ['self'=>$reaction['self'],'contacts'=>$reaction['contacts'],'source'=>$reaction['source'],'messages'=>$reaction['messages']];
+                    $return = $this->claim($scope, $observation, $self, 'react', $mail, null, $context);
                     return $return ?? $idle('already_claimed');
                 }
 
@@ -233,7 +232,7 @@ final class CorrespondenceOffscreenPg
         $outputChars = 0;
         try {
             $messages = $work['kind_of_job'] === 'react'
-                ? correspondenceAutonomyMessages($work['source'], $work['self'], $work['contacts'])
+                ? ($work['messages'] ?? correspondenceAutonomyMessages($work['source'], $work['self'], $work['contacts']))
                 : correspondenceOffscreenInitiateMessages($work['self'], $work['goal'], $work['contacts']);
             $modelCalled = true;
             $raw = $requestModel($messages);
@@ -389,27 +388,150 @@ final class CorrespondenceOffscreenPg
 
     private function finishWork(array $work, ?string $action, string $body, ?string $target, bool $modelReturned, string $reason, int $outputChars): array
     {
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            $pendingBefore = $this->pendingSourceIds;
+            $result = $this->finishWorkAttempt($work, $action, $body, $target, $modelReturned, $reason, $outputChars);
+            if (($result['reason'] ?? null) === 'interaction_lock_unavailable') {
+                $this->pendingSourceIds = $pendingBefore;
+                if ($attempt === 0) continue;
+                return $this->closeAfterInteractionLockUnavailable($work);
+            }
+            if (($result['reason'] ?? null) !== 'clock_or_anchor_stale') return $result;
+
+            $settled = $this->readTerminalCompletion($work);
+            if ($settled !== null) return $settled;
+            $this->pendingSourceIds = $pendingBefore;
+            if ($attempt === 0 && $this->claimStillOwned($work)) continue;
+            return $this->restoreStateChanged($work['restore_generation'] ?? null) === true
+                ? ['status'=>'stale','reason'=>'restore_changed']
+                : ['status'=>'failed','reason'=>'storage_error'];
+        }
+        return ['status'=>'failed','reason'=>'storage_error'];
+    }
+
+    private function runCompletionTransaction(callable $work, string $expectedRestoreToken): mixed
+    {
+        if (method_exists($this->store, 'completionTransaction')) return $this->store->completionTransaction($work, $expectedRestoreToken);
+        return $this->store->transaction(function () use ($work, $expectedRestoreToken) {
+            if (!$this->restoreTokenMatches($expectedRestoreToken)) throw new DomainException('restore_epoch_changed');
+            $result = $work();
+            if (!$this->restoreTokenMatches($expectedRestoreToken)) throw new DomainException('restore_epoch_changed');
+            return $result;
+        });
+    }
+
+    private function restoreStateChanged(mixed $expectedRestoreToken): ?bool
+    {
+        if (!is_string($expectedRestoreToken) || $expectedRestoreToken === '') return true;
+        try {
+            $current = $this->restoreGeneration();
+            $requestToken = method_exists($this->store, 'requestRestoreToken')
+                ? $this->store->requestRestoreToken()
+                : $current;
+            if (!is_string($current) || !is_string($requestToken)) return true;
+            return !hash_equals($expectedRestoreToken, $current) || !hash_equals($expectedRestoreToken, $requestToken);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function restoreTokenMatches(mixed $expectedRestoreToken): bool
+    {
+        return $this->restoreStateChanged($expectedRestoreToken) === false;
+    }
+    private function claimStillOwned(array $work): bool
+    {
+        if (!$this->restoreTokenMatches($work['restore_generation'] ?? null)) return false;
+        try {
+            $read = function () use ($work): bool {
+                $row = $this->store->query('SELECT status,claim_id::text,payload::text FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id=$1 AND job_id=$2', [$work['playthrough_id'],$work['job_id']])[0] ?? null;
+                if ($row === null || ($row['status'] ?? null) !== 'claimed' || ($row['claim_id'] ?? null) !== $work['claim_id']) return false;
+                return $this->validClaimAnchor($work, $this->jsonObject($row['payload'] ?? null));
+            };
+            return method_exists($this->store, 'readTransaction') ? $this->store->readTransaction($read) : $read();
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function readTerminalCompletion(array $work): ?array
+    {
+        if (!$this->restoreTokenMatches($work['restore_generation'] ?? null)) return null;
+        try {
+            $read = function () use ($work): ?array {
+                $row = $this->store->query('SELECT playthrough_id,job_id::text,trigger_event_id::text,actor_id::text,source_message_id::text,goal_hash,claim_id::text,status,action,payload::text FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id=$1 AND job_id=$2', [$work['playthrough_id'],$work['job_id']])[0] ?? null;
+                if ($row === null || ($row['claim_id'] ?? null) !== $work['claim_id']) return null;
+                $payload = $this->jsonObject($row['payload'] ?? null);
+                if (!$this->validClaimAnchor($work, $payload)) return null;
+                if (in_array($row['status'] ?? null, ['sent','silent'], true)) {
+                    if ($this->validatedCompletionGamets($row, $payload) === null) return null;
+                    return ['status'=>'processed','reason'=>(string)($payload['reason_code'] ?? 'completed')];
+                }
+                if (!in_array($row['status'] ?? null, ['failed','stale'], true) || ($row['action'] ?? null) !== null
+                    || ($payload['exposed_event_id'] ?? null) !== null || ($payload['child_message_id'] ?? null) !== null
+                    || !$this->validTerminalCompletionAnchor($row, $payload)) return null;
+                return ['status'=>$row['status'],'reason'=>(string)($payload['reason_code'] ?? 'completed')];
+            };
+            return method_exists($this->store, 'readTransaction') ? $this->store->readTransaction($read) : $read();
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function closeAfterInteractionLockUnavailable(array $work): array
+    {
+        try {
+            return $this->runCompletionTransaction(function () use ($work): array {
+                $scope = $this->clock();
+                if ($scope['playthrough_id'] !== $work['playthrough_id']) return ['status'=>'stale','reason'=>'scope_changed'];
+                if (!$this->restoreTokenMatches($work['restore_generation'] ?? null)) return ['status'=>'stale','reason'=>'restore_changed'];
+                if ($scope['gamets'] < (int)$work['claim_gamets']) return ['status'=>'stale','reason'=>'clock_changed'];
+                $row = $this->store->query('SELECT status,claim_id::text,payload::text FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id=$1 AND job_id=$2', [$work['playthrough_id'],$work['job_id']])[0] ?? null;
+                if ($row === null || ($row['status'] ?? null) !== 'claimed' || ($row['claim_id'] ?? null) !== $work['claim_id']) return ['status'=>'stale','reason'=>'claim_changed'];
+                $payload = $this->jsonObject($row['payload'] ?? null);
+                if (!$this->validClaimAnchor($work, $payload)) return ['status'=>'stale','reason'=>'claim_anchor_invalid'];
+                if ($work['kind_of_job'] === 'react') {
+                    $mail = $this->mailById($work['playthrough_id'], (string)$work['source_message_id']);
+                    $source = $mail === null ? null : $this->sourceForMail($mail, $this->npcMap($this->npcRows()));
+                    if ($source === null || !hash_equals(correspondenceCanonicalJson($source), correspondenceCanonicalJson($work['source']))) return ['status'=>'stale','reason'=>'source_changed'];
+                } else {
+                    $actors = $this->npcMap($this->npcRows());
+                    $self = $actors[(int)$work['actor_id']] ?? null;
+                    $goalText = $self['goal_text'] ?? null;
+                    if (!is_array($self) || !$this->eligible($self) || !is_string($goalText) || hash('sha256', trim($goalText)) !== ($work['goal']['id'] ?? null)) return ['status'=>'stale','reason'=>'actor_changed'];
+                }
+                return $this->terminalJob($work, 'stale', null, 'gate_changed', null, true, null, true);
+            }, (string)($work['restore_generation'] ?? ''));
+        } catch (Throwable) {
+            $settled = $this->readTerminalCompletion($work);
+            if ($settled !== null) return $settled;
+            return $this->restoreStateChanged($work['restore_generation'] ?? null) === true
+                ? ['status'=>'stale','reason'=>'restore_changed']
+                : ['status'=>'failed','reason'=>'storage_error'];
+        }
+    }
+
+    private function finishWorkAttempt(array $work, ?string $action, string $body, ?string $target, bool $modelReturned, string $reason, int $outputChars): array
+    {
         try {
             $latest = $this->bindLatestObservation();
             if ($latest === null || $latest['playthrough_id'] !== $work['playthrough_id']) return ['status'=>'stale','reason'=>'scope_changed'];
             $interactionLock = $this->acquireInteractionLock();
             if ($interactionLock === null) return ['status'=>'stale','reason'=>'interaction_lock_unavailable'];
             try {
-                return $this->store->transaction(function () use ($work, $latest, $action, $body, $target, $modelReturned, $reason, $outputChars, $interactionLock) {
+                return $this->runCompletionTransaction(function () use ($work, $latest, $action, $body, $target, $modelReturned, $reason, $outputChars, $interactionLock) {
                 $scope = $this->clock();
                 if ($scope['playthrough_id'] !== $work['playthrough_id']) return ['status'=>'stale','reason'=>'scope_changed'];
-                if ($this->restoreGeneration() !== $work['restore_generation'] || $latest['restore_generation'] !== $work['restore_generation']) {
-                    return $this->terminalJob($work, 'stale', null, 'restore_changed', null, true);
-                }
-                $claimedObservation = $work['observation'] ?? [];
-                if ($scope['gamets'] < (int)$work['claim_gamets'] || !$this->observationStillCurrent($latest, true)
-                    || (string)($latest['anchor']['rowid'] ?? '') !== (string)($claimedObservation['anchor']['rowid'] ?? '')) {
-                    return $this->terminalJob($work, 'stale', null, 'observation_changed', null, true, null, true);
-                }
                 $job = $this->store->query('SELECT status,claim_id::text,payload::text FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id=$1 AND job_id=$2', [$work['playthrough_id'],$work['job_id']])[0] ?? null;
                 if ($job === null || ($job['status'] ?? null) !== 'claimed' || ($job['claim_id'] ?? null) !== $work['claim_id']) return ['status'=>'stale','reason'=>'claim_changed'];
                 $jobPayload = $this->jsonObject($job['payload'] ?? null);
-                if (!$this->validClaimAnchor($work, $jobPayload)) return $this->terminalJob($work, 'stale', null, 'claim_anchor_invalid', null, false);
+                if (!$this->validClaimAnchor($work, $jobPayload)) return ['status'=>'stale','reason'=>'claim_anchor_invalid'];
+                if ($this->restoreGeneration() !== $work['restore_generation'] || $latest['restore_generation'] !== $work['restore_generation']) return ['status'=>'stale','reason'=>'restore_changed'];
+                if ($scope['gamets'] < (int)$work['claim_gamets'] || (int)($latest['gamets'] ?? 0) < (int)$work['claim_gamets']
+                    || ($latest['interaction_generation'] ?? null) !== $work['interaction_generation']
+                    || !$this->observationStillCurrent($latest, true, false)) {
+                    return $this->terminalJob($work, 'stale', null, 'observation_changed', null, true, null, true);
+                }
                 if ($latest['boundary'] || !$this->observationFresh($latest) || !$this->interactionLockMatches($interactionLock, $work['interaction_generation'])
                     || $latest['interaction_generation'] !== $work['interaction_generation']
                     || !$this->autonomyEnabled($scope['playthrough_id'])) return $this->terminalJob($work, 'stale', null, 'gate_changed', null, true, null, true);
@@ -428,7 +550,8 @@ final class CorrespondenceOffscreenPg
                         if (!isset($selectedActors[$actorId])) return $this->terminalJob($work, 'stale', null, 'source_changed', null, false);
                     }
                 }
-                $initialContacts = $this->contacts($self, $selectedActors);
+                $preferredSenderId = $work['kind_of_job'] === 'react' ? (int)$sourceMail['sender_id'] : null;
+                $initialContacts = $this->contacts($self, $selectedActors, $preferredSenderId);
                 $targetActorId = null;
                 if ($action === 'letter' || in_array($action, ['reply','forward','mediate'], true)) {
                     $initialContact = $this->findContact((string)$target, $initialContacts);
@@ -454,7 +577,8 @@ final class CorrespondenceOffscreenPg
                 if (!$this->eligible($self)) return $this->terminalJob($work, 'stale', null, 'actor_changed', null, false);
                 if ($this->globalCooldown($scope['playthrough_id'], $scope['gamets'], (string)$work['claim_id']) > $scope['gamets']
                     || $this->actorCooldown($scope['playthrough_id'], (int)$self['id'], $scope['gamets'], (string)$work['claim_id']) > $scope['gamets']) return $this->terminalJob($work, 'stale', null, 'cooldown_changed', null, true, null, true);
-                $contacts = $this->contacts($self, $actors);
+                $preferredSenderId = $work['kind_of_job'] === 'react' ? ($sourceActorIds[0] ?? null) : null;
+                $contacts = $this->contacts($self, $actors, $preferredSenderId);
                 $nowContext = ['self'=>$this->selfProjection($self, $contacts),'contacts'=>$contacts];
                 if ($work['kind_of_job'] === 'initiate') {
                     $goalText = $self['goal_text'] ?? '';
@@ -496,7 +620,7 @@ final class CorrespondenceOffscreenPg
                 $message = $this->createMail($scope['playthrough_id'], $self, $actors[$contact['id']], $body, $scope['gamets'], $parent, $action);
                 $this->terminalJob($work, 'sent', $action, 'sent', $exposure, true, $message['message_id']);
                 return ['status'=>'processed','reason'=>$work['kind_of_job'] === 'react' ? 'replied' : 'initiated'];
-                });
+                }, (string)$work['restore_generation']);
             } finally {
                 $this->releaseInteractionLock($interactionLock);
             }
@@ -560,7 +684,7 @@ final class CorrespondenceOffscreenPg
             $payload['completion_anchor'] = $this->appendAnchor('job_completion', $completionData);
         }
         $rows = $this->store->query("UPDATE plugins.correspondence_offscreen_jobs SET status=$1,action=$2,payload=$3::jsonb WHERE playthrough_id=$4 AND job_id=$5 AND claim_id=$6 AND status='claimed' RETURNING job_id::text", [$status,$action,correspondenceJson($payload),$work['playthrough_id'],$work['job_id'],$work['claim_id']]);
-        if (count($rows) !== 1) return ['status'=>'stale','reason'=>'claim_changed'];
+        if (count($rows) !== 1) throw new DomainException('claim_lost');
         return ['status'=>in_array($status,['sent','silent'],true) ? 'processed' : $status,'reason'=>$reason];
     }
 
@@ -662,13 +786,25 @@ final class CorrespondenceOffscreenPg
         $retryableArray = '{'.implode(',', $retryableIds).'}';
         $rows = $this->store->query("SELECT m.playthrough_id,m.message_id::text,m.sender_id::text,m.recipient_id::text,m.root_message_id::text,m.depth,m.status,m.body,m.created_gamets::text,m.due_gamets::text,m.arrived_gamets::text,m.source_event_id::text,m.source_event_sha256,m.payload::text FROM plugins.correspondence_offscreen_mail m WHERE m.playthrough_id=$1 AND m.status='arrived' AND m.due_gamets<=$2 AND (NOT EXISTS(SELECT 1 FROM plugins.correspondence_offscreen_jobs j WHERE j.playthrough_id=m.playthrough_id AND j.source_message_id=m.message_id) OR m.message_id=ANY($3::uuid[])) ORDER BY m.due_gamets,m.created_gamets,m.message_id LIMIT 16", [$scope,(string)$gamets,$retryableArray]);
         foreach ($rows as $row) {
-            if (!$this->eligible($actors[(int)$row['sender_id']] ?? null) || !$this->eligible($actors[(int)$row['recipient_id']] ?? null)) continue;
+            $sender = $actors[(int)$row['sender_id']] ?? null;
+            $self = $actors[(int)$row['recipient_id']] ?? null;
+            if (!$this->eligible($sender) || !$this->eligible($self)) continue;
             $mail = $this->normalizeMail($row);
             $this->assertMailArrival($mail);
             $arrived = $this->intValue($mail['arrived_gamets'] ?? null);
             $delay = correspondenceAutonomyGamets(2);
             if ($arrived < 1 || $arrived > PHP_INT_MAX - $delay || $gamets < $arrived + $delay) continue;
-            return $mail;
+            $source = $this->sourceForMail($mail, $actors);
+            if ($source === null) continue;
+            $contacts = $this->contacts($self, $actors, (int)$mail['sender_id']);
+            if ($contacts === []) continue;
+            $selfProjection = $this->selfProjection($self, $contacts);
+            try {
+                $messages = correspondenceAutonomyMessages($source, $selfProjection, $contacts);
+            } catch (Throwable) {
+                continue;
+            }
+            return ['mail'=>$mail,'source'=>$source,'self'=>$selfProjection,'contacts'=>$contacts,'messages'=>$messages];
         }
         return null;
     }
@@ -771,8 +907,12 @@ final class CorrespondenceOffscreenPg
             $mail = $this->normalizeMail($mail);
             if (($mail['status'] ?? null) !== 'exposed') return null;
             $this->assertMailExposure($mail, $actors);
+            $recipient = $actors[(int)$mail['recipient_id']] ?? null;
+            if (!is_array($recipient)) return null;
             $source = $this->sourcePayload($mail, $actors);
-            correspondenceAutonomyMessages($source, $this->selfProjection($actors[(int)$mail['recipient_id']], $this->contacts($actors[(int)$mail['recipient_id']], $actors)), $this->contacts($actors[(int)$mail['recipient_id']], $actors));
+            $contacts = $this->contacts($recipient, $actors, (int)$mail['sender_id']);
+            if ($contacts === []) return null;
+            correspondenceAutonomyMessages($source, $this->selfProjection($recipient, $contacts), $contacts);
             return $source;
         } catch (Throwable) {
             return null;
@@ -880,12 +1020,23 @@ final class CorrespondenceOffscreenPg
         return null;
     }
 
-    private function contacts(array $self, array $actors): array
+    private function contacts(array $self, array $actors, ?int $preferredSenderId = null): array
     {
+        $selfId = (int)$self['id'];
+        $selfName = mb_strtolower($self['name'],'UTF-8');
         $contacts = [];
-        $names = [mb_strtolower($self['name'],'UTF-8')=>true];
+        $names = [$selfName=>true];
+        if ($preferredSenderId !== null) {
+            $sender = $actors[$preferredSenderId] ?? null;
+            if ($preferredSenderId < 1 || $preferredSenderId === $selfId || !$this->eligible($sender)
+                || ($sender['key'] ?? null) !== 'npc:'.$preferredSenderId) return [];
+            $senderName = mb_strtolower($sender['name'],'UTF-8');
+            if ($senderName === $selfName) return [];
+            $contacts[] = ['key'=>$sender['key'],'name'=>$sender['name']];
+            $names[$senderName] = true;
+        }
         foreach ($actors as $npc) {
-            if (!$this->eligible($npc) || (int)$npc['id'] === (int)$self['id']) continue;
+            if (!$this->eligible($npc) || (int)$npc['id'] === $selfId || (int)$npc['id'] === $preferredSenderId) continue;
             $name = mb_strtolower($npc['name'],'UTF-8');
             if (isset($names[$name])) continue;
             $names[$name] = true;
@@ -1410,7 +1561,7 @@ final class CorrespondenceOffscreenPg
         $this->store->query('UPDATE plugins.correspondence_offscreen_observations SET consumed=TRUE,last_consumed_gamets=GREATEST(last_consumed_gamets,$3) WHERE playthrough_id=$1 AND anchor->>\'rowid\'=$2', [$scope,$anchorId,(string)$gamets]);
     }
 
-    private function observationStillCurrent(array $observation, bool $allowBoundary = false): bool
+    private function observationStillCurrent(array $observation, bool $allowBoundary = false, bool $requireEventClock = true): bool
     {
         $rows = $this->store->query('SELECT native_type,native_ts::text,gamets::text,request_sha256,interaction_generation,restore_generation,boundary,consumed,last_consumed_gamets::text,anchor::text FROM plugins.correspondence_offscreen_observations WHERE playthrough_id=$1', [$observation['playthrough_id']]);
         if (count($rows) !== 1) return false;
@@ -1422,7 +1573,7 @@ final class CorrespondenceOffscreenPg
             || ($row['restore_generation'] ?? null) !== $observation['restore_generation']
             || (!$allowBoundary && $this->dbBoolean($row['boundary'] ?? false))
             || (string)($anchor['rowid'] ?? '') !== (string)$observation['anchor']['rowid']) return false;
-        return $this->validObservationAnchor($anchor, $observation) && $this->observationFresh($observation) && $this->currentEventClockMatches($observation);
+        return $this->validObservationAnchor($anchor, $observation) && $this->observationFresh($observation) && (!$requireEventClock || $this->currentEventClockMatches($observation));
     }
 
     private function bindLatestObservation(): ?array
@@ -1591,6 +1742,7 @@ final class CorrespondenceOffscreenPg
 
     private function restoreGeneration(): ?string
     {
+        if (method_exists($this->store, 'restoreGeneration')) return $this->store->restoreGeneration();
         if (!array_key_exists('ptr_runtime_generation',$GLOBALS) || !is_string($GLOBALS['ptr_runtime_generation'])) return null;
         return $GLOBALS['ptr_runtime_generation'];
     }

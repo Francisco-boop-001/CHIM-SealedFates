@@ -11,6 +11,7 @@ final class CorrespondenceAutonomyPg
 
     public function ensureSchema(): void
     {
+        $this->store->ensureSchema();
         $ready = $this->store->query("SELECT to_regclass('plugins.correspondence_autonomy_settings') IS NOT NULL AS settings,to_regclass('plugins.correspondence_autonomy_decisions') IS NOT NULL AS decisions")[0] ?? [];
         if (($ready['settings'] ?? null) !== 't' || ($ready['decisions'] ?? null) !== 't') {
             $path = dirname(__DIR__).'/migrations/002_autonomy.sql';
@@ -107,10 +108,13 @@ final class CorrespondenceAutonomyPg
             $work = $this->store->transaction(function() use ($requestModel) {
                 $clock = $this->clock();
                 $scope = $clock['playthrough_id'];
+                $restoreGeneration = $this->store->restoreGeneration();
+                $requestRestoreToken = $this->store->requestRestoreToken();
+                if (!is_string($restoreGeneration) || $restoreGeneration === '' || !is_string($requestRestoreToken) || !hash_equals($restoreGeneration, $requestRestoreToken)) return ['kind'=>'idle','status'=>'idle','reason'=>'restore_unavailable'];
                 $setting = $this->settingRow($scope);
                 if ($setting === null || !$this->dbBoolean($setting['enabled'] ?? false)) return ['kind'=>'idle','status'=>'idle','reason'=>'disabled'];
 
-                if ($this->sweepAbandonedClaims($scope, $clock['gamets']) > 0) return ['kind'=>'idle','status'=>'idle','reason'=>'abandoned_claim_retired'];
+                if ($this->sweepAbandonedClaims($scope, $clock['gamets'], $restoreGeneration) > 0) return ['kind'=>'idle','status'=>'idle','reason'=>'abandoned_claim_retired'];
 
                 $flush = $this->flushDue($scope, $clock, $setting);
                 if ($flush !== null) return $flush;
@@ -144,21 +148,28 @@ final class CorrespondenceAutonomyPg
                     $byId = $this->npcMap($this->npcRows());
                     $context = $this->contextForSource($source, $byId);
                     if ($context === null) {
-                        $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets']);
-                        return ['kind'=>'idle','status'=>'idle','reason'=>'actor_unavailable'];
+                        $deferredReason ??= 'actor_unavailable';
+                        continue;
+                    }
+                    try {
+                        $messages = correspondenceAutonomyMessages($source, $context['self'], $context['contacts']);
+                    } catch (Throwable) {
+                        $deferredReason ??= 'context_unavailable';
+                        continue;
                     }
                     if ($this->actorCooldownUntil($scope, $recipientId, $clock['gamets']) > $clock['gamets']) return ['kind'=>'idle','status'=>'idle','reason'=>'cooldown'];
+                    $context['messages'] = $messages;
                     $lineage = $this->lineage($scope, $documentId);
                     if ($lineage['depth'] >= 3 || $this->linkCount($scope, $lineage['root_document_id']) >= 3) {
                         $this->recordStaleSource($scope, $documentId, $eventId, $candidate['source_data'] ?? '', $clock['gamets'], 'chain_limit');
                         return ['kind'=>'idle','status'=>'idle','reason'=>'chain_limit'];
                     }
-                    $claim = $this->claim($scope, $documentId, $eventId, $clock['gamets'], $lineage, $context, $exposed['event']['data']);
+                    $claim = $this->claim($scope, $documentId, $eventId, $clock['gamets'], $lineage, $context, $exposed['event']['data'], $restoreGeneration);
                     if ($claim === null) return ['kind'=>'idle','status'=>'idle','reason'=>'already_claimed'];
                     return $claim + [
                         'kind'=>'claimed', 'clock'=>$clock, 'setting_updated_at'=>$setting['updated_at'] ?? null,
                         'event'=>$exposed['event'], 'source'=>$source, 'self'=>$context['self'], 'contacts'=>$context['contacts'],
-                        'context_sha256'=>$context['context_sha256'],
+                        'messages'=>$context['messages'], 'context_sha256'=>$context['context_sha256'],
                     ];
                 }
                 return ['kind'=>'idle','status'=>'idle','reason'=>$deferredReason ?? 'no_eligible_source'];
@@ -178,18 +189,20 @@ final class CorrespondenceAutonomyPg
         $decision = null;
         $body = '';
         try {
-            $messages = correspondenceAutonomyMessages($work['source'], $work['self'], $work['contacts']);
+            $messages = $work['messages'] ?? correspondenceAutonomyMessages($work['source'], $work['self'], $work['contacts']);
             if (!is_array($messages)) throw new UnexpectedValueException('invalid_messages');
             $inputChars = $this->messageChars($messages);
             $modelCalls++;
             if (!$this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars)) {
                 $modelCalls = 0;
-                return $finish('failed', 'storage_error');
+                return $this->restoreStateChanged($work['restore_generation'] ?? null) === true
+                    ? $finish('stale', 'restore_changed')
+                    : $finish('failed', 'storage_error');
             }
             $raw = $requestModel($messages);
             if (!is_string($raw)) throw new UnexpectedValueException('invalid_model_output');
             $outputChars = $this->charCount($raw);
-            if (!$this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars)) return $finish('failed', 'storage_error');
+            if (!$this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars)) return $this->restoreStateChanged($work['restore_generation'] ?? null) === true ? $finish('stale', 'restore_changed') : $finish('failed', 'storage_error');
             $decision = correspondenceAutonomyDecision($raw, $work['source'], $work['contacts']);
             if (!is_array($decision) || !in_array($decision['action'] ?? null, self::ACTION_VALUES, true)) throw new InvalidArgumentException('invalid_decision');
             if ($decision['action'] !== 'none') {
@@ -211,13 +224,17 @@ final class CorrespondenceAutonomyPg
             return $finish($terminal['status'], $terminal['reason']);
         }
 
-        try {
-            $result = $this->store->transaction(function() use ($work, $decision, $body, $modelCalls, $inputChars, $outputChars) {
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            try {
+                $result = $this->runCompletionTransaction(function() use ($work, $decision, $body, $modelCalls, $inputChars, $outputChars) {
                 $scope = $this->clock();
+                $restoreState = $this->restoreStateChanged($work['restore_generation'] ?? null);
+                if ($restoreState === true) return ['status'=>'stale','reason'=>'restore_changed'];
+                if ($restoreState === null) return ['status'=>'failed','reason'=>'storage_error'];
+                if ($scope['playthrough_id'] !== $work['playthrough_id'] || $scope['gamets'] < $work['claim_gamets']) return ['status'=>'stale','reason'=>'clock_changed'];
                 $claimed = $this->decisionRow($work['playthrough_id'], $work['source_document_id']);
-                if ($claimed === null || ($claimed['claim_id'] ?? null) !== $work['claim_id'] || ($claimed['status'] ?? null) !== 'claimed'
-                    || !$this->claimMatchesWork($claimed, $work, $scope['gamets'])) return $this->closeLostClaim($work, 'claim_anchor_invalid');
-                if ($scope['playthrough_id'] !== $work['playthrough_id'] || $scope['gamets'] < $work['claim_gamets']) return $this->closeLostClaim($work, 'clock_changed');
+                if ($claimed === null || ($claimed['claim_id'] ?? null) !== $work['claim_id'] || ($claimed['status'] ?? null) !== 'claimed') return ['status'=>'stale','reason'=>'claim_changed'];
+                if (!$this->claimMatchesWork($claimed, $work, $scope['gamets'])) return $this->closeLostClaim($work);
                 $setting = $this->settingRow($scope['playthrough_id']);
                 if ($setting === null || !$this->dbBoolean($setting['enabled'] ?? false) || ($setting['updated_at'] ?? null) !== $work['setting_updated_at']) return $this->markTerminal($work, 'stale', null, null, null, 'setting_changed', $scope['gamets'], $modelCalls, $inputChars, $outputChars);
                 try { $exposed = $this->service->readExposedSource($work['source_event_id'], $work['recipient_id']); }
@@ -248,12 +265,18 @@ final class CorrespondenceAutonomyPg
                 $payload = $this->completionPayload($work, 'queued', 'queued_for_transit', $completedGamets, $modelCalls, $inputChars, $outputChars, $decision['action'], $compose['document_id'], $due) + ['target_key'=>$target['key']];
                 $this->updateDecision($work, 'queued', $decision['action'], $compose['document_id'], $due, $payload);
                 return ['status'=>'queued','reason'=>'queued_for_transit'];
-            });
+            }, (string)$work['restore_generation']);
             return $finish($result['status'], $result['reason']);
-        } catch (Throwable) {
-            $this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars);
-            return $finish('failed', 'storage_error');
+            } catch (Throwable) {
+                $settled = $this->readCompletedDecision($work);
+                if ($settled !== null) return $finish($settled['status'], $settled['reason']);
+                if ($attempt === 0 && $this->claimStillOwned($work)) continue;
+                if ($this->restoreStateChanged($work['restore_generation'] ?? null) === true) return $finish('stale', 'restore_changed');
+                $this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars);
+                return $finish('failed', 'storage_error');
+            }
         }
+        return $finish('failed', 'storage_error');
     }
 
     private function policyReady(): bool
@@ -369,6 +392,10 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
             'global_cooldown_until_gamets'=>$payload['global_cooldown_until_gamets'],
             'actor_cooldown_until_gamets'=>$payload['actor_cooldown_until_gamets'],
         ];
+        if (array_key_exists('restore_generation', $payload)) {
+            if (!is_string($payload['restore_generation']) || $payload['restore_generation'] === '') return false;
+            $completionData['restore_generation'] = $payload['restore_generation'];
+        }
         if (!$this->anchorMatches($payload['completion_anchor'] ?? null, $completionData, $payload['completed_gamets'], $gamets)) return false;
         return ($decision['action'] ?? null) === $payload['completed_action']
             && ($decision['child_document_id'] ?? null) === $payload['completed_child_document_id']
@@ -391,6 +418,10 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
             'global_cooldown_until_gamets'=>$payload['claim_global_cooldown_until_gamets'],
             'actor_cooldown_until_gamets'=>$payload['claim_actor_cooldown_until_gamets'],
         ];
+        if (array_key_exists('restore_generation', $payload)) {
+            if (!is_string($payload['restore_generation']) || $payload['restore_generation'] === '') return false;
+            $claimData['restore_generation'] = $payload['restore_generation'];
+        }
         return $this->anchorMatches($payload['claim_anchor'] ?? null, $claimData, $payload['claim_gamets'], $gamets);
     }
 
@@ -404,17 +435,103 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
         if (!is_array($payload) || ($payload['self_id'] ?? null) !== (string)$work['recipient_id']
             || ($payload['context_sha256'] ?? null) !== $work['context_sha256']
             || ($payload['source_event_sha256'] ?? null) !== $work['source_event_sha256']
-            || ($payload['source_body_sha256'] ?? null) !== $work['source_body_sha256']) return false;
+            || ($payload['source_body_sha256'] ?? null) !== $work['source_body_sha256']
+            || ($payload['restore_generation'] ?? null) !== ($work['restore_generation'] ?? null)) return false;
         return $this->validClaimAnchor($decision, $gamets)
             && hash_equals(correspondenceCanonicalJson($work['claim_anchor']), correspondenceCanonicalJson($payload['claim_anchor']));
     }
 
-    private function closeLostClaim(array $work, string $reason): array
+    private function closeLostClaim(array $work): array
     {
-        $this->store->query("UPDATE plugins.correspondence_autonomy_decisions SET status='stale',action=NULL,child_document_id=NULL,due_gamets=NULL,payload=(payload-ARRAY['completion_anchor','completed_gamets','global_cooldown_until_gamets','actor_cooldown_until_gamets','completed_status','completed_action','completed_child_document_id','completed_due_gamets'])||jsonb_build_object('reason_code',$1::text) WHERE playthrough_id=$2 AND source_document_id=$3 AND claim_id=$4 AND status='claimed'", [$reason,$work['playthrough_id'],$work['source_document_id'],$work['claim_id']]);
-        return ['status'=>'stale','reason'=>$reason];
+        $rows = $this->store->query("UPDATE plugins.correspondence_autonomy_decisions SET status='stale',payload=COALESCE(payload,'{}'::jsonb)||jsonb_build_object('reason_code','claim_anchor_invalid') WHERE playthrough_id=$1 AND source_document_id=$2 AND source_event_id=$3 AND claim_id=$4 AND status='claimed' AND action IS NULL AND child_document_id IS NULL AND due_gamets IS NULL RETURNING source_document_id::text", [
+            $work['playthrough_id'],$work['source_document_id'],(string)$work['source_event_id'],$work['claim_id'],
+        ]);
+        return count($rows) === 1
+            ? ['status'=>'stale','reason'=>'claim_anchor_invalid']
+            : ['status'=>'stale','reason'=>'claim_changed'];
     }
 
+    private function restoreStateChanged(mixed $expectedRestoreToken): ?bool
+    {
+        if (!is_string($expectedRestoreToken) || $expectedRestoreToken === '') return true;
+        try {
+            $current = $this->store->restoreGeneration();
+            $request = $this->store->requestRestoreToken();
+            if (!is_string($current) || !is_string($request)) return true;
+            return !hash_equals($expectedRestoreToken, $current) || !hash_equals($expectedRestoreToken, $request);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function restoreTokenMatches(mixed $expectedRestoreToken): bool
+    {
+        return $this->restoreStateChanged($expectedRestoreToken) === false;
+    }
+    private function runCompletionTransaction(callable $work, string $expectedRestoreToken): mixed
+    {
+        if (method_exists($this->store, 'completionTransaction')) return $this->store->completionTransaction($work, $expectedRestoreToken);
+        return $this->store->transaction(function () use ($work, $expectedRestoreToken) {
+            if (!$this->restoreTokenMatches($expectedRestoreToken)) throw new DomainException('restore_epoch_changed');
+            $result = $work();
+            if (!$this->restoreTokenMatches($expectedRestoreToken)) throw new DomainException('restore_epoch_changed');
+            return $result;
+        });
+    }
+
+    private function claimStillOwned(array $work): bool
+    {
+        if (!$this->restoreTokenMatches($work['restore_generation'] ?? null)) return false;
+        try {
+            return $this->store->readTransaction(function () use ($work): bool {
+                $clock = $this->clock();
+                if ($clock['playthrough_id'] !== $work['playthrough_id'] || $clock['gamets'] < $work['claim_gamets']) return false;
+                $decision = $this->decisionRow($work['playthrough_id'], $work['source_document_id']);
+                return $decision !== null && ($decision['status'] ?? null) === 'claimed'
+                    && ($decision['claim_id'] ?? null) === $work['claim_id']
+                    && $this->claimMatchesWork($decision, $work, $clock['gamets']);
+            });
+        } catch (Throwable) {
+            return false;
+        }
+    }
+
+    private function readCompletedDecision(array $work): ?array
+    {
+        if (!$this->restoreTokenMatches($work['restore_generation'] ?? null)) return null;
+        try {
+            return $this->store->readTransaction(function () use ($work): ?array {
+                $clock = $this->clock();
+                if ($clock['playthrough_id'] !== $work['playthrough_id']) return null;
+                $decision = $this->decisionRow($work['playthrough_id'], $work['source_document_id']);
+                if ($decision === null || ($decision['claim_id'] ?? null) !== $work['claim_id']
+                    || ($decision['status'] ?? null) === 'claimed'
+                    || ($decision['source_event_id'] ?? null) !== (string)$work['source_event_id']
+                    || ($decision['payload']['restore_generation'] ?? null) !== ($work['restore_generation'] ?? null)) return null;
+                $status = (string)$decision['status'];
+                $payload = $decision['payload'] ?? null;
+                if ($status === 'stale' && is_array($payload) && ($payload['reason_code'] ?? null) === 'claim_anchor_invalid'
+                    && !array_key_exists('completion_anchor', $payload) && !array_key_exists('completed_status', $payload)
+                    && ($decision['action'] ?? null) === null && ($decision['child_document_id'] ?? null) === null
+                    && ($decision['due_gamets'] ?? null) === null) {
+                    return ['status'=>'stale','reason'=>'claim_anchor_invalid'];
+                }
+                if (!$this->validDecisionAnchors($decision, $clock['gamets'])) return null;
+                if ($status === 'queued') {
+                    $childId = $decision['child_document_id'] ?? null;
+                    $child = is_string($childId) ? $this->store->loadDocument($childId) : null;
+                    if ($child === null || ($child['playthrough_id'] ?? null) !== $work['playthrough_id']
+                        || ($child['request_id'] ?? null) !== $work['request_id']
+                        || !$this->store->eventMatches($child['anchor'] ?? [])) return null;
+                    return ['status'=>'queued','reason'=>'queued_for_transit'];
+                }
+                if (!in_array($status, ['silent','failed','stale','unknown','dispatched'], true)) return null;
+                return ['status'=>$status,'reason'=>(string)($decision['payload']['reason_code'] ?? 'completed')];
+            });
+        } catch (Throwable) {
+            return null;
+        }
+    }
     private function anchorMatches(mixed $anchor, array $expectedData, string $expectedGamets, int $currentGamets): bool
     {
         if (!is_array($anchor) || ($anchor['type'] ?? null) !== 'info' || ($anchor['sess'] ?? null) !== 'correspondence_v1'
@@ -429,29 +546,21 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
         }
     }
 
-    private function sweepAbandonedClaims(string $scope, int $gamets): int
+    private function sweepAbandonedClaims(string $scope, int $gamets, string $restoreGeneration): int
     {
-        $rows = $this->store->query("SELECT playthrough_id,source_document_id::text,source_event_id::text,claim_id::text,request_id::text,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND status='claimed' AND created_at <= clock_timestamp()-interval '180 seconds' ORDER BY created_at,source_document_id LIMIT 64 FOR UPDATE", [$scope]);
+        $rows = $this->store->query("SELECT playthrough_id,source_document_id::text,source_event_id::text,claim_id::text,request_id::text,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND status='claimed' AND (payload->>'restore_generation' IS DISTINCT FROM $2 OR created_at <= clock_timestamp()-interval '180 seconds') ORDER BY created_at,source_document_id LIMIT 64 FOR UPDATE", [$scope,$restoreGeneration]);
         $retired = 0;
         foreach ($rows as $row) {
             $decision = array_merge($row, ['payload'=>$this->jsonObject($row['payload'] ?? null)]);
             $work = $this->claimWorkForRetirement($decision);
-            if ($work === null) {
-                $this->closeLostClaim([
-                    'playthrough_id'=>$scope,
-                    'source_document_id'=>(string)$row['source_document_id'],
-                    'claim_id'=>(string)$row['claim_id'],
-                ], 'claim_anchor_invalid');
-                $retired++;
+            if ($work === null || !$this->claimMatchesWork($decision, $work, $gamets)) {
+                // Inert quarantine never turns missing proof into a completion or permission to retry.
+                if ($this->closeLostClaim($row)['reason'] === 'claim_anchor_invalid') $retired++;
                 continue;
             }
-            if (!$this->claimMatchesWork($decision, $work, $gamets)) {
-                $this->closeLostClaim($work, 'claim_anchor_invalid');
-                $retired++;
-                continue;
-            }
+            $reason = ($work['restore_generation'] ?? null) !== $restoreGeneration ? 'restore_changed' : 'abandoned_claim_expired';
             $metrics = $this->attemptCounters($decision['payload']);
-            $this->markTerminal($work, 'stale', null, null, null, 'abandoned_claim_expired', $gamets, $metrics['model_calls'], $metrics['input_chars'], $metrics['output_chars']);
+            $this->markTerminal($work, 'stale', null, null, null, $reason, $gamets, $metrics['model_calls'], $metrics['input_chars'], $metrics['output_chars']);
             $retired++;
         }
         return $retired;
@@ -478,7 +587,8 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
         }
         $recipientId = filter_var($payload['self_id'], FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
         $sourceEventIdInt = filter_var($sourceEventId, FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
-        if (!is_int($recipientId) || !is_int($sourceEventIdInt) || !is_array($payload['claim_anchor'] ?? null)) return null;
+        if (!is_int($recipientId) || !is_int($sourceEventIdInt) || !is_array($payload['claim_anchor'] ?? null)
+            || (array_key_exists('restore_generation', $payload) && (!is_string($payload['restore_generation']) || $payload['restore_generation'] === ''))) return null;
         return [
             'playthrough_id'=>$playthroughId,
             'source_document_id'=>$sourceDocumentId,
@@ -493,6 +603,7 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
             'source_body_sha256'=>$payload['source_body_sha256'],
             'context_sha256'=>$payload['context_sha256'],
             'claim_anchor'=>$payload['claim_anchor'],
+            'restore_generation'=>$payload['restore_generation'] ?? null,
         ];
     }
 
@@ -678,7 +789,7 @@ SQL;
         $this->store->query("INSERT INTO plugins.correspondence_autonomy_decisions(playthrough_id,source_document_id,source_event_id,claim_id,request_id,root_document_id,depth,status,action,payload) VALUES($1,$2,$3,$4,$4,$5,$6,'stale',NULL,$7::jsonb) ON CONFLICT DO NOTHING", [$scope,$documentId,$eventId,$claim,$lineage['root_document_id'],$lineage['depth'],correspondenceJson($payload)]);
     }
 
-    private function claim(string $scope, string $documentId, int $eventId, int $gamets, array $lineage, array $context, string $eventData): ?array
+    private function claim(string $scope, string $documentId, int $eventId, int $gamets, array $lineage, array $context, string $eventData, string $restoreGeneration): ?array
     {
         $claim = correspondenceUuid();
         $sourceBodyHash = hash('sha256', $context['source_body']);
@@ -695,6 +806,7 @@ SQL;
             'source_event_sha256'=>hash('sha256', $eventData),
             'source_body_sha256'=>$sourceBodyHash,
             'context_sha256'=>$context['context_sha256'],
+            'restore_generation'=>$restoreGeneration,
             'claim_anchor'=>null,
         ];
         $rows = $this->store->query("INSERT INTO plugins.correspondence_autonomy_decisions(playthrough_id,source_document_id,source_event_id,claim_id,request_id,root_document_id,depth,status,action,payload) VALUES($1,$2,$3,$4,$4,$5,$6,'claimed',NULL,$7::jsonb) ON CONFLICT DO NOTHING RETURNING claim_id::text", [$scope,$documentId,$eventId,$claim,$lineage['root_document_id'],$lineage['depth'],correspondenceJson($payload)]);
@@ -703,6 +815,7 @@ SQL;
             'kind'=>'autonomy_claim','playthrough_id'=>$scope,'claim_id'=>$claim,'request_id'=>$claim,
             'source_document_id'=>$documentId,'source_event_id'=>(string)$eventId,'claim_gamets'=>(string)$gamets,
             'global_cooldown_until_gamets'=>(string)$claimGlobalCooldown,'actor_cooldown_until_gamets'=>(string)$claimActorCooldown,
+            'restore_generation'=>$restoreGeneration,
         ];
         $claimAnchor = $this->store->appendEvent('correspondence_anchor', correspondenceJson($claimData), '', 'correspondence_v1');
         $payload['claim_anchor'] = $claimAnchor;
@@ -713,7 +826,7 @@ SQL;
             'recipient_id'=>(int)$context['self_row']['id'],'claim_id'=>$claim,'request_id'=>$claim,
             'root_document_id'=>$lineage['root_document_id'],'depth'=>$lineage['depth'],'claim_gamets'=>$gamets,
             'source_event_sha256'=>hash('sha256',$eventData),'source_body_sha256'=>$sourceBodyHash,
-            'claim_anchor'=>$claimAnchor,'claim_global_cooldown_until_gamets'=>$claimGlobalCooldown,
+            'claim_anchor'=>$claimAnchor,'claim_global_cooldown_until_gamets'=>$claimGlobalCooldown,'restore_generation'=>$restoreGeneration,
             'claim_actor_cooldown_until_gamets'=>$claimActorCooldown,
         ];
     }
@@ -803,26 +916,30 @@ SQL;
             $eligible[$key]=['key'=>$key,'name'=>$actor['name'],'kind'=>'npc'];
         }
         $senderKey = ($source['claimed_sender']['kind'] ?? null)==='player' ? 'player' : 'npc:'.(int)($source['claimed_sender']['id'] ?? 0);
-        $contacts=[];
-        if ($senderKey==='player' && $player!==null) $contacts[]=$player;
-        elseif (isset($eligible[$senderKey])) $contacts[]=$eligible[$senderKey];
+        $senderName = $source['claimed_sender']['name'] ?? null;
+        if (!is_string($senderName)) return null;
+        $nameKey = static fn(string $name): string => function_exists('mb_strtolower') ? mb_strtolower($name,'UTF-8') : strtolower($name);
+        $selfNameKey = $nameKey($selfRow['name']);
+        $sender = $senderKey === 'player' ? $player : ($eligible[$senderKey] ?? null);
+        if (!is_array($sender) || $sender['name'] !== $senderName || $senderKey === $selfRow['key']) return null;
+        $senderNameKey = $nameKey($sender['name']);
+        if ($senderNameKey === $selfNameKey) return null;
+        $contacts=[$sender];
+        $contactNames=[$selfNameKey=>true,$senderNameKey=>true];
         $sorted=array_values($eligible);
         usort($sorted,fn($a,$b)=>(int)substr($a['key'],4)<=>(int)substr($b['key'],4));
-        $contactNames=[];
-        foreach($contacts as $contact)$contactNames[function_exists('mb_strtolower')?mb_strtolower($contact['name'],'UTF-8'):strtolower($contact['name'])]=true;
         $npcLimit=$player!==null?31:32;
         $npcCount=count(array_filter($contacts,fn($contact)=>$contact['kind']==='npc'));
         foreach($sorted as $contact){
             if($npcCount>=$npcLimit)break;
             if(in_array($contact['key'],array_column($contacts,'key'),true))continue;
-            $nameKey=function_exists('mb_strtolower')?mb_strtolower($contact['name'],'UTF-8'):strtolower($contact['name']);
-            if(isset($contactNames[$nameKey])||($player!==null&&$nameKey===(function_exists('mb_strtolower')?mb_strtolower($player['name'],'UTF-8'):strtolower($player['name']))))continue;
-            $contacts[]=$contact;$contactNames[$nameKey]=true;$npcCount++;
+            $contactNameKey=$nameKey($contact['name']);
+            if(isset($contactNames[$contactNameKey])||($player!==null&&$contactNameKey===$nameKey($player['name'])))continue;
+            $contacts[]=$contact;$contactNames[$contactNameKey]=true;$npcCount++;
         }
         if($player!==null&&!in_array('player',array_column($contacts,'key'),true)){
-            $playerNameKey=function_exists('mb_strtolower')?mb_strtolower($player['name'],'UTF-8'):strtolower($player['name']);
-            if(isset($contactNames[$playerNameKey]))return null;
-            $contacts[]=$player;
+            $playerNameKey=$nameKey($player['name']);
+            if(!isset($contactNames[$playerNameKey]))$contacts[]=$player;
         }
         $contactRows=[];
         $state=['self'=>['key'=>$selfRow['key'],'name'=>$selfRow['name'],'personality'=>$selfRow['personality'],'enabled_raw'=>$selfRow['enabled_raw'],'letters_raw'=>$selfRow['letters_raw'],'dead_raw'=>$selfRow['dead_raw']],'contacts'=>[]];
@@ -892,22 +1009,30 @@ SQL;
 
     private function completeFailure(array $work,string $reason,int $calls,int $inputChars,int $outputChars): array
     {
-        try{
-            return $this->store->transaction(function()use($work,$reason,$calls,$inputChars,$outputChars){
-                $clock=$this->clock();
-                $claimed=$this->decisionRow($work['playthrough_id'],$work['source_document_id']);
-                if($claimed===null||($claimed['claim_id']??null)!==$work['claim_id']||($claimed['status']??null)!=='claimed'
-                    ||!$this->claimMatchesWork($claimed,$work,$clock['gamets']))return $this->closeLostClaim($work,'claim_anchor_invalid');
-                if($clock['playthrough_id']!==$work['playthrough_id']||$clock['gamets']<$work['claim_gamets'])return $this->closeLostClaim($work,'clock_changed');
-                $this->markTerminal($work,'failed',null,null,null,$reason,$clock['gamets'],$calls,$inputChars,$outputChars);
-                return ['status'=>'failed','reason'=>$reason];
-            });
-        }catch(Throwable){
-            $this->persistAttemptCounters($work,$calls,$inputChars,$outputChars);
-            return ['status'=>'failed','reason'=>'storage_error'];
+        for ($attempt = 0; $attempt < 2; $attempt++) {
+            try {
+                return $this->runCompletionTransaction(function () use ($work,$reason,$calls,$inputChars,$outputChars): array {
+                    $clock = $this->clock();
+                    $restoreState = $this->restoreStateChanged($work['restore_generation'] ?? null);
+                    if ($restoreState === true) return ['status'=>'stale','reason'=>'restore_changed'];
+                    if ($restoreState === null) return ['status'=>'failed','reason'=>'storage_error'];
+                    if ($clock['playthrough_id'] !== $work['playthrough_id'] || $clock['gamets'] < $work['claim_gamets']) return ['status'=>'stale','reason'=>'clock_changed'];
+                    $claimed = $this->decisionRow($work['playthrough_id'],$work['source_document_id']);
+                    if ($claimed === null || ($claimed['claim_id'] ?? null) !== $work['claim_id'] || ($claimed['status'] ?? null) !== 'claimed') return ['status'=>'stale','reason'=>'claim_changed'];
+                    if (!$this->claimMatchesWork($claimed,$work,$clock['gamets'])) return $this->closeLostClaim($work);
+                    return $this->markTerminal($work,'failed',null,null,null,$reason,$clock['gamets'],$calls,$inputChars,$outputChars);
+                }, (string)($work['restore_generation'] ?? ''));
+            } catch (Throwable) {
+                $settled = $this->readCompletedDecision($work);
+                if ($settled !== null) return $settled;
+                if ($attempt === 0 && $this->claimStillOwned($work)) continue;
+                if ($this->restoreStateChanged($work['restore_generation'] ?? null) === true) return ['status'=>'stale','reason'=>'restore_changed'];
+                $this->persistAttemptCounters($work,$calls,$inputChars,$outputChars);
+                return ['status'=>'failed','reason'=>'storage_error'];
+            }
         }
+        return ['status'=>'failed','reason'=>'storage_error'];
     }
-
     private function attemptCounters(array $payload): array
     {
         $limit = 2147483647;
@@ -923,7 +1048,7 @@ SQL;
 
     private function persistAttemptCounters(array $work,int $calls,int $inputChars,int $outputChars): bool
     {
-        if ($calls < 0 || $calls > 1 || $inputChars < 0 || $inputChars > 2147483647 || $outputChars < 0 || $outputChars > 2147483647) return false;
+        if (!$this->restoreTokenMatches($work['restore_generation'] ?? null) || $calls < 0 || $calls > 1 || $inputChars < 0 || $inputChars > 2147483647 || $outputChars < 0 || $outputChars > 2147483647) return false;
         try {
             $rows = $this->store->query("UPDATE plugins.correspondence_autonomy_decisions SET payload=COALESCE(payload,'{}'::jsonb)||jsonb_build_object('model_calls',$5::integer,'input_chars',$6::integer,'output_chars',$7::integer) WHERE playthrough_id=$1 AND source_document_id=$2 AND source_event_id=$3 AND claim_id=$4 AND status='claimed' RETURNING claim_id::text", [
                 $work['playthrough_id'],$work['source_document_id'],(string)$work['source_event_id'],$work['claim_id'],$calls,$inputChars,$outputChars,
@@ -953,8 +1078,9 @@ SQL;
             'completed_gamets'=>(string)$gamets,'global_cooldown_until_gamets'=>(string)$globalCooldown,
             'actor_cooldown_until_gamets'=>(string)$actorCooldown,
         ];
+        if (is_string($work['restore_generation'] ?? null) && $work['restore_generation'] !== '') $completionData['restore_generation'] = $work['restore_generation'];
         $completionAnchor = $this->store->appendEvent('correspondence_anchor', correspondenceJson($completionData), '', 'correspondence_v1');
-        return [
+        $payload = [
             'reason_code'=>$reason,
             'claim_gamets'=>(string)$work['claim_gamets'],
             'claim_global_cooldown_until_gamets'=>(string)$work['claim_global_cooldown_until_gamets'],
@@ -971,6 +1097,8 @@ SQL;
             'completed_due_gamets'=>$due===null?null:(string)$due,
             'model_calls'=>$calls,'input_chars'=>$inputChars,'output_chars'=>$outputChars,
         ];
+        if (is_string($work['restore_generation'] ?? null) && $work['restore_generation'] !== '') $payload['restore_generation'] = $work['restore_generation'];
+        return $payload;
     }
 
     private function updateDecision(array $work,string $status,?string $action,?string $child,?int $due,array $payload): void

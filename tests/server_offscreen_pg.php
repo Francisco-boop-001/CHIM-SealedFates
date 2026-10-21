@@ -208,6 +208,7 @@ offscreenPgObserve($engine, 'bored', 120, 120);
 $dsnForPeer = $dsn;
 $modelCalls = 0;
 $peerResult = null;
+$originalGoal = offscreenPgSql("SELECT extended_data->>'background_life_goals' goal FROM public.core_npc_master WHERE id=900001")[0]['goal'];
 $driftResult = $engine->tick(function (array $messages) use (&$modelCalls, &$peerResult, $dsnForPeer): string {
     $modelCalls++;
     $goalPayload = json_decode($messages[1]['content'], true, 64, JSON_THROW_ON_ERROR);
@@ -221,15 +222,17 @@ $driftResult = $engine->tick(function (array $messages) use (&$modelCalls, &$pee
     $peerCalls = 0;
     $peerResult = $peerEngine->tick(static function () use (&$peerCalls): string { $peerCalls++; throw new RuntimeException('duplicate_model_call'); });
     offscreenPgCheck($peerCalls === 0 && ($peerResult['model_calls'] ?? null) === 0, 'active_claim_must_block_second_paid_call');
+    offscreenPgSql("UPDATE public.core_npc_master SET extended_data=jsonb_set(extended_data,'{background_life_goals}',to_jsonb('A genuinely changed goal.'::text)) WHERE id=900001");
     pg_close($peer);
     return offscreenPgInitiation();
 });
-offscreenPgCheck($driftResult['status'] === 'stale' && $driftResult['reason'] === 'observation_changed'
+offscreenPgCheck($driftResult['status'] === 'stale' && $driftResult['reason'] === 'goal_changed'
     && $driftResult['model_calls'] === 1 && $modelCalls === 1, 'drifted_goal_output_must_be_rejected');
 offscreenPgCheck(($peerResult['status'] ?? null) === 'idle' && in_array($peerResult['reason'] ?? null, ['cooldown','already_claimed'], true), 'new_clock_concurrent_worker_must_idle');
 offscreenPgCheck(offscreenPgSql("SELECT count(*)::int AS n FROM plugins.correspondence_offscreen_mail WHERE playthrough_id=$1 AND depth=0", [$scope])[0]['n'] === '0'
     && offscreenPgSql("SELECT rowid FROM public.eventlog WHERE sess='written_evidence_v1'") === [], 'drifted_goal_must_not_create_or_expose_mail');
 
+offscreenPgSql("UPDATE public.core_npc_master SET extended_data=jsonb_set(extended_data,'{background_life_goals}',to_jsonb($1::text)) WHERE id=900001", [$originalGoal]);
 $freshGoalGamets = 120 + correspondenceAutonomyGamets(7);
 offscreenPgObserve($engine, 'bored', 122, $freshGoalGamets);
 $result = $engine->tick(static function () use (&$modelCalls): string {

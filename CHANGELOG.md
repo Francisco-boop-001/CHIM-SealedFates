@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-dev.18 — PRE-ALPHA
+
+- Replace global event-clock freshness with restore epochs/native floors; accept unrelated concurrent events without admitting stale requests.
+- Recover stuck claims and retry the same parsed result once without duplicate model calls or transfers; retain complete forwarded letters.
+- Correct sender/contact construction, receipt enum casing, operator Host/Origin checks and the default package CLI.
+- Verify 21 disposable PostgreSQL jobs, 25 pure cases and deterministic matching assets; preserve strict unknown/no-resend behavior.
+- Keep the web interface available. Department dev.18 integration is separate and unverified at publication. No live/game/provider deployment.
+
 ## 0.1.0-dev.17 — PRE-ALPHA
 
 - Retire one proven ineligible arrived letter per tick and close abandoned old-generation claims without exposing or rewriting mail. Newly anchored transient reactions can be reconsidered once under fresh eligibility and restore checks.

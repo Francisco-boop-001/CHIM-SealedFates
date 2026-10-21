@@ -14,6 +14,7 @@ check($doc['state'] === 'queued', 'composition must queue without publishing evi
 check(count($store->events) === 1 && $store->events[1]['type'] === 'correspondence_anchor', 'only private anchor is published on compose');
 check($service->compose($input)['document_id'] === $doc['document_id'], 'repeated form request must be idempotent');
 function rejected(callable $fn, string $why): void { try { $fn(); } catch (DomainException|InvalidArgumentException $e) { return; } throw new RuntimeException($why); }
+function accepted(callable $fn): mixed { try { return $fn(); } catch (InvalidArgumentException) { return null; } }
 rejected(fn()=>correspondenceAttachments([['kind'=>'gold','form_id'=>'skyrim.esm|0000000F','quantity'=>1]]),'Gold must use exact frozen canonical stable identity');
 $changed = $input; $changed['body'] = 'different'; rejected(fn()=>$service->compose($changed), 'same request id must reject changed content');
 $bad=$input; $bad['request_id']='22222222-2222-4222-8222-222222222222'; $bad['body']=str_repeat('é',2001); rejected(fn()=>$service->compose($bad),'Unicode overflow must reject');
@@ -32,9 +33,12 @@ $wrong=$receipt; $wrong['nonce']=str_repeat('a',64); rejected(fn()=>$service->re
 $wrong=$receipt; $wrong['attachments'][0]['after_source']=60; rejected(fn()=>$service->receive($wrong),'mismatched deltas must reject');
 $got=$service->receive($receipt); check($got['state']==='delivered','receipt confirms possession');
 check(count($store->events)===3,'possession must not publish written evidence');
-$upperReceipt=$receipt;foreach(['document_id','operation_id','receipt_id','scope_token','nonce']as$key)$upperReceipt[$key]=strtoupper($upperReceipt[$key]);
-check($service->receive($upperReceipt)===$got&&$store->operations[$op['operation_id']]['receipt']===$receipt,'uppercase hex receipt identities must bind to the same operation without changing stored canonical IDs');
+$upperReceipt=$receipt;foreach(['document_id','operation_id','receipt_id','scope_token','nonce']as$key)$upperReceipt[$key]=strtoupper($upperReceipt[$key]);$upperReceipt['status']=strtoupper($upperReceipt['status']);$upperReceipt['reason']=strtoupper($upperReceipt['reason']);
+$upperAccepted=accepted(fn()=>$service->receive($upperReceipt));check($upperAccepted===$got&&$store->operations[$op['operation_id']]['receipt']===$receipt,'uppercase identities and ASCII enum fields must bind to the same operation and keep canonical stored values');
 check($service->receive($receipt)===$got && count($store->events)===3,'receipt replay must be idempotent');
+$badEnum=$receipt;$badEnum['status']='DELIVERED?';rejected(fn()=>$service->receive($badEnum),'unknown receipt status must reject');
+$badReason=$receipt;$badReason['reason']="PHYSICAL\u{00C9}_ONLY";rejected(fn()=>$service->receive($badReason),'non-ASCII receipt reason must reject after ASCII case normalization');
+$badScope=$receipt;$badScope['playthrough_id']='UNPROFILED';rejected(fn()=>$service->receive($badScope),'playthrough identity stays case-sensitive');
 check($service->prompt('The Narrator')==='' && $service->prompt('Faendal')==='','unrelated/Narrator prompt gets no letters');
 $text=$service->prompt('Camilla'); check(str_contains($text,'Signed the jarl'),'recipient prompt gets original text');
 $source=end($store->events); check($source['type']==='written_evidence' && $source['sess']==='written_evidence_v1' && $source['people']==='|Camilla|','canonical source marker and recipient only');
@@ -50,9 +54,12 @@ $service->dispatch($doc['document_id']); check(count($store->commands)===2,'rest
 unset($store->events[1]); rejected(fn()=>$service->get($doc['document_id']),'restored missing document anchor must reject');
 $store2=new CorrespondenceMemoryStore();$svc2=new CorrespondenceService($store2);$queued=$svc2->compose($input);$sent2=$svc2->dispatch($queued['document_id']);$op2=$store2->operations[$sent2['operation_id']];
 $r2=$receipt;foreach(['document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce']as$key)$r2[$key]=$op2[$key];
-$unknown=$r2;$unknown['status']='unknown';$unknown['reason']='interrupted';$unknown['note_form_id']=0;$unknown['attachments'][0]['quantity']=0;$unknown['attachments'][0]['after_source']=100;$unknown['attachments'][0]['after_recipient']=5;
+$unknown=$r2;$unknown['status']='UNKNOWN';$unknown['reason']='INTERRUPTED';$unknown['note_form_id']=0;$unknown['attachments'][0]['quantity']=0;$unknown['attachments'][0]['after_source']=100;$unknown['attachments'][0]['after_recipient']=5;
 $unknown['attachments'][0]['after_source']=95;$unknown['attachments'][0]['after_recipient']=9;$unknown['attachments'][0]['quantity']=4;
-check($svc2->receive($unknown)['state']==='unknown','ambiguous outcome must remain unknown');
+$unknownAccepted=accepted(fn()=>$svc2->receive($unknown));check(($unknownAccepted['state']??null)==='unknown','ambiguous outcome must remain unknown');
+$storedUnknown=$store2->operations[$op2['operation_id']]['receipt'];check($storedUnknown['status']==='unknown'&&$storedUnknown['reason']==='interrupted'&&$storedUnknown['playthrough_id']==='unprofiled','uppercase unknown enum fields canonicalize while preserving unprofiled wire scope');
+$lowerUnknown=$unknown;$lowerUnknown['status']='unknown';$lowerUnknown['reason']='interrupted';check($svc2->receive($lowerUnknown)['state']==='unknown','lowercase replay of a case-normalized unknown stays unknown');
+rejected(fn()=>$svc2->retry($queued['document_id']),'unknown receipt never becomes retryable through case normalization');
 $svc2->dispatch($queued['document_id']);check(count($store2->commands)===2,'unknown must not resend');
 check($svc2->receive($r2)['state']==='delivered','read-only reconciliation may upgrade unknown to confirmed');
 $reordered=$store2->docs[$queued['document_id']];foreach(['author','payer','recipient','claimed_sender']as$key){$a=$reordered[$key];$reordered[$key]=['name'=>$a['name'],'id'=>$a['id'],'kind'=>$a['kind']];}$store2->docs[$queued['document_id']]=$reordered;
@@ -62,7 +69,8 @@ $svc2->dispatch($queued['document_id'],true);$reconcileWire=explode('@',end($sto
 $store3=new CorrespondenceMemoryStore();$svc3=new CorrespondenceService($store3);
 for($i=0;$i<4;$i++){$next=$input;$next['request_id']=correspondenceUuid();$next['attachments']=[];$q=$svc3->compose($next);$d=$svc3->dispatch($q['document_id']);$o=$store3->operations[$d['operation_id']];$r=$receipt;foreach(['document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce']as$key)$r[$key]=$o[$key];$r['attachments']=[];$svc3->receive($r);}
 $svc3->prompt('Camilla');$svc3->prompt('Camilla');check(count(array_filter($store3->events,fn($e)=>$e['type']==='written_evidence'))===4,'bounded prompts must eventually expose all delivered letters');
-$store4=new CorrespondenceMemoryStore();$svc4=new CorrespondenceService($store4);$next=$input;$next['attachments']=[];$q=$svc4->compose($next);$d=$svc4->dispatch($q['document_id']);$o=$store4->operations[$d['operation_id']];$r=$receipt;foreach(['document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce']as$key)$r[$key]=$o[$key];$r['status']='failed';$r['reason']='insufficient_inventory';$r['note_form_id']=0;$r['attachments']=[];$svc4->receive($r);
+$store4=new CorrespondenceMemoryStore();$svc4=new CorrespondenceService($store4);$next=$input;$next['attachments']=[];$q=$svc4->compose($next);$d=$svc4->dispatch($q['document_id']);$o=$store4->operations[$d['operation_id']];$r=$receipt;foreach(['document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce']as$key)$r[$key]=$o[$key];$r['status']='FAILED';$r['reason']='INSUFFICIENT_INVENTORY';$r['note_form_id']=0;$r['attachments']=[];$failedAccepted=accepted(fn()=>$svc4->receive($r));check(($failedAccepted['state']??null)==='failed','case-normalized safe preflight failure remains retryable');
+$lowerFailed=$r;$lowerFailed['status']='failed';$lowerFailed['reason']='insufficient_inventory';$failedEvents=count($store4->events);check($svc4->receive($lowerFailed)['state']==='failed'&&$store4->operations[$d['operation_id']]['receipt']['status']==='failed'&&$store4->operations[$d['operation_id']]['receipt']['reason']==='insufficient_inventory'&&count($store4->events)===$failedEvents,'lowercase replay of a case-normalized retryable failure is idempotent');
 check(method_exists($svc4,'retry'),'explicit safe failure retry missing');$retried=$svc4->retry($q['document_id']);check($retried['operation_id']!==$d['operation_id']&&$retried['state']==='dispatched','safe failed retry must get a new physical operation identity');
 rejected(fn()=>$svc4->retry($q['document_id']),'dispatched/unknown operation cannot be retried');
 $store5=new CorrespondenceMemoryStore();$svc5=new CorrespondenceService($store5);$next=$input;$next['attachments']=[];$q=$svc5->compose($next);$d=$svc5->dispatch($q['document_id']);$o=$store5->operations[$d['operation_id']];$r=$receipt;foreach(['document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce']as$key)$r[$key]=$o[$key];$r['attachments']=[];$svc5->receive($r);$lost=$store5->operations[$d['operation_id']]['receipt_anchor']['rowid'];unset($store5->events[$lost]);$r['status']='failed';$r['reason']='operation_conflict';$r['note_form_id']=0;$r['attachments']=[];$svc5->receive($r);

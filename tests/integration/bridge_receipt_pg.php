@@ -5,7 +5,7 @@ if(getenv('WSL_DISTRO_NAME')!=='DwemerAI4Skyrim3-test')throw new RuntimeExceptio
 $c=pg_connect('host=/var/run/postgresql dbname=chim_correspondence_it_snapshot1 user=postgres');
 $guard=pg_fetch_assoc(pg_query($c,"SELECT current_database() db,current_setting('listen_addresses') listeners"));
 if($guard!==['db'=>'chim_correspondence_it_snapshot1','listeners'=>''])throw new RuntimeException('owned synthetic snapshot only');
-$store=new CorrespondencePgStore($c,fn($s)=>$s->observedExecutor(),fn($title,$body)=>true);$store->bindRequestClock(['inputtext','100','100','synthetic native fixture']);$service=new CorrespondenceService($store);
+$store=new CorrespondencePgStore($c,fn($s)=>$s->observedExecutor(),fn($title,$body)=>true);$store->ensureSchema();$store->bindRequestClock(['inputtext','100','100','synthetic native fixture']);$service=new CorrespondenceService($store);
 $out='/mnt/k/ActorwrightExchange/artifacts/chim-correspondence-implementation-20261019/carrier-roundtrip';
 $playerMode=in_array($argv[1]??'',['setup-player','receive-player'],true);$phase=str_replace('-player','',$argv[1]??'');
 if($phase==='setup'){

@@ -10,7 +10,7 @@ from zipfile import ZipFile, ZipInfo, ZIP_STORED
 SERVER_FILES = (
     '.htaccess', 'manifest.json', 'index.php', 'preprocessing.php', 'context_pre.php',
     'lib/bootstrap.php', 'lib/boundaries.php', 'lib/runtime.php', 'lib/store.php',
-    'lib/view.php', 'lib/consumers.php', 'migrations/001_initial.sql',
+    'lib/view.php', 'lib/consumers.php', 'migrations/001_initial.sql', 'migrations/004_restore_state.sql',
     'postrequest.php', 'lib/autonomy_policy.php', 'lib/autonomy_store.php',
     'lib/autonomy_host.php', 'migrations/002_autonomy.sql',
     'offscreen-worker.php', 'offscreen-service.php', 'lib/offscreen_host.php',
@@ -304,7 +304,5 @@ if __name__=='__main__':
         header=pex_header(data)
         print(json.dumps({'path':str(clean_path),'sha256':hash_bytes(data),'bytes':len(data),'header':header,'body_sha256':hash_bytes(data[header['end']:]),'input_header_clean':caprica_metadata_clean},indent=2))
     else:
-        if not args.pex:
-            parser.error('--pex is required to build a package')
         result=build(root,args.pex,args.output or root/'dist')
         print(json.dumps({name:{'path':path,'sha256':hashlib.sha256(Path(path).read_bytes()).hexdigest()} for name,path in result.items()},indent=2))

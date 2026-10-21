@@ -24,8 +24,8 @@ initClockRequire($store->readTransaction(fn()=>true),'seconds_row_must_not_inval
 initClockEvent('1800000000000000003');
 // Last inserted row is deliberately NOT the maximum native clock.
 initClockEvent('1800000000000000002');
-$stale=false;try{$store->transaction(fn()=>true);}catch(DomainException $e){$stale=$e->getMessage()==='stale_request_clock';}
-initClockRequire($stale,'newer_nonmonotonic_native_event_must_reject_stale_completion');
+$store->transaction(fn()=>true);
+initClockRequire(true,'unrelated_future_event_must_not_reject_valid_native_completion');
 
 if(($argv[1]??null)!=='--fence-only'){
 $store->bindRequestClock(['inputtext','1800000000000000004','100']);
@@ -55,10 +55,11 @@ initClockSql('DELETE FROM public.eventlog WHERE gamets >= 100');initClockEvent('
 include dirname(__DIR__,2).'/server/context_pre.php';
 $started=microtime(true);
 $receiptStore=new CorrespondencePgStore($peer,fn($s)=>null,fn($title,$body)=>true);
+$receiptStore->ensureSchema();
 $receiptStore->bindRequestClock(['correspondence_receipt','1800000000000000005','100']);
 try{$receiptStore->transaction(fn()=>$receiptStore->appendEvent('correspondence_receipt_confirmed','{"synthetic":true}','','correspondence_v1'));}
 catch(Throwable $e){throw new RuntimeException('receipt_writer_blocked_by_init_fence',0,$e);}
 initClockRequire(microtime(true)-$started<1.0,'receipt_writer_must_not_wait_for_init_model_phase');
 initClockRequire(count(initClockSql("SELECT rowid FROM public.eventlog WHERE sess='correspondence_v1'"))===1,'receipt_evidence_must_commit_during_open_init_request');
-echo "PASS init/clock recovery: mixed native nanoseconds/core seconds, nonmonotonic stale clock, presence coalescing, restore fence and receipt commit before init shutdown\n";
+echo "PASS init/clock recovery: mixed native nanoseconds/core seconds, unrelated future event, presence coalescing, restore fence and receipt commit before init shutdown\n";
 pg_close($peer);

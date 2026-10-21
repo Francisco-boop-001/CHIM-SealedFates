@@ -224,10 +224,11 @@ $runNative = static function (int $ts, int $gamets, callable $modelFactory) use 
     return correspondenceAutonomyRunNativePostrequest(['inputtext',(string)$ts,(string)$gamets,'synthetic native recovery request'], $runtimeFactory, $modelFactory);
 };
 
-// F02: the claim commits before the callback; a newer native event makes completion stale.
+// A truly unavailable completion writer leaves durable work for the bounded expiry sweep.
 $f02Source = null;
 $abandoned = null;
 $f02ModelCalls = 0;
+$completionBlocker = correspondenceRecoveryFixture('chim_corr_recovery_autonomy');
 $claimGamets = 100 + correspondenceAutonomyGamets(2);
 try {
     $activateScope(null);
@@ -241,23 +242,28 @@ try {
             $abandoned = $rows[0];
             autonomyRecoverySql($connection, "UPDATE plugins.correspondence_autonomy_decisions SET created_at=clock_timestamp()-interval '181 seconds' WHERE playthrough_id='unprofiled' AND source_document_id=$1 AND claim_id=$2 AND status='claimed'", [$abandoned['source_id'],$abandoned['claim_id']]);
             autonomyRecoverySql($connection, "INSERT INTO public.eventlog(ts,gamets,type,data,sess,localts,people,location,party) VALUES(201,$1,'inputtext','later native event','',201,'','','')", [$claimGamets+1]);
+            global $completionBlocker;
+            autonomyRecoverySql($completionBlocker, 'SELECT pg_advisory_lock(18459814,1)');
             throw new RuntimeException('synthetic worker/model failure');
         };
     });
-    autonomyRecoveryCheck(($failed['status'] ?? null) === 'failed' && ($failed['reason'] ?? null) === 'storage_error', 'F02_later_timestamp_must_reject_completion');
+    autonomyRecoverySql($completionBlocker, 'SELECT pg_advisory_unlock(18459814,1)');
+    autonomyRecoveryCheck(($failed['status'] ?? null) === 'failed' && ($failed['reason'] ?? null) === 'storage_error', 'F02_persistently_unavailable_completion_writer_must_report_failure');
     if (is_array($abandoned)) {
         $claimed = autonomyRecoverySql($connection, 'SELECT claim_id::text,status,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', ['unprofiled',$abandoned['source_id']])[0] ?? [];
         autonomyRecoveryCheck(($claimed['status'] ?? null) === 'claimed' && ($claimed['claim_id'] ?? null) === $abandoned['claim_id'], 'F02_rejection_must_leave_the_same_claim');
         $payload = json_decode((string)($claimed['payload'] ?? '{}'), true, 64, JSON_THROW_ON_ERROR);
         autonomyRecoveryCheck($store->eventMatches($payload['claim_anchor'] ?? []), 'F02_original_claim_anchor_must_still_match');
 
+        autonomyRecoverySql($connection, 'UPDATE plugins.correspondence_restore_state SET pending=true WHERE singleton=true');
         $staleModelCalls = 0;
         $staleClock = correspondenceAutonomyRunNativePostrequest(['inputtext','200',(string)($claimGamets+1),'stale clock replay'], $runtimeFactory, static function () use (&$staleModelCalls): callable {
             return static function (array $messages) use (&$staleModelCalls): string { $staleModelCalls++; return autonomyRecoveryReply('npc:900002'); };
         });
         $afterStaleReplay = autonomyRecoverySql($connection, 'SELECT claim_id::text,status FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2', ['unprofiled',$abandoned['source_id']])[0] ?? [];
-        autonomyRecoveryCheck(($afterStaleReplay['status'] ?? null) === 'claimed' && ($afterStaleReplay['claim_id'] ?? null) === $abandoned['claim_id'] && $staleModelCalls === 0 && ($staleClock['status'] ?? null) === 'failed', 'F02_stale_request_clock_must_not_sweep_or_publish');
+        autonomyRecoveryCheck(($afterStaleReplay['status'] ?? null) === 'claimed' && ($afterStaleReplay['claim_id'] ?? null) === $abandoned['claim_id'] && $staleModelCalls === 0 && ($staleClock['status'] ?? null) === 'failed', 'F02_pending_restore_must_not_sweep_or_publish');
 
+        autonomyRecoverySql($connection, 'UPDATE plugins.correspondence_restore_state SET pending=false WHERE singleton=true');
         $activateScope(AUTONOMY_RECOVERY_SCOPE_FOREIGN);
         $enableScope(AUTONOMY_RECOVERY_SCOPE_FOREIGN);
         $foreignModelCalls = 0;
@@ -497,10 +503,13 @@ foreach (['pruned'=>'700006','malformed'=>'700007','restored'=>'700008'] as $edg
                 $edgeClaim = autonomyRecoverySql($connection, "SELECT claim_id::text,status,payload::text FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2 AND status='claimed'", [$edgeScope,$edgeSource])[0] ?? null;
                 autonomyRecoveryRequire(is_array($edgeClaim), 'F02_edge_claim_must_commit_before_callback');
                 autonomyRecoverySql($connection, "INSERT INTO public.eventlog(ts,gamets,type,data,sess,localts,people,location,party) VALUES($1,$2,'inputtext','later edge request','',$1,'','','')", [$baseTs+2,$edgeGamets+1]);
+                global $completionBlocker;
+                autonomyRecoverySql($completionBlocker, 'SELECT pg_advisory_lock(18459814,1)');
                 throw new RuntimeException('synthetic edge worker failure');
             };
         });
-        autonomyRecoveryRequire(is_array($edgeClaim) && ($edgeFailed['reason'] ?? null) === 'storage_error', 'F02_edge_setup_must_reject_stale_completion');
+        autonomyRecoverySql($completionBlocker, 'SELECT pg_advisory_unlock(18459814,1)');
+        autonomyRecoveryRequire(is_array($edgeClaim) && ($edgeFailed['reason'] ?? null) === 'storage_error', 'F02_edge_setup_requires_unavailable_completion_writer');
         $edgePayload = json_decode((string)$edgeClaim['payload'], true, 64, JSON_THROW_ON_ERROR);
         autonomyRecoveryRequire($store->eventMatches($edgePayload['claim_anchor'] ?? []), 'F02_edge_setup_requires_real_claim_anchor');
         $edgeAged = autonomyRecoverySql($connection, "UPDATE plugins.correspondence_autonomy_decisions SET created_at=clock_timestamp()-interval '181 seconds' WHERE playthrough_id=$1 AND source_document_id=$2 AND claim_id=$3 AND status='claimed' RETURNING claim_id::text", [$edgeScope,$edgeSource,$edgeClaim['claim_id']]);

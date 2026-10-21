@@ -3,8 +3,9 @@ declare(strict_types=1);
 require_once __DIR__.'/lib/bootstrap.php';
 global $gameRequest;
 $type=is_string($gameRequest[0]??null)?strtolower(trim($gameRequest[0])):null;
+if(is_array($gameRequest??null))correspondenceBeginRequestIngress($gameRequest);
 if($type==='info'&&in_array($gameRequest[4]??null,['written_evidence_v1','correspondence_v1'],true)){correspondenceDiagnostic('receipt_rejected');if(function_exists('terminate'))terminate();exit;}
-if($type==='init'){try{correspondenceHoldInitFence();}catch(Throwable){correspondenceDiagnostic('init_fence_unavailable');}return;}
+if($type==='init'){correspondencePrepareRestoreInit(is_array($gameRequest??null)?$gameRequest:[]);return;}
 if(in_array($type,['written_evidence','correspondence_anchor','correspondence_dispatch','correspondence_receipt_confirmed','correspondence_presence'],true)){
     correspondenceDiagnostic('receipt_rejected');if(function_exists('terminate'))terminate();exit;
 }

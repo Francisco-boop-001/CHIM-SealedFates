@@ -418,19 +418,20 @@ $afterTimeout = $engine->tick(static function () use (&$secondTimeoutCalls, &$ts
     $ts++;
     $gamets++;
     recoveryObserve($engine, $ts, $gamets);
+    recoverySql("UPDATE public.core_npc_master SET personality='A genuine changed reply context.' WHERE id=900002");
     return json_encode(['action'=>'reply','recipient'=>'npc:900001','body'=>'The second stale output must not expose this letter.','reason'=>'I want to answer.'], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 });
 $secondTimeoutJob = recoverySql("SELECT job_id::text,claim_id::text,status,payload->>'attempt' AS attempt,payload->>'reconsiderable' AS reconsiderable,payload->'completion_anchor'->>'rowid' AS completion_anchor,payload->>'reason_code' AS reason_code FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id='unprofiled' AND source_message_id=$1", [$secondRoot['message_id']])[0] ?? [];
 $secondTimeoutAnchor = recoverySql("SELECT data::jsonb->>'attempt' AS attempt,data::jsonb->>'reconsiderable' AS reconsiderable,data::jsonb->>'reason_code' AS reason_code FROM public.eventlog WHERE rowid=$1", [$secondTimeoutJob['completion_anchor'] ?? ''])[0] ?? [];
 $secondTimeoutSource = recoverySql("SELECT status,body,source_event_id::text FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND message_id=$1", [$secondRoot['message_id']])[0] ?? [];
 $secondTimeoutChildren = recoverySql("SELECT count(*)::int AS amount FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND payload->>'parent_message_id'=$1", [$secondRoot['message_id']])[0]['amount'] ?? 0;
-recoveryCheck(($afterTimeout['status'] ?? null) === 'stale' && ($afterTimeout['reason'] ?? null) === 'observation_changed'
+recoveryCheck(($afterTimeout['status'] ?? null) === 'stale' && ($afterTimeout['reason'] ?? null) === 'context_changed'
     && $secondTimeoutCalls === 1 && ($secondTimeoutJob['job_id'] ?? null) === $abandoned['job_id']
     && ($secondTimeoutJob['claim_id'] ?? null) !== $abandoned['claim_id']
     && ($secondTimeoutJob['status'] ?? null) === 'stale' && (string)($secondTimeoutJob['attempt'] ?? '') === '1'
-    && ($secondTimeoutJob['reconsiderable'] ?? null) !== 'true' && ($secondTimeoutJob['reason_code'] ?? null) === 'observation_changed'
+    && ($secondTimeoutJob['reconsiderable'] ?? null) !== 'true' && ($secondTimeoutJob['reason_code'] ?? null) === 'context_changed'
     && (string)($secondTimeoutAnchor['attempt'] ?? '') === '1' && ($secondTimeoutAnchor['reconsiderable'] ?? null) !== 'true'
-    && ($secondTimeoutAnchor['reason_code'] ?? null) === 'observation_changed'
+    && ($secondTimeoutAnchor['reason_code'] ?? null) === 'context_changed'
     && ($secondTimeoutSource['status'] ?? null) === 'arrived' && ($secondTimeoutSource['body'] ?? null) === 'A fresh letter after the abandoned reaction.'
     && ($secondTimeoutSource['source_event_id'] ?? null) === null && (int)$secondTimeoutChildren === 0,
     'claim_timeout_must_reuse_one_job_for_only_one_stale_reconsideration');
@@ -495,7 +496,7 @@ $restoreCleanup = $engine->tick(static function () use (&$restoreCleanupCalls): 
 $restoreTerminalJob = recoverySql("SELECT status,payload->>'reason_code' AS reason_code,payload->>'reconsiderable' AS reconsiderable FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id='unprofiled' AND source_message_id=$1", [$thirdRoot['message_id']])[0] ?? [];
 $restoreRetiredSource = recoverySql("SELECT status,body,source_event_id::text,payload->>'reason_code' AS reason_code,payload->'stale_anchor'->>'rowid' AS stale_anchor FROM plugins.correspondence_offscreen_mail WHERE playthrough_id='unprofiled' AND message_id=$1", [$thirdRoot['message_id']])[0] ?? [];
 $restoreRetiredAnchor = recoverySql("SELECT data::jsonb->>'transition' AS transition,data::jsonb->>'message_id' AS message_id,data::jsonb->>'reason_code' AS reason_code FROM public.eventlog WHERE rowid::text=$1", [$restoreRetiredSource['stale_anchor'] ?? ''])[0] ?? [];
-recoveryCheck($restoreCleanup === ['status'=>'processed','reason'=>'reaction_abandoned','model_calls'=>0] && $restoreCleanupCalls === 0,
+recoveryCheck($restoreCleanup === ['status'=>'processed','reason'=>'restore_changed','model_calls'=>0] && $restoreCleanupCalls === 0,
     'restore_changed_terminal_cleanup_must_take_one_metadata_only_tick');
 recoveryCheck(($restoreTerminalJob['status'] ?? null) === 'stale' && ($restoreTerminalJob['reason_code'] ?? null) === 'restore_changed'
     && ($restoreTerminalJob['reconsiderable'] ?? null) !== 'true'
@@ -548,7 +549,7 @@ foreach ($invalidReturnedCases as [$caseName, $rawDecision]) {
     $eligibleCandidate = recoveryPrivate($engine, 'reactionCandidate', ['unprofiled', $gamets, $eligibleActors]);
     $globalUntil = recoveryPrivate($engine, 'globalCooldown', ['unprofiled', $gamets]);
     $actorUntil = recoveryPrivate($engine, 'actorCooldown', ['unprofiled', (int)$invalidMail['recipient_id'], $gamets]);
-    recoveryCheck(($eligibleCandidate['message_id'] ?? null) === $invalidMail['message_id']
+    recoveryCheck(($eligibleCandidate['mail']['message_id'] ?? null) === $invalidMail['message_id']
         && $globalUntil <= $gamets && $actorUntil <= $gamets,
         $caseName.'_fixture_must_have_current_eligible_reaction');
     $invalidCalls = 0;

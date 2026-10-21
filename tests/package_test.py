@@ -59,6 +59,20 @@ class PackageTest(unittest.TestCase):
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(json.dumps(self.bridge_manifest, indent=2) + '\n', encoding='utf-8')
 
+    def test_restore_epoch_migration_ships_with_store(self):
+        self.assertIn('migrations/004_restore_state.sql', pkg.SERVER_FILES)
+
+    def test_documented_cli_selects_manifest_pex(self):
+        script = self.root / 'scripts' / 'build-package.py'
+        script.parent.mkdir()
+        shutil.copyfile(ROOT / 'scripts' / 'build-package.py', script)
+        run = subprocess.run([sys.executable, '-B', str(script)], cwd=self.root,
+                             capture_output=True, text=True, timeout=30)
+        self.assertEqual(run.returncode, 0, run.stderr)
+        result = json.loads(run.stdout)
+        self.assertTrue(Path(result['server']['path']).is_file())
+        self.assertTrue(Path(result['bundle']['path']).is_file())
+
     @staticmethod
     def resolve_evidence(original_manifest, path):
         path = Path(path)
@@ -340,6 +354,34 @@ class PackageTest(unittest.TestCase):
         checksum_names = [line.split('  ', 1)[1] for line in (out / 'SHA256SUMS.txt').read_text(encoding='ascii').splitlines()]
         self.assertEqual(checksum_names, sorted(expected - {'SHA256SUMS.txt'}))
 
+    def test_dev18_release_has_only_current_four_assets_deterministically(self):
+        manifest_path = self.root / 'server/manifest.json'
+        manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
+        manifest['version'] = '0.1.0-dev.18'
+        manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
+        original_root = release.ROOT
+        release.ROOT = self.root
+        try:
+            first = release.build()
+            first_bytes = {name: (self.root / 'dist' / name).read_bytes() for name in first}
+            second = release.build()
+            second_bytes = {name: (self.root / 'dist' / name).read_bytes() for name in second}
+        finally:
+            release.ROOT = original_root
+        expected = {
+            'correspondence-0.1.0-dev.18.dwpkg',
+            'CHIM-Sealed-Fates-0.1.0-dev.18.zip',
+            'correspondence.tar.gz',
+            'SHA256SUMS.txt',
+        }
+        out = self.root / 'dist'
+        self.assertEqual({path.name for path in out.iterdir()}, expected)
+        self.assertEqual(set(first), expected)
+        self.assertEqual(set(second), expected)
+        self.assertEqual(first_bytes, second_bytes)
+        checksum_names = [line.split('  ', 1)[1] for line in (out / 'SHA256SUMS.txt').read_text(encoding='ascii').splitlines()]
+        self.assertEqual(checksum_names, sorted(expected - {'SHA256SUMS.txt'}))
+
     def test_dev16_preflight_preserves_dev15_and_conflicting_outputs(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
@@ -375,7 +417,7 @@ class PackageTest(unittest.TestCase):
     def test_release_rejects_unsupported_version(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        manifest['version'] = '0.1.0-dev.18'
+        manifest['version'] = '0.1.0-dev.19'
         manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
         original_root = release.ROOT
         release.ROOT = self.root

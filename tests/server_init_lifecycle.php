@@ -30,16 +30,20 @@ function pg_query_params(mixed $connection,string $sql,array $parameters=[]):mix
     if(($GLOBALS['initUnlockFails']??false)&&str_contains($sql,'pg_advisory_unlock'))return false;
     return true;
 }
+function pg_fetch_all(mixed $result):array{return [['released'=>'t']];}
+function pg_free_result(mixed $result):bool{return true;}
 function pg_close(mixed $connection):bool{$GLOBALS['initClosed']++;return true;}
 function chimRegisterPromptInjection(string $slot,string $key,callable $callback,int $priority):void{}
 }
 require_once dirname(__DIR__).'/server/lib/bootstrap.php';
+$GLOBALS['CORRESPONDENCE_RESTORE_INIT_ACTIVE']=true;
 correspondenceHoldInitFence();
 initLifecycleCheck(isset($GLOBALS['CORRESPONDENCE_INIT_FENCE']),'init_not_fenced');
 if($case==='unlock_failure')$GLOBALS['initUnlockFails']=true;
 // Core comm.php has completed its prune/marker before this supported hook.
 include dirname(__DIR__).'/server/context_pre.php';
 initLifecycleCheck(!isset($GLOBALS['CORRESPONDENCE_INIT_FENCE']),'fence_still_held_during_model');
+initLifecycleCheck(($GLOBALS['CORRESPONDENCE_RESTORE_INIT_FENCE_OK']??null)===($case!=='unlock_failure'),'fence_release_success_must_match_actual_unlock_result');
 initLifecycleCheck(count(array_filter($GLOBALS['initQueries'],fn($q)=>str_contains($q,'pg_advisory_unlock')))==1,'explicit_unlock_missing');
 initLifecycleCheck($GLOBALS['initClosed']===1,'connection_not_closed');
 correspondenceReleaseInitFence();

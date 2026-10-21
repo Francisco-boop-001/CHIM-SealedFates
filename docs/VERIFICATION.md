@@ -1,5 +1,11 @@
 # Verification and limits
 
+## Dev.18 PRE-ALPHA release
+
+All 21 integrated PostgreSQL jobs and 23 pure suites (25 cases) passed from the same frozen `followup11` stage on exclusively leased disposable TEST. Tests include unrelated/newer events, future-clock poisoning, same-output completion retry, concurrent observations, interaction-lock contention, retained-anchor epoch changes, stale handles, null/uninitialized ingress, missing epoch state, aborted init and failed-fence recovery. Full source bodies and no-resend uncertainty rules remain strict.
+
+See [dev.18 changes, exact evidence and limits](DEV18-RECOVERY.md). Department performed a read-only contract review: its published prealpha.1 stays pinned to dev.17. Adding dev.18 hashes alone would miss lifecycle wiring and the signed-unknown branch; dev.18 interface compatibility is not claimed. The existing web interface remains available. This is synthetic server recovery proof, not model quality or Skyrim gameplay.
+
 ## Dev.17 PRE-ALPHA release
 
 This PRE-ALPHA release retains the verified dev.17 candidate payload. Fourteen integrated PostgreSQL suites passed from one final frozen production/test stage on fresh private socket-only databases in the exclusively leased disposable TEST distro. Twenty pure PHP suites (22 cases, including three direct init cases) passed on the same Linux stage, with database/network/process APIs disabled in test children. The Windows host checks and 71 PHP syntax checks passed apart from the existing Windows path-separator assertion; that unchanged host test passed on Linux.

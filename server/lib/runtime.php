@@ -355,6 +355,7 @@ final class CorrespondenceService
         }
         if (!is_string($receipt['nonce']) || preg_match('/\A[0-9a-fA-F]{64}\z/D',$receipt['nonce'])!==1) throw new InvalidArgumentException('invalid_nonce');
         $receipt['nonce']=strtolower($receipt['nonce']);
+        foreach(['status','reason'] as $key) if (is_string($receipt[$key])) $receipt[$key]=strtolower($receipt[$key]);
         if ($receipt['protocol_version']!==1 || !in_array($receipt['status'],['delivered','failed','unknown'],true) || !is_string($receipt['reason']) || preg_match('/\A[a-z][a-z0-9_]{0,63}\z/D',$receipt['reason'])!==1 || !is_int($receipt['note_form_id']) || $receipt['note_form_id'] < -2147483648 || $receipt['note_form_id'] > 2147483647 || !is_array($receipt['attachments']) || !array_is_list($receipt['attachments'])) throw new InvalidArgumentException('invalid_receipt');
         return $this->store->transaction(function()use($receipt){
             $doc=$this->document($receipt['document_id'],true); $op=$this->store->loadOperation($receipt['operation_id']);

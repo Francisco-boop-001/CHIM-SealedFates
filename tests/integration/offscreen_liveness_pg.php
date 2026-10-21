@@ -285,6 +285,34 @@ $originalSenderData = (string)(livenessSql("SELECT extended_data::text FROM publ
 $ts = 101;
 $gamets = 101;
 livenessObserve($engine, $ts, $gamets);
+if (in_array('--concurrent-events-only', $argv, true) || in_array('--concurrent-observation-only', $argv, true) || in_array('--completion-lock-only', $argv, true)) {
+    $mail = livenessArrivedMail($engine,$store,900001,900002,'A concurrent event must not lose this reply.',$ts,$gamets);
+    $modelCalls = 0;
+    $heldLock = null;
+    $result = $engine->tick(static function (array $messages) use ($engine,&$ts,&$gamets,&$modelCalls,&$heldLock,$argv,$lockPath): string {
+        $modelCalls++;
+        $ts++;
+        $gamets++;
+        if (in_array('--concurrent-observation-only',$argv,true)) livenessObserve($engine,$ts,$gamets);
+        elseif (in_array('--completion-lock-only',$argv,true)) {
+            $heldLock=fopen($lockPath,'c+');
+            livenessCheck(is_resource($heldLock) && flock($heldLock,LOCK_EX|LOCK_NB),'fixture_competing_interaction_lock_required');
+        } else livenessSql("INSERT INTO public.eventlog(ts,gamets,type,data,sess,localts,people,location,party) VALUES($1,$2,'infoaction','Unrelated concurrent event','',100,'','','')",[$ts,$gamets]);
+        return livenessReply('npc:900001','One carefully considered response survives ordinary background events.');
+    });
+    if (is_resource($heldLock)) {flock($heldLock,LOCK_UN);fclose($heldLock);}
+    $job = livenessSql("SELECT status,payload->>'reason_code' reason FROM plugins.correspondence_offscreen_jobs WHERE source_message_id=$1",[$mail['message_id']])[0] ?? [];
+    $children=(int)(livenessSql("SELECT count(*) n FROM plugins.correspondence_offscreen_mail WHERE payload->>'parent_message_id'=$1",[$mail['message_id']])[0]['n'] ?? 0);
+    if (in_array('--completion-lock-only',$argv,true)) {
+        livenessCheck(($job['status'] ?? null) !== 'claimed' && $children===0 && $modelCalls===1,'completion_lock_failure_must_close_claim_without_effects');
+    } else {
+        $marker=in_array('--concurrent-observation-only',$argv,true)?'concurrent_observation_must_commit_valid_offscreen_reply':'concurrent_event_must_commit_valid_offscreen_reply';
+        livenessCheck(($result['status'] ?? null)==='processed' && ($job['status'] ?? null)==='sent' && $children===1 && $modelCalls===1,$marker);
+    }
+    echo json_encode(['status'=>'PASS','case'=>$argv[1],'model_calls'=>$modelCalls,'job_status'=>$job['status'] ?? null,'children'=>$children],JSON_THROW_ON_ERROR).PHP_EOL;
+    exit;
+}
+
 $failures = [];
 $ineligibleIds = [];
 $validLaterMail = null;
@@ -552,7 +580,7 @@ try {
     livenessRecord($failures, ($oldGenerationResult['reason'] ?? null) === 'restore_changed' && $oldGenerationCalls === 0
         && ($oldGenerationJob['status'] ?? null) === 'stale' && ($oldGenerationJob['claim_id'] ?? null) === ($oldGenerationWork['claim_id'] ?? null)
         && (string)($oldGenerationJob['attempt'] ?? '') === '0' && ($oldGenerationJob['reason_code'] ?? null) === 'restore_changed'
-        && ($oldGenerationJob['claim_invalidated'] ?? null) === 'true' && ($oldGenerationJob['restore_generation'] ?? null) === $oldGeneration
+        && ($oldGenerationJob['claim_invalidated'] ?? null) === 'true' && ($oldGenerationJob['restore_generation'] ?? null) === $oldGenerationWork['restore_generation']
         && ($oldGenerationSource['status'] ?? null) === 'stale' && ($oldGenerationSource['body'] ?? null) === $oldGenerationMail['body']
         && ($oldGenerationSource['source_event_id'] ?? null) === null && ($oldGenerationSource['reason_code'] ?? null) === 'restore_changed'
         && ($oldGenerationAnchor['transition'] ?? null) === 'mail_stale'
@@ -669,7 +697,7 @@ try {
     livenessRecord($failures, ($missingGenerationResult['reason'] ?? null) === 'claim_anchor_invalid' && $missingGenerationCalls === 0
         && ($missingGenerationJob['status'] ?? null) === 'stale' && ($missingGenerationJob['claim_invalidated'] ?? null) === 'true'
         && ($missingGenerationJob['reason_code'] ?? null) === 'claim_anchor_invalid'
-        && ($missingGenerationJob['invalidated_restore_generation'] ?? null) === 'runtime-generation-liveness-after-missing'
+        && ($missingGenerationJob['invalidated_restore_generation'] ?? null) === $store->restoreGeneration()
         && ($missingGenerationJob['restore_generation'] ?? null) === null
         && ($missingGenerationSource['status'] ?? null) === 'arrived' && ($missingGenerationSource['body'] ?? null) === $missingGenerationMail['body']
         && ($missingGenerationSource['source_event_id'] ?? null) === null

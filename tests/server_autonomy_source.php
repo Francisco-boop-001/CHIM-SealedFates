@@ -95,10 +95,13 @@ if (!extension_loaded('pgsql')) {
 $lostClaimId = '22222222-2222-4222-8222-222222222222';
 $lostSourceId = '33333333-3333-4333-8333-333333333333';
 $lostEventId = '77';
+$lostRestoreEpoch = '66666666-6666-4666-8666-666666666666';
+$lostRestoreGeneration = $lostRestoreEpoch . ':source-fixture-generation';
 $claimData = [
     'kind'=>'autonomy_claim','playthrough_id'=>'unprofiled','claim_id'=>$lostClaimId,'request_id'=>$lostClaimId,
     'source_document_id'=>$lostSourceId,'source_event_id'=>'5','claim_gamets'=>'100',
     'global_cooldown_until_gamets'=>'416767','actor_cooldown_until_gamets'=>'2160100',
+    'restore_generation'=>$lostRestoreGeneration,
 ];
 $lostAnchor = ['rowid'=>$lostEventId,'ts'=>'100','gamets'=>'100','type'=>'info','data'=>correspondenceJson($claimData),'sess'=>'correspondence_v1','localts'=>'100','people'=>''];
 $lostPayload = [
@@ -106,6 +109,7 @@ $lostPayload = [
     'claim_actor_cooldown_until_gamets'=>'2160100','global_cooldown_until_gamets'=>'416767',
     'actor_cooldown_until_gamets'=>'2160100','self_id'=>'900001','source_event_sha256'=>str_repeat('a',64),
     'source_body_sha256'=>str_repeat('b',64),'context_sha256'=>str_repeat('c',64),'claim_anchor'=>$lostAnchor,
+    'restore_generation'=>$lostRestoreGeneration,
 ];
 $lostDecision = [
     'playthrough_id'=>'unprofiled','source_document_id'=>$lostSourceId,'source_event_id'=>'5','claim_id'=>$lostClaimId,
@@ -113,11 +117,25 @@ $lostDecision = [
     'status'=>'claimed','action'=>null,'due_gamets'=>null,'payload'=>correspondenceJson($lostPayload),
 ];
 $completionAppends = 0;
+$quarantineWrites = 0;
 $managedChildrenReads = 0;
 $managedChildIds = ['44444444-4444-4444-8444-444444444444','55555555-5555-4555-8555-555555555555'];
-$GLOBALS['autonomyFakePg'] = static function (string $sql, array $parameters) use ($lostDecision, &$completionAppends, &$managedChildrenReads, $managedChildIds): array {
+$GLOBALS['autonomyFakePg'] = static function (string $sql, array $parameters) use (&$lostDecision, $lostRestoreEpoch, $lostSourceId, $lostClaimId, &$completionAppends, &$quarantineWrites, &$managedChildrenReads, $managedChildIds): array {
     if (str_contains($sql, "to_regclass('chim_meta.playthrough_profiles')")) return [['profile_table'=>null]];
+    if (str_starts_with($sql, 'SELECT epoch::text,pending FROM plugins.correspondence_restore_state')) return [['epoch'=>$lostRestoreEpoch,'pending'=>'f']];
+    if (str_starts_with($sql, 'SELECT native_ts_floor FROM plugins.correspondence_restore_state')) return [['native_ts_floor'=>'0']];
+    if (str_contains($sql, 'pg_advisory_unlock_shared')) return [['released'=>'t']];
     if (str_starts_with($sql, 'SELECT playthrough_id,source_document_id::text')) return [$lostDecision];
+    if (str_starts_with($sql, "UPDATE plugins.correspondence_autonomy_decisions SET status='stale'")) {
+        $quarantineWrites++;
+        if (($parameters[0] ?? null) !== 'unprofiled' || ($parameters[1] ?? null) !== $lostSourceId
+            || ($parameters[2] ?? null) !== '5' || ($parameters[3] ?? null) !== $lostClaimId) return [];
+        $lostDecision['status'] = 'stale';
+        $payload = json_decode($lostDecision['payload'], true, 32, JSON_THROW_ON_ERROR);
+        $payload['reason_code'] = 'claim_anchor_invalid';
+        $lostDecision['payload'] = correspondenceJson($payload);
+        return [['source_document_id'=>$lostSourceId]];
+    }
     if (str_starts_with($sql, 'SELECT child_document_id::text')) {
         $managedChildrenReads++;
         return array_map(static fn($id) => ['child_document_id'=>$id], $managedChildIds);
@@ -130,7 +148,12 @@ $GLOBALS['autonomyFakePg'] = static function (string $sql, array $parameters) us
     return [];
 };
 $lostPg = new CorrespondencePgStore(null, static fn($store) => null, static fn($title, $body) => true);
+$GLOBALS['ptr_runtime_generation'] = 'source-fixture-generation';
+$restoreReadyProperty = new ReflectionProperty(CorrespondencePgStore::class, 'restoreStateReady');
+$restoreReadyProperty->setValue($lostPg, true);
 $lostPg->bindRequestClock(['inputtext','200','200','isolated unit fixture']);
+$restoreGeneration = $lostPg->requestRestoreToken();
+autonomySourceCheck($restoreGeneration === $lostRestoreGeneration, 'lost claim fixture carries a valid current restore token');
 $activeProperty = new ReflectionProperty(CorrespondencePgStore::class, 'active');
 $activeProperty->setValue($lostPg, true);
 $lostAutonomy = new CorrespondenceAutonomyPg($lostPg, new CorrespondenceService($lostPg));
@@ -149,16 +172,20 @@ $lostWork = [
     'request_id'=>$lostClaimId,'root_document_id'=>$lostSourceId,'depth'=>0,'recipient_id'=>900001,
     'claim_gamets'=>100,'claim_global_cooldown_until_gamets'=>416767,'claim_actor_cooldown_until_gamets'=>2160100,
     'source_event_sha256'=>str_repeat('a',64),'source_body_sha256'=>str_repeat('b',64),
-    'context_sha256'=>str_repeat('c',64),'claim_anchor'=>$lostAnchor,
+    'context_sha256'=>str_repeat('c',64),'claim_anchor'=>$lostAnchor,'restore_generation'=>$restoreGeneration,
 ];
 $failureMethod = new ReflectionMethod(CorrespondenceAutonomyPg::class, 'completeFailure');
 $failureResult = $failureMethod->invoke($lostAutonomy, $lostWork, 'invalid_decision', 1, 20, 8);
 autonomySourceCheck(($failureResult['status'] ?? null) === 'stale' && ($failureResult['reason'] ?? null) === 'claim_anchor_invalid', 'lost claim during model failure must close stale');
+autonomySourceCheck($quarantineWrites === 1 && $lostDecision['status'] === 'stale', 'lost claim quarantine CASes only its exact active claim');
+$quarantinedPayload = json_decode($lostDecision['payload'], true, 32, JSON_THROW_ON_ERROR);
+autonomySourceCheck(($quarantinedPayload['reason_code'] ?? null) === 'claim_anchor_invalid' && $lostDecision['child_document_id'] === null, 'lost claim quarantine records only an inert stale reason');
 autonomySourceCheck($completionAppends === 0, 'lost claim during model failure must not write a completion anchor');
 $readsBeforeManagedChildren = $managedChildrenReads;
 autonomySourceCheck($lostAutonomy->managedChildren() === $managedChildIds, 'managed children returns current-scope child IDs');
 autonomySourceCheck($managedChildrenReads === $readsBeforeManagedChildren + 1, 'managed children uses one list query');
 unset($GLOBALS['autonomyFakePg']);
+unset($GLOBALS['ptr_runtime_generation']);
 }
 
 echo "PASS autonomy source reader: exact exposed recipient, immutable source identity, strict v1 privacy\n";

@@ -15,7 +15,7 @@ final class CorrespondenceHistoryQueryDb
     public function escape(string $value):string{return pg_escape_string($this->connection,$value);}
     public function fetchAll(string $query):never{$this->query=$query;throw new CorrespondenceHistoryQueryCaptured();}
 }
-$store=new CorrespondencePgStore($c,fn($s)=>null,fn($title,$body)=>true);$clock=(int)($store->query('SELECT MAX(ts) AS ts FROM public.eventlog')[0]['ts']??100)+10;$store->bindRequestClock(['inputtext',(string)$clock,(string)$clock]);
+$store=new CorrespondencePgStore($c,fn($s)=>null,fn($title,$body)=>true);$store->ensureSchema();$clock=(int)($store->query('SELECT MAX(ts) AS ts FROM public.eventlog')[0]['ts']??100)+10;$store->bindRequestClock(['inputtext',(string)$clock,(string)$clock]);
 try{$store->transaction(function()use($store,$c){
     // All mutations use the real public-table producer and roll back together on success.
     $store->query('ALTER TABLE public.eventlog ADD COLUMN IF NOT EXISTS private_thought text, ADD COLUMN IF NOT EXISTS delivery_state text');

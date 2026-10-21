@@ -5,7 +5,41 @@ function correspondenceAccess(array $server):bool
 {
     if(is_string($server['REMOTE_USER']??null)&&trim($server['REMOTE_USER'])!=='')return true;
     foreach(['HTTP_FORWARDED','HTTP_X_FORWARDED_FOR','HTTP_X_REAL_IP'] as $header)if(array_key_exists($header,$server))return false;
-    return in_array($server['REMOTE_ADDR']??null,['127.0.0.1','::1'],true);
+    if(!in_array($server['REMOTE_ADDR']??null,['127.0.0.1','::1'],true)||!is_string($server['HTTP_HOST']??null))return false;
+    if(preg_match('/\A(?:localhost|127\.0\.0\.1|\[::1\])(?::([0-9]{1,5}))?\z/iD',$server['HTTP_HOST'],$matches)!==1)return false;
+    if(($matches[1]??'')!==''){$port=(int)$matches[1];if($port<1||$port>65535)return false;}
+    return true;
+}
+function correspondenceAuthorityParts(string $authority):?array
+{
+    $label='[a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9_])?';
+    if(preg_match('/\A(?:\[([0-9a-f:.]+)\]|('.$label.'(?:\.'.$label.')*\.?))(?::([0-9]{1,5}))?\z/iD',$authority,$matches)!==1)return null;
+    if(($matches[1]??'')!==''){$packed=inet_pton($matches[1]);if(!is_string($packed))return null;$host='ipv6:'.bin2hex($packed);}
+    else{$host=strtolower($matches[2]);if(strlen($host)>254||(preg_match('/\A[0-9.]+\z/D',$host)===1&&filter_var($host,FILTER_VALIDATE_IP,FILTER_FLAG_IPV4)===false))return null;$host='dns:'.$host;}
+    $port=null;if(($matches[3]??'')!==''){$port=(int)$matches[3];if($port<1||$port>65535)return null;}
+    return ['host'=>$host,'port'=>$port];
+}
+function correspondencePostOriginAllowed(array $server):bool
+{
+    if(array_key_exists('HTTP_SEC_FETCH_SITE',$server)){
+        if(!is_string($server['HTTP_SEC_FETCH_SITE']))return false;
+        $site=strtolower(trim($server['HTTP_SEC_FETCH_SITE']));
+        if(!in_array($site,['same-origin','same-site','cross-site','none'],true)||$site==='cross-site')return false;
+    }
+    // Missing Origin remains protected by the required session CSRF token.
+    if(!array_key_exists('HTTP_ORIGIN',$server))return true;
+    if(!is_string($server['HTTP_ORIGIN'])||preg_match('/\A(https?):\/\/(.+)\z/iD',$server['HTTP_ORIGIN'],$origin)!==1)return false;
+    $scheme=strtolower($origin[1]);
+    $https=$server['HTTPS']??'';if(!is_string($https))return false;$https=strtolower($https);
+    if($https===''||$https==='off')$requestScheme='http';elseif(in_array($https,['on','1'],true))$requestScheme='https';else return false;
+    if($scheme!==$requestScheme)return false;
+    $port=$server['SERVER_PORT']??null;if(!is_string($port)&&!is_int($port))return false;$port=(string)$port;
+    if(preg_match('/\A[0-9]{1,5}\z/D',$port)!==1)return false;$port=(int)$port;if($port<1||$port>65535)return false;
+    if(!is_string($server['HTTP_HOST']??null))return false;
+    $requestAuthority=correspondenceAuthorityParts($server['HTTP_HOST']);$originAuthority=correspondenceAuthorityParts($origin[2]);
+    if($requestAuthority===null||$originAuthority===null||($requestAuthority['port']!==null&&$requestAuthority['port']!==$port))return false;
+    $originPort=$originAuthority['port']??($scheme==='https'?443:80);
+    return $originAuthority['host']===$requestAuthority['host']&&$originPort===$port;
 }
 function correspondenceHtml(mixed $value):string{return htmlspecialchars((string)$value,ENT_QUOTES|ENT_SUBSTITUTE,'UTF-8');}
 function correspondencePost(array $post,string $csrf,array $choices):array

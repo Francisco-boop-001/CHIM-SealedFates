@@ -6,62 +6,303 @@ final class CorrespondencePgStore implements CorrespondenceStore
 {
     private bool $active=false;
     private bool $writerActive=false;
+    private bool $schemaSetup=false;
+    private bool $restoreStateReady=false;
+    private bool $restoreAdmin=false;
+    private bool $restoreProbe=false;
+    private bool $sessionSharedLock=false;
+    private bool $connectionClosed=false;
     private ?array $actorCatalog=null;
     private ?array $offscreenActorRows=null;
     private ?string $playerName=null;
     private ?array $requestClock=null;
-    public function __construct(private mixed $connection, private Closure $executorResolver, private Closure $notePreparer) {}
+    private ?string $requestRestoreToken=null;
+    private ?string $requestNativeTs=null;
+    /** The connection must be dedicated to this store; failed advisory cleanup closes it. */
+    public function __construct(private mixed $connection, private Closure $executorResolver, private Closure $notePreparer, private ?string $restoreSentinelPath=null) {}
     private function clearTransactionCache():void{$this->actorCatalog=null;$this->offscreenActorRows=null;$this->playerName=null;}
     public function bindRequestClock(array $request):void
     {
         if($this->active)throw new LogicException('clock_rebind_during_transaction');
         $this->requestClock=correspondenceRequestClock($request);
-    }    public function ensureSchema():void
-    {
-        $ready=$this->query("SELECT to_regclass('plugins.correspondence_documents') IS NOT NULL AS documents,to_regclass('plugins.correspondence_operations') IS NOT NULL AS operations,to_regclass('plugins.correspondence_presence') IS NOT NULL AS presence")[0]??[];
-        if(($ready['documents']??null)!=='t'||($ready['operations']??null)!=='t'||($ready['presence']??null)!=='t'){
-        $migration=@file_get_contents(dirname(__DIR__).'/migrations/001_initial.sql');
-        if(!is_string($migration)||$migration==='')throw new DomainException('schema_migration_unavailable');
-        $this->transaction(function()use($migration){
-            foreach(explode(';',$migration)as$statement)if(trim($statement)!=='')$this->query($statement);
-        });
+        if(!empty($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED'])){
+            $this->requestRestoreToken=is_string($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']??null)?$GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']:null;
+            $this->requestNativeTs=is_string($GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']??null)?$GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']:$this->requestNativeTs;
+        }else{
+            $this->requestNativeTs=$this->requestClock['ts'];
+            if(!$this->restoreStateReady)$this->requestRestoreToken=null;
+            else $this->requestRestoreToken=$this->restoreGeneration();
         }
-        $columns=$this->query("SELECT table_name,column_name FROM information_schema.columns WHERE table_schema='plugins' AND table_name IN ('correspondence_documents','correspondence_operations','correspondence_presence')");
-        $expected=['correspondence_documents'=>['document_id','playthrough_id','request_id','payload','created_at'],'correspondence_operations'=>['operation_id','document_id','payload','created_at'],'correspondence_presence'=>['playthrough_id','payload']];
-        foreach($expected as$table=>$names)foreach($names as$name)if(!array_filter($columns,fn($row)=>$row['table_name']===$table&&$row['column_name']===$name))throw new DomainException('schema_migration_incomplete');
-    }    public function query(string $sql,array $parameters=[]): array
+    }
+    public function captureRequestRestoreToken(?string $nativeTs=null,bool $newIngress=false):?string
     {
+        if($this->active)throw new LogicException('restore_token_capture_during_transaction');
+        if($newIngress){$this->requestNativeTs=$nativeTs;$this->requestRestoreToken=null;}
+        if(!empty($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED'])){
+            $this->requestNativeTs=is_string($GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']??null)?$GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']:$this->requestNativeTs;
+            return $this->requestRestoreToken=is_string($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']??null)?$GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']:null;
+        }
+        if(!$newIngress&&$this->requestClock!==null)$this->requestNativeTs=$this->requestClock['ts'];
+        return $this->requestRestoreToken=$this->restoreGeneration();
+    }
+    public function refreshRequestRestoreTokenAfterInit():?string
+    {
+        if($this->active)throw new LogicException('restore_token_capture_during_transaction');
+        // The completed init request is trusted only for the lifecycle handoff;
+        // its timestamp is the floor itself, not a fresh post-init observation.
+        $this->requestNativeTs=null;
+        return $this->requestRestoreToken=$this->restoreGeneration();
+    }
+    public function requestRestoreToken():?string{return $this->requestRestoreToken;}
+    public function restoreGeneration():?string
+    {
+        if(!$this->restoreStateReady)return null;
+        if($this->active)return $this->currentRestoreGeneration();
+        return $this->readTransactionInternal(fn()=>$this->currentRestoreGeneration(),false);
+    }
+    public function assertRestoreToken(?string $expectedRestoreToken=null):void
+    {
+        if(!$this->restoreStateReady)throw new DomainException('restore_epoch_state_uninitialized');
+        if(!empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_UNSAFE']))throw new DomainException('restore_epoch_pending');
+        $expected=$expectedRestoreToken??$this->requestRestoreToken;
+        if($this->requestRestoreToken!==null&&$expected!==$this->requestRestoreToken)throw new DomainException('restore_epoch_changed');
+        if(($this->restoreSentinelPath!==null||$this->requestClock!==null)&&$this->requestRestoreToken===null)throw new DomainException('restore_token_unavailable');
+        $current=$this->currentRestoreGeneration();
+        if($current===null)throw new DomainException('restore_epoch_pending');
+        if($expected!==null&&!hash_equals($expected,$current))throw new DomainException('restore_epoch_changed');
+        if($this->requestNativeTs!==null){
+            $rows=$this->queryRaw('SELECT native_ts_floor FROM plugins.correspondence_restore_state WHERE singleton IS TRUE');
+            if(count($rows)!==1)throw new DomainException('restore_epoch_state_unavailable');
+            $floor=$rows[0]['native_ts_floor']??null;
+            if(!is_string($floor)||preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/D',$floor)!==1)throw new DomainException('restore_epoch_state_unavailable');
+            if((int)$this->requestNativeTs<=(int)$floor)throw new DomainException('request_before_restore_epoch');
+        }
+    }
+    public function beginRestoreEpoch(?string $epoch=null,?string $nativeTsFloor=null):string
+    {
+        if($this->active)throw new LogicException('restore_epoch_during_transaction');
+        $epoch=$epoch??correspondenceUuid();
+        correspondenceUuidCheck($epoch);
+        $nativeTsFloor=$nativeTsFloor??$this->requestNativeTs??'0';
+        if(preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/D',$nativeTsFloor)!==1||filter_var($nativeTsFloor,FILTER_VALIDATE_INT,['options'=>['min_range'=>0]])===false)throw new DomainException('invalid_restore_native_floor');
+        $sentinelWritten=$this->writeRestoreSentinel('pending',$epoch);
+        $this->restoreAdmin=true;
+        try{
+            $this->queryRaw('BEGIN');
+            try{
+                $this->queryRaw("SET LOCAL lock_timeout='3s'");
+                $this->queryRaw('SELECT pg_advisory_xact_lock(18459814, 1)');
+                $rows=$this->queryRaw('UPDATE plugins.correspondence_restore_state SET epoch=$1::uuid,pending=TRUE,native_ts_floor=$2::bigint,updated_at=now() WHERE singleton IS TRUE RETURNING epoch::text',[$epoch,$nativeTsFloor]);
+                if(count($rows)!==1)throw new DomainException('restore_epoch_state_unavailable');
+                $this->queryRaw('COMMIT');
+            }catch(Throwable $e){try{$this->queryRaw('ROLLBACK');}catch(Throwable){}throw $e;}
+        }finally{$this->restoreAdmin=false;}
+        if(!$sentinelWritten&&$this->restoreSentinelPath!==null)error_log('[CORRESPONDENCE] restore_sentinel_unavailable');
+        return $epoch;
+    }
+    public function completeRestoreEpoch(string $epoch):void
+    {
+        correspondenceUuidCheck($epoch);
+        if($this->active)throw new LogicException('restore_epoch_during_transaction');
+        $this->restoreAdmin=true;
+        try{
+            $this->queryRaw('BEGIN');
+            try{
+                $this->queryRaw("SET LOCAL lock_timeout='3s'");
+                $this->queryRaw('SELECT pg_advisory_xact_lock(18459814, 1)');
+                $rows=$this->queryRaw('UPDATE plugins.correspondence_restore_state SET pending=FALSE,updated_at=now() WHERE singleton IS TRUE AND epoch=$1::uuid AND pending IS TRUE RETURNING epoch::text',[$epoch]);
+                if(count($rows)!==1)throw new DomainException('restore_epoch_state_changed');
+                $this->queryRaw('COMMIT');
+            }catch(Throwable $e){try{$this->queryRaw('ROLLBACK');}catch(Throwable){}throw $e;}
+        }finally{$this->restoreAdmin=false;}
+        if(!$this->writeRestoreSentinel('clear',$epoch)&&$this->restoreSentinelPath!==null)throw new DomainException('restore_sentinel_unavailable');
+    }
+    public function initMarkerAfter(int $rowid,string $gamets):bool
+    {
+        if($rowid<0||!preg_match('/\A[0-9]{1,20}\z/D',$gamets))return false;
+        $this->restoreProbe=true;
+        try{return $this->queryRaw("SELECT EXISTS(SELECT 1 FROM public.eventlog WHERE rowid>$1::bigint AND type='init' AND gamets=$2::numeric) AS found",[(string)$rowid,$gamets])[0]['found']==='t';}
+        finally{$this->restoreProbe=false;}
+    }
+    public function initMarkerStart():int
+    {
+        $this->restoreProbe=true;
+        try{$rows=$this->queryRaw('SELECT COALESCE(MAX(rowid),0)::text AS rowid FROM public.eventlog');$value=$rows[0]['rowid']??null;if(!is_string($value)||preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/D',$value)!==1||filter_var($value,FILTER_VALIDATE_INT,['options'=>['min_range'=>0]])===false)throw new DomainException('restore_init_marker_unavailable');return (int)$value;}
+        finally{$this->restoreProbe=false;}
+    }
+    public function ensureSchema():void
+    {
+        if($this->active)throw new LogicException('schema_during_transaction');
+        $this->schemaSetup=true;$schemaComplete=false;
+        try{
+            $ready=$this->queryRaw("SELECT to_regclass('plugins.correspondence_documents') IS NOT NULL AS documents,to_regclass('plugins.correspondence_operations') IS NOT NULL AS operations,to_regclass('plugins.correspondence_presence') IS NOT NULL AS presence,to_regclass('plugins.correspondence_restore_state') IS NOT NULL AS restore_state,EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='plugins' AND table_name='correspondence_restore_state' AND column_name='native_ts_floor') AS restore_floor")[0]??[];
+            if(($ready['documents']??null)!=='t'||($ready['operations']??null)!=='t'||($ready['presence']??null)!=='t'){
+                $migration=@file_get_contents(dirname(__DIR__).'/migrations/001_initial.sql');
+                if(!is_string($migration)||$migration==='')throw new DomainException('schema_migration_unavailable');
+                $this->transaction(function()use($migration){foreach(explode(';',$migration)as$statement)if(trim($statement)!=='')$this->queryRaw($statement);});
+            }
+            if(($ready['restore_state']??null)!=='t'||($ready['restore_floor']??null)!=='t'){
+                $migration=@file_get_contents(dirname(__DIR__).'/migrations/004_restore_state.sql');
+                if(!is_string($migration)||$migration==='')throw new DomainException('schema_migration_unavailable');
+                $this->transaction(function()use($migration){foreach(explode(';',$migration)as$statement)if(trim($statement)!=='')$this->queryRaw($statement);});
+            }
+            $columns=$this->queryRaw("SELECT table_name,column_name FROM information_schema.columns WHERE table_schema='plugins' AND table_name IN ('correspondence_documents','correspondence_operations','correspondence_presence','correspondence_restore_state')");
+            $expected=['correspondence_documents'=>['document_id','playthrough_id','request_id','payload','created_at'],'correspondence_operations'=>['operation_id','document_id','payload','created_at'],'correspondence_presence'=>['playthrough_id','payload'],'correspondence_restore_state'=>['singleton','epoch','pending','native_ts_floor']];
+            foreach($expected as$table=>$names)foreach($names as$name)if(!array_filter($columns,fn($row)=>$row['table_name']===$table&&$row['column_name']===$name))throw new DomainException('schema_migration_incomplete');
+            $state=$this->queryRaw('SELECT epoch::text,pending FROM plugins.correspondence_restore_state WHERE singleton IS TRUE');
+            if($state===[]){
+                $initStarting=!empty($GLOBALS['CORRESPONDENCE_RESTORE_INIT_START']);
+                $epoch=is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_EPOCH']??null)?$GLOBALS['CORRESPONDENCE_RESTORE_INIT_EPOCH']:correspondenceUuid();$pending=$initStarting;
+                if($this->restoreSentinelPath!==null){
+                    try{$sentinel=$this->readRestoreSentinel();}catch(Throwable){$sentinel=null;$pending=true;}
+                    if($initStarting){if($sentinel!==null&&!is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_EPOCH']??null))$epoch=$sentinel['epoch'];$pending=true;if(!$this->writeRestoreSentinel('pending',$epoch))$pending=true;}
+                    else{
+                        // A sentinel can outlive a database restore. Without the row's
+                        // native floor, even a previously clear sentinel is not enough
+                        // evidence to re-admit requests at an old clock.
+                        if($sentinel!==null){$epoch=$sentinel['epoch'];$pending=true;}
+                        elseif(!$pending)$epoch=correspondenceUuid();
+                        if(!$this->writeRestoreSentinel($pending?'pending':'clear',$epoch))$pending=true;
+                    }
+                }
+                $floor=$initStarting&&is_string($GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS']??null)?$GLOBALS['CORRESPONDENCE_RESTORE_INIT_NATIVE_TS']:'0';
+                if(preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/D',$floor)!==1||filter_var($floor,FILTER_VALIDATE_INT,['options'=>['min_range'=>0]])===false)$floor='0';
+                $this->transaction(fn()=>$this->queryRaw('INSERT INTO plugins.correspondence_restore_state(singleton,epoch,pending,native_ts_floor) VALUES(TRUE,$1::uuid,$2::boolean,$3::bigint) ON CONFLICT(singleton) DO NOTHING',[$epoch,$pending?'true':'false',$floor]));
+            }
+            $this->restoreStateReady=true;$schemaComplete=true;
+        }finally{
+            $this->schemaSetup=false;
+            if($schemaComplete){
+                if(!empty($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED']))$this->requestRestoreToken=is_string($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']??null)?$GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']:null;
+                elseif($this->requestClock!==null&&$this->requestRestoreToken===null)$this->requestRestoreToken=$this->restoreGeneration();
+            }
+        }
+    }
+    public function query(string $sql,array $parameters=[]): array
+    {
+        if(!$this->active&&!$this->schemaSetup&&!$this->restoreAdmin&&!$this->restoreProbe){
+            if(preg_match('/\A\s*(?:SELECT|WITH|SHOW)\b/i',$sql)===1)return $this->readTransaction(fn()=>$this->queryRaw($sql,$parameters));
+            $this->assertRestoreToken();
+        }
+        return $this->queryRaw($sql,$parameters);
+    }
+    private function queryRaw(string $sql,array $parameters=[]):array
+    {
+        if($this->connectionClosed)throw new RuntimeException('storage_failed');
         $result=@pg_query_params($this->connection,$sql,$parameters);
         if($result===false)throw new RuntimeException('storage_failed');
         try{return pg_num_fields($result)>0?(pg_fetch_all($result)?:[]):[];}finally{pg_free_result($result);}
     }
+    private function readRestoreSentinel():?array
+    {
+        if($this->restoreSentinelPath===null)return null;
+        if(!is_file($this->restoreSentinelPath))return null;
+        $raw=@file_get_contents($this->restoreSentinelPath);
+        if(!is_string($raw))throw new DomainException('restore_sentinel_unavailable');
+        try{$value=json_decode($raw,true,8,JSON_THROW_ON_ERROR);}catch(Throwable){throw new DomainException('restore_sentinel_unavailable');}
+        if(!is_array($value)||($value['schema']??null)!=='correspondence.restore.v1'||!in_array($value['state']??null,['clear','pending'],true)||!is_string($value['epoch']??null))throw new DomainException('restore_sentinel_unavailable');
+        try{$epoch=correspondenceUuidCheck($value['epoch']);}catch(Throwable){throw new DomainException('restore_sentinel_unavailable');}
+        return ['state'=>$value['state'],'epoch'=>$epoch];
+    }
+    public static function writeRestoreSentinelFile(string $path,string $state,string $epoch):bool
+    {
+        if(!in_array($state,['clear','pending'],true))return false;
+        try{correspondenceUuidCheck($epoch);}catch(Throwable){return false;}
+        $directory=dirname($path);
+        if(!is_dir($directory)||!is_writable($directory))return false;
+        try{$temporary=$path.'.'.bin2hex(random_bytes(8)).'.tmp';}catch(Throwable){return false;}
+        $handle=@fopen($temporary,'xb');if($handle===false)return false;
+        $bytes=json_encode(['schema'=>'correspondence.restore.v1','state'=>$state,'epoch'=>$epoch],JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)."\n";
+        $ok=false;
+        try{
+            $written=0;$length=strlen($bytes);
+            while($written<$length){$part=fwrite($handle,substr($bytes,$written));if($part===false||$part===0)break;$written+=$part;}
+            $ok=$written===$length&&fflush($handle)&&(function_exists('fsync')?@fsync($handle):true);
+        }catch(Throwable){return false;}
+        finally{fclose($handle);}
+        if(!$ok||!@rename($temporary,$path)){@unlink($temporary);return false;}
+        clearstatcache(true,$path);return true;
+    }
+    private function writeRestoreSentinel(string $state,string $epoch):bool
+    {
+        return $this->restoreSentinelPath===null||self::writeRestoreSentinelFile($this->restoreSentinelPath,$state,$epoch);
+    }
+    private function restoreStateRow():?array
+    {
+        $rows=$this->queryRaw('SELECT epoch::text,pending FROM plugins.correspondence_restore_state WHERE singleton IS TRUE');
+        return count($rows)===1?$rows[0]:null;
+    }
+    private function currentRestoreGeneration():?string
+    {
+        $row=$this->restoreStateRow();if($row===null)throw new DomainException('restore_epoch_state_unavailable');
+        if(($row['pending']??null)==='t')return null;
+        if($this->restoreSentinelPath!==null){
+            $sentinel=$this->readRestoreSentinel();
+            if($sentinel===null)throw new DomainException('restore_sentinel_unavailable');
+            if($sentinel['state']==='pending')return null;
+            if(!hash_equals((string)$row['epoch'],$sentinel['epoch']))throw new DomainException('restore_epoch_changed');
+        }
+        $ptrGeneration=array_key_exists('ptr_runtime_generation',$GLOBALS)?$GLOBALS['ptr_runtime_generation']:($this->restoreSentinelPath===null?'db-only':null);
+        if(!is_string($ptrGeneration))throw new DomainException('restore_generation_unavailable');
+        return (string)$row['epoch'].':'.($ptrGeneration===''?'none':$ptrGeneration);
+    }
     public function transaction(callable $work): mixed
     {
-        if($this->active)return $work();
+        return $this->writerTransaction($work,null);
+    }
+    public function completionTransaction(callable $work,?string $expectedRestoreToken=null):mixed
+    {
+        return $this->writerTransaction($work,$expectedRestoreToken);
+    }
+    private function writerTransaction(callable $work,?string $expectedRestoreToken):mixed
+    {
+        if($this->active){$this->assertRestoreToken($expectedRestoreToken);return $work();}
         $this->clearTransactionCache();
-        $this->query('BEGIN'); $this->active=true; $this->writerActive=true;
+        $this->queryRaw('BEGIN'); $this->active=true; $this->writerActive=true;
         try{
-            $this->query("SET LOCAL lock_timeout='3s'");
-            $this->query('SELECT pg_advisory_xact_lock(18459814, 1)');
+            $this->queryRaw("SET LOCAL lock_timeout='3s'");
+            $this->queryRaw('SELECT pg_advisory_xact_lock(18459814, 1)');
             // Core restore and source publication must not interleave with receipt validation.
-            $this->query('LOCK TABLE public.eventlog IN SHARE ROW EXCLUSIVE MODE');
-            if($this->requestClock!==null){$latest=$this->query('SELECT MAX(ts) AS ts FROM public.eventlog')[0]['ts']??null;if($latest!==null&&(int)$latest>(int)$this->requestClock['ts'])throw new DomainException('stale_request_clock');}
-            $result=$work();$this->query('COMMIT');return $result;
-        }catch(Throwable $e){try{$this->query('ROLLBACK');}catch(Throwable){}throw $e;}finally{$this->active=false;$this->writerActive=false;$this->clearTransactionCache();}
+            $this->queryRaw('LOCK TABLE public.eventlog IN SHARE ROW EXCLUSIVE MODE');
+            if(!$this->schemaSetup){
+                if(count($this->queryRaw('SELECT epoch FROM plugins.correspondence_restore_state WHERE singleton IS TRUE FOR SHARE'))!==1)throw new DomainException('restore_epoch_state_unavailable');
+                $this->assertRestoreToken($expectedRestoreToken);
+            }
+            $result=$work();if(!$this->schemaSetup)$this->assertRestoreToken($expectedRestoreToken);$this->queryRaw('COMMIT');return $result;
+        }catch(Throwable $e){try{$this->queryRaw('ROLLBACK');}catch(Throwable){}throw $e;}finally{$this->active=false;$this->writerActive=false;$this->clearTransactionCache();}
     }
     public function readTransaction(callable $work):mixed
     {
-        if($this->active)return $work();
+        return $this->readTransactionInternal($work,true);
+    }
+    private function readTransactionInternal(callable $work,bool $checkToken):mixed
+    {
+        if($this->active){if($checkToken)$this->assertRestoreToken();return $work();}
         $this->clearTransactionCache();
-        $this->query('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');
-        $this->active=true; $this->writerActive=false;
+        $begun=false;
         try{
-            $this->query("SET LOCAL lock_timeout='3s'");
-            if($this->requestClock!==null){$latest=$this->query('SELECT MAX(ts) AS ts FROM public.eventlog')[0]['ts']??null;if($latest!==null&&(int)$latest>(int)$this->requestClock['ts'])throw new DomainException('stale_request_clock');}
-            $result=$work();$this->query('COMMIT');return $result;
+            $this->queryRaw("SET lock_timeout='3s'");
+            $this->queryRaw('SELECT pg_advisory_lock_shared(18459814, 1)');$this->sessionSharedLock=true;
+            $this->queryRaw('BEGIN ISOLATION LEVEL REPEATABLE READ READ ONLY');$begun=true;$this->active=true;$this->writerActive=false;
+            $this->queryRaw("SET LOCAL lock_timeout='3s'");
+            if($checkToken)$this->assertRestoreToken();
+            $result=$work();if($checkToken)$this->assertRestoreToken();$this->queryRaw('COMMIT');$begun=false;return $result;
         }
-        catch(Throwable $e){try{$this->query('ROLLBACK');}catch(Throwable){}throw $e;}
-        finally{$this->active=false;$this->writerActive=false;$this->clearTransactionCache();}
+        catch(Throwable $e){if($begun)try{$this->queryRaw('ROLLBACK');}catch(Throwable){}throw $e;}
+        finally{
+            $this->active=false;$this->writerActive=false;$this->clearTransactionCache();
+            if($this->sessionSharedLock){
+                $released=false;
+                try{$rows=$this->queryRaw('SELECT pg_advisory_unlock_shared(18459814, 1) AS released');$released=($rows[0]['released']??null)==='t';}catch(Throwable){}
+                $this->sessionSharedLock=false;
+                if(!$released){
+                    $this->connectionClosed=true;
+                    try{@pg_close($this->connection);}catch(Throwable){}
+                    error_log('[CORRESPONDENCE] restore_read_unlock_failed');
+                    throw new RuntimeException('storage_failed');
+                }
+            }
+        }
     }
     public function scope(): array
     {

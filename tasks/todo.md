@@ -44,3 +44,38 @@ All 110 tagged source files match the final snapshot. Four assets reproduced fro
 Release: https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.17
 
 No live/game/core/provider deployment occurred. Sealed Fates made no WSL call after returning TEST; Department retains its separate active lease. Native gameplay, actual inventory/co-save behavior and shipped Department DLL compatibility remain unverified.
+
+
+## Dev.18 critique repairs
+
+Goal: make concurrent-event completion and claim recovery progress without weakening playthrough/restore/identity safety; fix the remaining confirmed bounded findings. Published dev.17 tags/assets remain immutable. No publication or live installation in this task.
+
+- [x] Freeze baseline and exact critique; inspect core restore/clock contracts; coordinate actual Department TEST release.
+- [x] Specify restore-safe completion semantics; reproduce newer-event success, future-ts poisoning, retained-anchor restores and stale claimant rejection.
+- [x] Implement bounded freshness and immediate claim recovery; preserve full letters, attempted-call accounting and exactly-once effects.
+- [x] Correct sender/contact construction and prevent local construction failures from consuming mail.
+- [x] Harden operator Host/Origin authorization; repair documented CLI usage; handle bridge failure/unknown semantics without inventing clean failure or blind retry.
+- [x] Obtain exclusive TEST lease, use fresh network-isolated/private PG runtime and execute frozen RED/GREEN concurrent-event, lock-contention, restore, receipt and contact regressions.
+- [x] Run integrated regression/package/bridge checks, independent review, exact Department handoff and canonical synchronization preserving its provenance layout.
+- [x] Stop owned runtime, verify protected metadata, explicitly release TEST and append final review/remaining limits.
+
+Acceptance: unrelated later events during a valid model call do not strand or retire its source; restores (including retained old anchors), changed identity/settings, tampered anchors and stale claimants never create new effects; unavailable bridge proof stays unknown and cannot resend inventory. Runtime evidence must distinguish setup errors, valid safety refusals and actual liveness failures.
+
+
+### Dev.18 repair review
+
+All 21 integrated PostgreSQL jobs and 23 pure suites (25 cases) passed on the final 98-file frozen followup11 stage. Seven genuine dev.17 baseline failures and two external-ingress safety regressions are retained; setup errors, intermediate failures and a refused duplicate queue are explicitly excluded from final proof. All 76 PHP lints, 60 parser checks, 41 fake-native state checks and 28 public plus 28 canonical package checks passed. Full forwarded bodies, strict transfer uncertainty and restored-anchor/epoch identity remain intact.
+
+Canonical server/contracts equal the tested source; its artwork, historical packages, bridge provenance manifest and local portable-test adapter were preserved. The owned socket-only cluster stopped after identity verification; TEST was stopped and explicitly released to Department with unchanged protected live-VHD size/mtime. Remaining work is Windows-only packaging/reporting. No live/game/core/provider deployment, commit, push or publication occurred.
+
+Department performed a read-only compatibility review. Its published prealpha.1 stays on dev.17; dev.18 needs a separate lifecycle-aware adapter candidate and signed-unknown branch update, not a hash-only allowlist change. Native gameplay/co-save/inventory, actual providers, downstream cross-plugin atomicity, campaign-scale retention and dual filesystem/database quarantine persistence failure remain documented limits. See docs/DEV18-RECOVERY.md and artifacts/chim-sealed-fates-critique-dev18-20261020/verification-final.json.
+
+
+## Dev.18 publication follow-up (explicitly authorized)
+
+- [x] Reverify exact runtime/test evidence and fresh host checks; finalize accurate release notes.
+- [ ] Commit intended source, create annotated dev.18 tag and reproduce four assets from its clean export.
+- [ ] Push tag, upload draft assets, verify downloads, then publish PRE-ALPHA.
+- [ ] Advance main without force after publication, verify public assets/refs and record final review.
+
+Department owns its separate integration/publication. No TEST, live, game, core or provider operation is authorized by this publication follow-up.

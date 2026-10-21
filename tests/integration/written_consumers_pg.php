@@ -30,7 +30,7 @@ SQL;
 crossCheck(pg_query($c,$ddl)!==false,'synthetic native table shape');
 crossCheck(pg_query($c,file_get_contents($project.'/server/migrations/001_initial.sql'))!==false,'real producer migration');
 
-$store=new CorrespondencePgStore($c,fn($s)=>$s->observedExecutor(),fn($title,$body)=>true);$store->bindRequestClock(['inputtext','100','100','synthetic native fixture']);$service=new CorrespondenceService($store);
+$store=new CorrespondencePgStore($c,fn($s)=>$s->observedExecutor(),fn($title,$body)=>true);$store->ensureSchema();$store->bindRequestClock(['inputtext','100','100','synthetic native fixture']);$service=new CorrespondenceService($store);
 $store->observeManaged(base64_encode(correspondenceJson(['source'=>'plugin_player_routing_v2','present_actors'=>[['form_id'=>hexdec('000A2C94'),'name'=>'Lydia','distance'=>10,'managed'=>true,'creature'=>false]]])));
 $body="Camilla, you are a disgrace and I despise you.\nSigned, Jarl Balgruuf.";
 $doc=$service->compose(['request_id'=>correspondenceUuid(),'author'=>'player','payer'=>'player','recipient'=>'npc:900001','claimed_sender'=>'npc:900002','body'=>$body,'attachments'=>[['kind'=>'gold','form_id'=>'Skyrim.esm|0000000F','quantity'=>5]]]);

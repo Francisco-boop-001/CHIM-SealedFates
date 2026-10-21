@@ -3,6 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/lib/bootstrap.php';
 // Core comm.php has finished its restore prune and init marker before this hook.
 correspondenceReleaseInitFence();
+correspondenceCompletePendingInit();
 require_once __DIR__.'/lib/consumers.php';
 if(function_exists('chimRegisterPromptInjection')){
     chimRegisterPromptInjection('character_bottom','correspondence.recipient',function(string $slot,array $context):string{

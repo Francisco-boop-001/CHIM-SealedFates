@@ -101,6 +101,7 @@ foreach([900002,900003,900004] as $id) mpCrossQuery($connection,'UPDATE core_npc
 $ownerBefore=mpCrossNpc($connection,900001);$absentBefore=[];
 foreach([900002,900003,900004] as $id) $absentBefore[$id]=mpCrossNpc($connection,$id);
 $store=new CorrespondencePgStore($connection,fn($s)=>$s->observedExecutor(),fn($title,$body)=>true);
+$store->ensureSchema();
 $store->bindRequestClock(['inputtext','100','100','synthetic native fixture']);
 $service=new CorrespondenceService($store);
 $store->observeManaged(base64_encode(correspondenceJson(['source'=>'plugin_player_routing_v2','present_actors'=>[['form_id'=>hexdec('000A2C94'),'name'=>'Lydia','distance'=>10,'managed'=>true,'creature'=>false]]])));

@@ -1,6 +1,6 @@
 # Installation and removal
 
-**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The checked package is a matched pair: the server package and Papyrus bridge must stay on the same release package. Dev.17 rebuilds the bridge; use its matching server package and PEX together.
+**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The checked package is a matched pair: the server package and Papyrus bridge must stay on the same release package. Dev.18 includes the byte-identical, source-bound dev.17 bridge; install the server and bridge from the dev.18 paired archive together.
 
 ## Pick your interface
 
@@ -8,17 +8,17 @@
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The updated Department adapter passed exact dev.17 owner/adapter checks on disposable TEST. This verifies the synthetic server/adapter boundary, not Skyrim gameplay or a shipped DLL. The verified Department change is a local candidate at verification time; older interface builds without the dev.17 pins refuse this version. Use a Department build containing the verified adapter; see [the exact boundary and digest](VERIFICATION.md). No sibling bundle is included. Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
+The Department Skyrim interface is optional. Published Department prealpha.1 targets dev.17 and refuses dev.18. A separate dev.18 adapter candidate is being developed and requires its own restore-fencing and signed-unknown receipt tests. Use the existing web plugin page until an exact dev.18 Department pairing is verified; adding version hashes alone is insufficient. No sibling plugins are bundled. Normal CHIM update checks may replace the historical kit's tested sibling candidates and invalidate that pairing. An older enabled Mind Poisoning MO2 package may also synchronize an older build back. Confirm the active files before upgrading, and do not stack old and new routes.
 
 ## Main paired install
 
-Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.17.zip**, and verify it against **SHA256SUMS.txt**.
+Download the paired archive, **CHIM-Sealed-Fates-0.1.0-dev.18.zip**, and verify it against **SHA256SUMS.txt**.
 
 1. Stop the offscreen service before replacing files (see **Updating** below). Install that ZIP as an MO2 mod. Confirm that exactly one active mod supplies **Data/Scripts/CHIMCorrespondenceBridge.pex** and exactly one correspondence **.dwpkg** remains in the merged **CHIM/server-plugins/correspondence/** directory. Disable older playtest/recovery mods that supply either file.
-2. From the same ZIP, install **correspondence-0.1.0-dev.17.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
-3. Keep the bridge and server package from the dev.17 paired archive. Do not pair the server package with a bridge from another release.
+2. From the same ZIP, install **correspondence-0.1.0-dev.18.dwpkg** through CHIM's normal server plugin manager. It is under **CHIM/server-plugins/correspondence/**.
+3. Keep the bridge and server package from the dev.18 paired archive. Do not pair the server package with a bridge from another release.
 
-The paired ZIP includes the rebuilt, hash-verified MO2 bridge PEX and the dev.17 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.17 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
+The paired ZIP includes the unchanged, hash-verified MO2 bridge PEX and the dev.18 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.18 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
 
 CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Older playtest ZIPs contain 2026 timestamps; current reproducible archives use a fixed 1980 timestamp. With both enabled, the courier may diligently install the older package. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
 
@@ -58,7 +58,7 @@ Historical sibling packages are exact development fixtures, not current dependen
 
 ## Recovery and diagnostics
 
-A storage-failed receipt gets one intake retry with the same packet. This does not repeat delivery or move inventory. If the packet still cannot be accepted, keep the operation pending/unknown and use read-only Reconcile with the original dispatch wire; never compose or dispatch a replacement as a recovery shortcut. A missing or untrusted native journal cannot prove delivery.
+A storage-failed receipt gets one intake retry with the same packet. This does not repeat delivery or move inventory. If the packet still cannot be accepted, keep the operation pending/unknown and use read-only Reconcile with the original dispatch wire; never compose or dispatch a replacement as a recovery shortcut. A missing or untrusted native journal cannot prove delivery. Reconcile reads an existing journal; it cannot repair missing or unsupported JContainers, a malformed dispatch packet, or a missing journal. Fix the prerequisite first, keep the original operation and its evidence, then check that same operation. If its outcome still cannot be proven, abandon further delivery attempts and leave it pending/unknown. There is no safe clean-failure receipt or automatic resend for an unproven transfer, and no database deletion is required.
 
 Structured diagnostics record UTC time, bounded status/reason, elapsed time and available claim/source correlation. Autonomy records callback attempts and input/output character counts independently of effect-bearing completion. These are operational measurements, not token totals or provider billing receipts. A failure can legitimately retain an attempted call while producing no letter or social effect.
 

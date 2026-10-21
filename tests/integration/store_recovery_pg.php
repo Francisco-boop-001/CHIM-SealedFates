@@ -261,7 +261,9 @@ storeRecoveryPgCheck(count($promptReadOnlyBegins) === 1, 'queued_prompt_must_run
 storeRecoveryPgCheck(count($promptEventlogWriterLocks) === 0, 'queued_prompt_must_not_take_the_eventlog_writer_table_lock');
 storeRecoveryPgCheck(count($promptAdvisoryWriterLocks) === 0, 'queued_prompt_must_not_take_the_writer_advisory_lock');
 storeRecoveryPgCheck($filterSql, 'recipient_prompt_document_select_must_filter_before_validating_other_letters');
-storeRecoveryPgCheck(count($promptQueries) <= 20, 'prompt_query_count_must_remain_bounded_for_50_letters_and_2000_npcs');
+// The restore gate adds a fixed number of probes; document/actor queries must stay constant.
+$restoreGateQueries=array_filter($promptQueries,static fn($sql)=>str_contains($sql,'correspondence_restore_state')||str_contains($sql,'pg_advisory_lock_shared')||str_contains($sql,'pg_advisory_unlock_shared'));
+storeRecoveryPgCheck(count($promptQueries)-count($restoreGateQueries) <= 20 && count($restoreGateQueries) <= 8, 'prompt_query_count_must_remain_bounded_for_50_letters_and_2000_npcs');
 
 $deliveredBody = 'Synthetic delivered body for the real PostgreSQL prompt path.';
 $deliveredSummary = $service->compose([
@@ -501,13 +503,15 @@ $peerEventsBeforeStale = (int)(storeRecoveryPgSql(
 )[0]['n'] ?? -1);
 storeRecoveryPgCheck($documentCountBeforeStale === 51, 'fixture_must_contain_fifty_queued_letters_and_one_delivered_letter');
 storeRecoveryPgCheck($peerEventsBeforeStale === 53, 'fixture_must_retain_all_fifty_queued_and_three_delivered_anchors');
+// A real pending restore must reject reads and effects even while every old anchor survives.
+storeRecoveryPgSql($connection, 'UPDATE plugins.correspondence_restore_state SET pending=true WHERE singleton=true');
 $staleReadRejected = false;
 try {
     $service->list();
 } catch (DomainException $error) {
-    $staleReadRejected = $error->getMessage() === 'stale_request_clock';
+    $staleReadRejected = $error->getMessage() === 'restore_epoch_pending';
 }
-storeRecoveryPgCheck($staleReadRejected, 'read_transaction_must_reject_a_newer_committed_eventlog_clock');
+storeRecoveryPgCheck($staleReadRejected, 'read_transaction_must_reject_pending_restore_with_retained_anchors');
 
 $staleWriteRejected = false;
 try {
@@ -521,9 +525,9 @@ try {
         'attachments'=>[],
     ]);
 } catch (DomainException $error) {
-    $staleWriteRejected = $error->getMessage() === 'stale_request_clock';
+    $staleWriteRejected = $error->getMessage() === 'restore_epoch_pending';
 }
-storeRecoveryPgCheck($staleWriteRejected, 'writer_must_retain_request_clock_max_ts_guard_after_read_lock_split');
+storeRecoveryPgCheck($staleWriteRejected, 'writer_must_reject_pending_restore_after_read_lock_split');
 $documentCount = storeRecoveryPgSql($connection, 'SELECT count(*)::int AS n FROM plugins.correspondence_documents')[0]['n'] ?? null;
 storeRecoveryPgCheck((int)$documentCount === $documentCountBeforeStale, 'stale_request_must_not_persist_a_new_document');
 
@@ -533,11 +537,14 @@ $peerEvents = storeRecoveryPgSql(
 )[0]['n'] ?? null;
 storeRecoveryPgCheck((int)$peerEvents === $peerEventsBeforeStale, 'stale_read_and_write_paths_must_not_append_correspondence_events');
 
+storeRecoveryPgSql($connection, 'UPDATE plugins.correspondence_restore_state SET pending=false WHERE singleton=true');
+
 $raceStore = new CorrespondencePgStore(
     $connection,
     static fn($unused) => null,
     static fn($title, $body) => true
 );
+$raceStore->ensureSchema();
 $raceStore->bindRequestClock(['inputtext','101001','101001']);
 $raceService = new CorrespondenceService($raceStore);
 $raceInput = [
@@ -615,6 +622,7 @@ $lockStore = new CorrespondencePgStore(
     static fn($unused) => null,
     static fn($title, $body) => true
 );
+$lockStore->ensureSchema();
 $lockStore->bindRequestClock(['inputtext','101001','101001']);
 $outsideLockRejected = false;
 try {
