@@ -9,6 +9,7 @@ final class CorrespondenceMemoryStore implements CorrespondenceStore
     public array $actors=[900001=>['id'=>900001,'npc_name'=>'Camilla','refid'=>'00013488'],900002=>['id'=>900002,'npc_name'=>'Jarl Balgruuf','refid'=>'0001A677']];
     public ?Closure $beforeDocuments=null;
     public ?Closure $afterReadTransaction=null;
+    public ?Closure $beforePrepareNote=null;
     private bool $active=false;
     private bool $readOnly=false;
     private ?array $actorCatalogCache=null;
@@ -63,7 +64,7 @@ final class CorrespondenceMemoryStore implements CorrespondenceStore
     public function appendEvent(string $type,string $data,string $people,string $sess):array{$id=count($this->events)+1;return $this->events[$id]=['rowid'=>$id,'type'=>$type,'data'=>$data,'people'=>$people,'sess'=>$sess,'ts'=>$this->clock['ts'],'gamets'=>$this->clock['gamets'],'localts'=>100];}
     public function eventMatches(array $event):bool{return ($this->events[$event['rowid']]??null)===$event;}
     public function managedExecutor():?string{return $this->executor;}
-    public function prepareNote(string $title,string $body):void{$this->notes[]=['title'=>$title,'text'=>$body];$this->commands[]=['actor'=>'rolemaster','action'=>'rolecommand|generateLetter@'.$title];}
+    public function prepareNote(string $title,string $body):void{if($this->beforePrepareNote!==null)($this->beforePrepareNote)($title,$body);$this->notes[]=['title'=>$title,'text'=>$body];$this->commands[]=['actor'=>'rolemaster','action'=>'rolecommand|generateLetter@'.$title];}
     public function queueCommand(string $actor,string $action):void{$this->commands[]=compact('actor','action');}
     public function physicalActor(array $actor):array{return ['refid'=>$actor['kind']==='player'?20:(int)hexdec($this->actors[$actor['id']]['refid']),'plugin'=>'Skyrim.esm','local_id'=>$actor['kind']==='player'?20:(int)hexdec($this->actors[$actor['id']]['refid'])];}
     public function physicalItem(array $item):array{return ['kind'=>$item['kind'],'form_id'=>15,'plugin'=>'Skyrim.esm','local_id'=>15,'quantity'=>$item['quantity']];}

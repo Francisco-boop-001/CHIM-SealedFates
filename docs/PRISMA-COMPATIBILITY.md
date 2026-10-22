@@ -4,7 +4,7 @@ The Department Skyrim interface is optional. The Sealed Fates web plugin page re
 
 Compatibility belongs to an exact pair of sources. A successful Sealed Fates test run, unchanged bridge bytes, or a version added to Department's allowlist does not establish that its adapter understands the new server behavior. Unknown or changed sources must continue to be refused.
 
-The preflight currently targets dev.21 explicitly. Dev.21 was released with an explicit web-only decision: Department prealpha.4 is paired with dev.20 and refuses dev.21, so PRISMA users should stay on dev.20 until a dev.21 pairing is released. A future version bump must advance that reviewed release identity and obtain its own pairing evidence or an explicit web-only decision. Editing an old receipt's version does not establish compatibility.
+The preflight currently targets dev.22 explicitly. Dev.22 uses an explicit web-only decision. Published Department prealpha.5 adds dev.21 source compatibility without a new runtime gate; dev.20/prealpha.4 retains its earlier disposable server-facade proof. Neither published adapter accepts dev.22. Keep your existing pair if you use PRISMA, or use the web page for dev.22 until an exact pairing is released. A source allowlist update alone does not establish runtime compatibility. A future version bump must advance that reviewed release identity and obtain its own pairing evidence or an explicit web-only decision. Editing an old receipt's version does not establish compatibility.
 
 ## Verified dev.20 server pairing — 2026-10-21
 

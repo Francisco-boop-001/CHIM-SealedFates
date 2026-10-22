@@ -96,4 +96,13 @@ $ordinaryDispatch = correspondencePost(['csrf' => $csrf, 'action' => 'dispatch',
 autonomyUiCheck(correspondenceAutonomyGuardManualDispatch($ordinaryDispatch, [$childId]) === $ordinaryDispatch, 'manual dispatch guard must leave ordinary letters unchanged');
 autonomyUiRejected(fn() => correspondenceAutonomyGuardManualDispatch($forgedDispatch, ['invalid-id']), 'malformed ownership state must fail closed for dispatch');
 
+$letters[1]['state'] = 'failed';
+$failedChildHtml = correspondencePage([], [], $letters, $csrf, '', null, [], [], [$childId]);
+autonomyUiCheck(!str_contains($failedChildHtml, 'value="retry"'), 'RED: a failed scheduler-owned child must not offer manual retry');
+$childRetry = correspondencePost(['csrf'=>$csrf, 'action'=>'retry', 'document_id'=>$childId], $csrf, []);
+autonomyUiRejected(fn() => correspondenceAutonomyGuardManualDispatch($childRetry, [$childId]), 'a forged retry must not detach a child from its scheduler');
+autonomyUiRejected(fn() => correspondenceAutonomyGuardManualDispatch($childRetry, ['invalid-id']), 'retry must fail closed when scheduler ownership is unreadable');
+$manualRetry = ['action'=>'retry', 'document_id'=>$manualId];
+autonomyUiCheck(correspondenceAutonomyGuardManualDispatch($manualRetry, [$childId]) === $manualRetry, 'ordinary manual retry remains available');
+
 echo "PASS server autonomy UI: CSRF-protected default-off pause, escaped operator read, scheduler-owned dispatch guard, shallow outcomes and no browser tick/exposure\n";

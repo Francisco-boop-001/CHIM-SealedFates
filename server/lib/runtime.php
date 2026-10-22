@@ -305,6 +305,10 @@ final class CorrespondenceService
             return ['event' => $event, 'source' => $source];
         });
     }
+    public function composeAndDispatch(array $input): array
+    {
+        return $this->store->transaction(fn() => $this->dispatch($this->compose($input)['document_id']));
+    }
     public function compose(array $input): array
     {
         correspondenceKeys($input,['request_id','author','payer','recipient','claimed_sender','body','attachments']); correspondenceUuidCheck($input['request_id']);

@@ -242,6 +242,54 @@ $r2FailureDiagnostics = [
     'recovered_source_decision_status'=>in_array($recoveredDecision['status'] ?? null, ['claimed','silent','queued','dispatched','failed','unknown','stale'], true) ? $recoveredDecision['status'] : null,
 ];
 if ($GLOBALS['autonomyAccountingFailures'] !== []) throw new RuntimeException('autonomy_accounting_failed:'.implode(',', $GLOBALS['autonomyAccountingFailures']).':'.json_encode($r2FailureDiagnostics, JSON_THROW_ON_ERROR));
+// dev.22: retain queued replies on transient reads and release locally unattempted claims.
+foreach (in_array('--dev22-attempt-only',$argv,true) ? ['attempt-write'] : ['queued-source','attempt-write'] as $mode) {
+$scope = $mode==='queued-source' ? '700122' : '700123';
+$activateScope($scope);
+$enableScope($scope);
+$insertNative(8000,100,'dev22 isolated source');
+$store->bindRequestClock(['inputtext','8000','100','dev22 isolated source']);
+$sourceId = $makeSource('Please reply after considering this complete original letter.');
+$calls = 0;
+$decide = static function () use (&$calls): callable {
+    return static function () use (&$calls): string { $calls++; return autonomyAccountingReply('npc:900001'); };
+};
+$decisionAt = 100 + correspondenceAutonomyGamets(4);
+if ($mode==='queued-source') {
+    $queued = $runNative(8001,$decisionAt,$decide);
+    autonomyAccountingRequire($queued['status']==='queued' && $calls===1, 'fixture must queue a real one-call reply');
+    $before = autonomyAccountingSql($connection,'SELECT * FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2',[$scope,$sourceId])[0];
+    $due = (int)$before['due_gamets'];
+    $child = $before['child_document_id'];
+    autonomyAccountingSql($connection,"UPDATE public.core_player SET value='' WHERE id='player_name'");
+    $waiting = $runNative(8002,$due+1,static fn() => null);
+    $after = autonomyAccountingSql($connection,'SELECT * FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2',[$scope,$sourceId])[0];
+    autonomyAccountingRequire($waiting['model_calls']===0 && $after===$before && $after['status']==='queued',
+        'RED: temporary player identity unavailability must leave the same due decision and child queued');
+    autonomyAccountingSql($connection,"UPDATE public.core_player SET value='Dragonborn' WHERE id='player_name'");
+    $delivered = $runNative(8003,$due+2,static fn() => null);
+    $final = autonomyAccountingSql($connection,'SELECT status,child_document_id::text AS child FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2',[$scope,$sourceId])[0];
+    autonomyAccountingRequire($delivered['status']==='dispatched' && $delivered['model_calls']===0 && $calls===1
+        && $final['child']===$child && $final['status']==='dispatched', 'identity recovery dispatches the same reply without another model call');
+} elseif ($mode==='attempt-write') {
+    autonomyAccountingSql($connection,'CREATE SEQUENCE public.dev22_attempt_fault_counter');
+    autonomyAccountingSql($connection,"CREATE FUNCTION public.dev22_attempt_fault() RETURNS trigger LANGUAGE plpgsql AS \$\$ BEGIN IF NEW.payload ? 'model_calls' AND NOT (OLD.payload ? 'model_calls') AND nextval('public.dev22_attempt_fault_counter')=1 THEN RAISE EXCEPTION 'synthetic pre-callback write refusal'; END IF; RETURN NEW; END \$\$");
+    autonomyAccountingSql($connection,'CREATE TRIGGER dev22_attempt_fault BEFORE UPDATE ON plugins.correspondence_autonomy_decisions FOR EACH ROW EXECUTE FUNCTION public.dev22_attempt_fault()');
+    $failed = $runNative(8001,$decisionAt,$decide);
+    autonomyAccountingRequire($failed['status']==='failed' && $failed['model_calls']===0 && $calls===0, 'fixture must fail its attempt write before entering the model callback');
+    $open = autonomyAccountingSql($connection,"SELECT status FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2",[$scope,$sourceId]);
+    autonomyAccountingRequire($open===[], 'RED: a locally proven unattempted claim must be released without cooldown or permanent source exclusion');
+    $retried = $runNative(8002,$decisionAt+1,$decide);
+    autonomyAccountingRequire($retried['status']==='queued' && $retried['model_calls']===1 && $calls===1,
+        'the original source must remain eligible after a recovered attempt-write failure');
+    $row = autonomyAccountingSql($connection,"SELECT payload->>'model_calls' AS calls FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2",[$scope,$sourceId])[0];
+    autonomyAccountingRequire($row['calls']==='1', 'only the actual callback attempt is recorded on the successful claim');
+    autonomyAccountingSql($connection,'DROP TRIGGER dev22_attempt_fault ON plugins.correspondence_autonomy_decisions');
+} else throw new InvalidArgumentException('unknown_dev22_autonomy_case');
+echo 'PASS dev22 autonomy '.$mode."\n";
+
+}
+
 echo json_encode([
     'status'=>'PASS','attempt_counters_persist_before_model_callback'=>true,'concurrent_completion_keeps_counters'=>true,
     'one_child_without_physical_resend'=>true,'temporary_first_source_does_not_pin_later_source'=>true,

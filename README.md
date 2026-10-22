@@ -1,4 +1,4 @@
-**0.1.0-dev.21 — PRE-ALPHA.** Background letters no longer stall on unusual NPC profile metadata. Web-only release: PRISMA users should stay on dev.20 for now. [Release and downloads](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.21) · [Release notes](docs/RELEASE.md).
+**0.1.0-dev.22 — PRE-ALPHA.** Fewer lost letters, fewer stuck claims, same catastrophically overworked courier. Web-only release; the optional PRISMA pairing remains separate. [Release and downloads](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22) · [Release notes](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -16,13 +16,13 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The optional [Department/PRISMA v0.1.0-prealpha.4](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.4) adapter passed the exact dev.20 server pairing tests. Published prealpha.3 and earlier refuse dev.20. Prealpha.4 does not accept dev.21: if you use PRISMA, stay on dev.20 until a dev.21 pairing is released. The existing web plugin page still works. No sibling plugins are bundled, and installed Skyrim behavior remains unverified. Read [the source identities and verification limits](docs/PRISMA-COMPATIBILITY.md).
+The optional [Department/PRISMA prealpha.5](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.5) adds dev.21 source compatibility; the dev.20/prealpha.4 pair has the earlier disposable server-facade proof. Neither published adapter accepts dev.22. Keep your existing pair if you use PRISMA, or use the existing web plugin page for dev.22 until an exact pairing is released. No sibling plugins are bundled, and installed Skyrim behavior remains unverified. Read [the source identities and verification limits](docs/PRISMA-COMPATIBILITY.md).
 
 ## Download
 
-Download the [dev.21 PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.21). See the [release notes](docs/RELEASE.md) for the current and historical checksums.
+Download the [dev.22 PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22). See the [release notes](docs/RELEASE.md) for the current and historical checksums.
 
-Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/CHIM-Sealed-Fates-0.1.0-dev.21.zip) for the main install path; it contains the matching bridge PEX and server package. The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/correspondence-0.1.0-dev.21.dwpkg) is for CHIM's package manager. The server-only maintenance [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.21/correspondence.tar.gz) is not automatically listed by CHIM.
+Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/CHIM-Sealed-Fates-0.1.0-dev.22.zip) for the main install path; it contains the matching bridge PEX and server package. The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/correspondence-0.1.0-dev.22.dwpkg) is for CHIM's package manager. The server-only maintenance [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/correspondence.tar.gz) is not automatically listed by CHIM.
 
 ## The web page
 
@@ -42,7 +42,7 @@ When the connector is missing, disabled or invalid, due queued letters can still
 
 Offscreen NPC mail is a separate text-only service. After opt-in, a fresh native bored or location observation can start or resume its bounded worker, so an NPC may process mail while the player is elsewhere. It waits for fresh native clock observations, pauses when those stop or scope checks fail, and its supervisor has a 30-minute lifetime cap; each child makes at most one bounded decision tick. It does not deliver physical notes or items.
 
-Recipient context contains up to the three newest valid exposed letters found in the latest 32 inbox entries. Failed, expired, or invalid work stays inert or is retired under its proof checks. Newly recorded, proven transient offscreen reaction failures may be reconsidered once with a fresh claim; historical ambiguous failures remain terminal. Recovery preserves the full original body and never resends physical transfers.
+Recipient context contains up to the three newest valid exposed letters found in the latest 32 inbox entries. A sender must still be alive and have Background Life and Letters enabled for that mail to appear in current NPC prompts. Death or an explicit opt-out suppresses prompt exposure; the complete stored letter and its audit evidence remain. Restoring eligibility lets the same valid letter appear again. Failed, expired, or invalid work stays inert or is retired under its proof checks. Newly recorded, proven transient offscreen reaction failures may be reconsidered once with a fresh claim; historical ambiguous failures remain terminal. Recovery preserves the full original body and never resends physical transfers.
 
 ## Compatibility and limits
 

@@ -321,14 +321,17 @@ function correspondenceOffscreenServiceStatus(): array
     if (correspondenceOffscreenStateDirectory(false) === null) return ['status' => 'unavailable', 'reason' => 'state_directory_unavailable'];
     $paths = correspondenceOffscreenServicePaths();
     if (!correspondenceOffscreenSafePath($paths['lock'])) return ['status' => 'unavailable', 'reason' => 'lock_unavailable'];
-    $handle = @fopen($paths['lock'], 'c+e');
-    if (!is_resource($handle)) return ['status' => 'unavailable', 'reason' => 'lock_unavailable'];
-    try {
-        if (!@flock($handle, LOCK_EX | LOCK_NB)) return ['status' => 'running', 'reason' => 'supervisor_active'];
-        @flock($handle, LOCK_UN);
-    } finally {
-        @fclose($handle);
-    }
+    $free = correspondenceOffscreenWithSignalLock(static function (array $paths): ?bool {
+        $handle = @fopen($paths['lock'], 'c+e');
+        if (!is_resource($handle)) return null;
+        try {
+            if (!@flock($handle, LOCK_EX | LOCK_NB)) return false;
+            @flock($handle, LOCK_UN);
+            return true;
+        } finally { @fclose($handle); }
+    });
+    if ($free === null) return ['status' => 'unavailable', 'reason' => 'lock_unavailable'];
+    if ($free === false) return ['status' => 'running', 'reason' => 'supervisor_active'];
     $last = correspondenceOffscreenServiceReadLastStatus();
     if (in_array($last['status'] ?? null, ['failed','unavailable'], true)) return ['status' => 'unavailable', 'reason' => $last['reason'] ?? 'service_unavailable'];
     if (($last['status'] ?? null) === 'running') return ['status' => 'paused', 'reason' => 'supervisor_exited'];
@@ -388,16 +391,18 @@ function correspondenceOffscreenAcquireSupervisorLock(): mixed
     if (correspondenceOffscreenStateDirectory(true) === null) return null;
     $paths = correspondenceOffscreenServicePaths();
     if (!correspondenceOffscreenSafePath($paths['lock'])) return null;
-    $handle = @fopen($paths['lock'], 'c+e');
-    if (!is_resource($handle) || !@flock($handle, LOCK_EX | LOCK_NB)) {
-        if (is_resource($handle)) @fclose($handle);
-        return null;
-    }
-    @ftruncate($handle, 0);
-    @rewind($handle);
-    @fwrite($handle, (string)getmypid());
-    @fflush($handle);
-    return $handle;
+    return correspondenceOffscreenWithSignalLock(static function (array $paths): mixed {
+        $handle = @fopen($paths['lock'], 'c+e');
+        if (!is_resource($handle) || !@flock($handle, LOCK_EX | LOCK_NB)) {
+            if (is_resource($handle)) @fclose($handle);
+            return null;
+        }
+        @ftruncate($handle, 0);
+        @rewind($handle);
+        @fwrite($handle, (string)getmypid());
+        @fflush($handle);
+        return $handle;
+    });
 }
 
 function correspondenceOffscreenStopRequested(): bool

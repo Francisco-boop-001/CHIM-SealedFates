@@ -80,7 +80,7 @@ function correspondenceOperatorRead(array $letters,string $id):array
 }
 function correspondenceAutonomyGuardManualDispatch(array $request,array $managedChildren):array
 {
-    if(!in_array($request['action']??null,['dispatch','close'],true))return $request;
+    if(!in_array($request['action']??null,['dispatch','retry','close'],true))return $request;
     if(!array_is_list($managedChildren))throw new DomainException('autonomy_status_unavailable');
     foreach($managedChildren as$id)if(!is_string($id)||preg_match('/\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/D',$id)!==1)throw new DomainException('autonomy_status_unavailable');
     if(in_array($request['document_id']??null,$managedChildren,true))throw new DomainException('autonomous_dispatch_owned');
@@ -121,7 +121,7 @@ function correspondencePage(array $actors,array $choices,array $letters,string $
         $rows.='<tr><td>'.$h($letter['claimed_sender']['name']).'</td><td>'.$h($letter['recipient']['name']).'</td><td>'.$h($letter['state']).'</td><td>'.$h($socialText).'</td><td><form method="post"><input type="hidden" name="csrf" value="'.$token.'"><input type="hidden" name="document_id" value="'.$id.'">';
         $rows.='<button name="action" value="read">Open letter</button>';
         if($closed)$rows.=($letter['operator_close_evidence_unavailable']??false)===true?'<span>Closure evidence unavailable; remains closed.</span>':'<span>Closed by operator; delivery outcome unchanged.</span>';
-        elseif($letter['recipient']['kind']==='player'&&$letter['state']==='failed')$rows.='<button name="action" value="retry">Retry failed letter (new operation)</button>';
+        elseif(!$managedChild&&$letter['recipient']['kind']==='player'&&$letter['state']==='failed')$rows.='<button name="action" value="retry">Retry failed letter (new operation)</button>';
         elseif($letter['state']==='queued'&&$managedChild)$rows.='<span>Awaiting autonomous scheduler</span>';
         elseif($letter['state']==='queued')$rows.='<button name="action" value="dispatch">Dispatch queued letter</button>';
         if(in_array($letter['state'],['unknown','dispatched'],true))$rows.='<button name="action" value="reconcile">Check outcome (read only)</button>';

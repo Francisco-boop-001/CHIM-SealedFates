@@ -219,6 +219,7 @@ final class CorrespondenceAutonomyPg
             $modelCalls++;
             if (!$this->persistAttemptCounters($work, $modelCalls, $inputChars, $outputChars)) {
                 $modelCalls = 0;
+                $this->releaseUnattemptedClaim($work);
                 return $this->restoreStateChanged($work['restore_generation'] ?? null) === true
                     ? $finish('stale', 'restore_changed')
                     : $finish('failed', 'storage_error');
@@ -652,7 +653,10 @@ WHERE d.playthrough_id=$1 AND ca.gamets<=$2::numeric
         if (!$this->dbBoolean($setting['enabled'] ?? false)) return ['kind'=>'dispatch','status'=>'idle','reason'=>'disabled'];
         try {
             $exposed = $this->service->readExposedSource((int)$decision['source_event_id'], $selfId);
-        } catch (DomainException|InvalidArgumentException) {
+        } catch (DomainException|InvalidArgumentException $error) {
+            if (in_array($error->getMessage(), ['player_unavailable','actor_unavailable','identity_changed','actor_identity_changed','source_not_due'], true)) {
+                return ['kind'=>'dispatch','status'=>'queued','reason'=>$error->getMessage()];
+            }
             return $this->setDispatchState($decision, 'stale', 'source_changed');
         }
         if (!hash_equals((string)$payload['source_event_sha256'], hash('sha256', $exposed['event']['data']))
@@ -1112,6 +1116,25 @@ SQL;
         if(preg_match('//u',$value)!==1)return strlen($value);
         $count=preg_match_all('/./us',$value,$matches);
         return $count===false?0:$count;
+    }
+
+    private function releaseUnattemptedClaim(array $work): bool
+    {
+        try {
+            return $this->runCompletionTransaction(function () use ($work): bool {
+                $clock = $this->clock();
+                if ($this->restoreStateChanged($work['restore_generation'] ?? null) !== false
+                    || $clock['playthrough_id'] !== $work['playthrough_id'] || $clock['gamets'] < $work['claim_gamets']) return false;
+                $claimed = $this->decisionRow($work['playthrough_id'], $work['source_document_id']);
+                if ($claimed === null || ($claimed['status'] ?? null) !== 'claimed'
+                    || !$this->claimMatchesWork($claimed, $work, $clock['gamets'])) return false;
+                // Only this live caller knows the callback was never entered; historical zero counters do not prove that.
+                $removed = $this->store->query("DELETE FROM plugins.correspondence_autonomy_decisions WHERE playthrough_id=$1 AND source_document_id=$2 AND claim_id=$3 AND status='claimed' AND child_document_id IS NULL RETURNING claim_id::text", [$work['playthrough_id'],$work['source_document_id'],$work['claim_id']]);
+                if (count($removed) !== 1) return false;
+                $this->store->appendEvent('correspondence_anchor', correspondenceJson(['kind'=>'autonomy_unattempted','playthrough_id'=>$work['playthrough_id'],'source_document_id'=>$work['source_document_id'],'source_event_id'=>(string)$work['source_event_id'],'claim_id'=>$work['claim_id'],'reason_code'=>'attempt_write_failed']), '', 'correspondence_v1');
+                return true;
+            }, (string)($work['restore_generation'] ?? ''));
+        } catch (Throwable) { return false; }
     }
 
     private function completeFailure(array $work,string $reason,int $calls,int $inputChars,int $outputChars): array

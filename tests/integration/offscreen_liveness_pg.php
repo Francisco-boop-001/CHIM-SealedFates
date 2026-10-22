@@ -753,6 +753,20 @@ try {
         && $oldClaimsUnchanged,
         'current_expired_claim_must_pass_seventeen_old_generation_claims_and_preserve_its_source');
 
+    // Foreign initiation claims now retire one per observation, without touching the current retry.
+    foreach ($oldGenerationJobs as $oldJobId) {
+        $ts++;
+        $gamets++;
+        livenessObserve($engine,$ts,$gamets);
+        $cleanup = $engine->tick(static function (): string { throw new RuntimeException('foreign_claim_cleanup_must_not_call_model'); });
+        $oldClaim = livenessSql("SELECT status,payload->>'reason_code' AS reason FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id='unprofiled' AND job_id=$1", [$oldJobId])[0] ?? [];
+        livenessCheck(($cleanup['reason'] ?? null)==='claim_anchor_invalid' && ($cleanup['model_calls'] ?? null)===0
+            && ($oldClaim['status'] ?? null)==='stale' && ($oldClaim['reason'] ?? null)==='claim_anchor_invalid',
+            'foreign_initiation_claim_must_retire_without_model_or_source_effects');
+        $current = livenessSql("SELECT status,payload->>'reason_code' AS reason FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id='unprofiled' AND job_id=$1", [$crashWork['job_id']])[0] ?? [];
+        livenessCheck(($current['status'] ?? null)==='stale' && ($current['reason'] ?? null)==='claim_timeout',
+            'foreign_claim_cleanup_must_preserve_the_current_reconsiderable_claim');
+    }
     $ts++;
     $gamets += correspondenceAutonomyGamets(8);
     livenessObserve($engine,$ts,$gamets);

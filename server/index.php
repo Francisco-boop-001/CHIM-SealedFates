@@ -21,7 +21,7 @@ try{
             if(($serviceState['status']??null)==='unavailable')$message.=' The background service is unavailable; check its status and installation.';
         }
         else{
-            if($request['action']==='compose'){$result=$service->compose($request['input']);$result=$service->dispatch($result['document_id']);}
+            if($request['action']==='compose')$result=$service->composeAndDispatch($request['input']);
             elseif($request['action']==='read'){$opened=correspondenceOperatorRead($service->list(),$request['document_id']);$result=['state'=>'read'];}
             elseif($request['action']==='retry')$result=$service->retry($request['document_id']);
             elseif($request['action']==='close')$result=$service->close($request['document_id']);

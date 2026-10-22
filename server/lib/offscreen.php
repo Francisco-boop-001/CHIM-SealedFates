@@ -170,10 +170,20 @@ final class CorrespondenceOffscreenPg
 
                 $due = $this->dueMail($scope, $observation['gamets']);
                 if ($due !== null) {
-                    $actors = $this->npcMap($this->npcRows());
+                    if (isset($due['result_kind'])) {
+                        $this->consumeObservation($scope, $observation['anchor']['rowid'], $observation['gamets']);
+                        return $due;
+                    }
+                    $actorRows = $this->npcRows();
+                    $actors = $this->npcMap($actorRows);
                     $sender = $actors[(int)$due['sender_id']] ?? null;
                     $recipient = $actors[(int)$due['recipient_id']] ?? null;
                     if (!$this->eligible($sender) || !$this->eligible($recipient)) {
+                        $rawActors = $this->actorRowsById($actorRows);
+                        if ($this->profilesNeedDeferral($rawActors[(int)$due['sender_id']] ?? null, $rawActors[(int)$due['recipient_id']] ?? null)) {
+                            $this->deferTransit($scope, $due, (int)$observation['gamets']);
+                            return $idle('profile_construction_failed');
+                        }
                         $this->assertMailCreation($due);
                         $ref = $this->appendAnchor('mail_stale', ['message_id'=>$due['message_id'],'reason_code'=>'actor_ineligible']);
                         $changed = $this->store->query("UPDATE plugins.correspondence_offscreen_mail SET status='stale',payload=payload||jsonb_build_object('stale_anchor',$2::jsonb,'reason_code','actor_ineligible') WHERE playthrough_id=$1 AND message_id=$3 AND status='in_transit' RETURNING message_id::text", [$scope, correspondenceJson($ref), $due['message_id']]);
@@ -200,6 +210,10 @@ final class CorrespondenceOffscreenPg
                 }
                 $reaction = $this->reactionCandidate($scope, $observation['gamets'], $actors, $actorRows);
                 if ($reaction !== null) {
+                    if (isset($reaction['result_kind'])) {
+                        $this->consumeObservation($scope, $observation['anchor']['rowid'], $observation['gamets']);
+                        return $reaction;
+                    }
                     $mail = $reaction['mail'];
                     $self = $actors[(int)$mail['recipient_id']];
                     $context = ['self'=>$reaction['self'],'contacts'=>$reaction['contacts'],'source'=>$reaction['source'],'messages'=>$reaction['messages']];
@@ -737,21 +751,29 @@ final class CorrespondenceOffscreenPg
 
     private function dueMail(string $scope, int $gamets): ?array
     {
-        $rows = $this->store->query("SELECT playthrough_id,message_id::text,sender_id::text,recipient_id::text,root_message_id::text,depth,status,body,created_gamets::text,due_gamets::text,arrived_gamets::text,source_event_id::text,source_event_sha256,payload::text FROM plugins.correspondence_offscreen_mail WHERE playthrough_id=$1 AND status='in_transit' AND due_gamets<=$2 ORDER BY due_gamets,created_gamets,message_id LIMIT 1", [$scope,(string)$gamets]);
+        $recheck = "CASE WHEN payload->'reconsiderable'='true'::jsonb AND payload->>'reason_code'='profile_construction_failed' AND payload->>'recheck_after_gamets' ~ '^[1-9][0-9]{0,18}$' THEN (payload->>'recheck_after_gamets')::numeric ELSE 0 END";
+        $rows = $this->store->query("SELECT playthrough_id,message_id::text,sender_id::text,recipient_id::text,root_message_id::text,depth,status,body,created_gamets::text,due_gamets::text,arrived_gamets::text,source_event_id::text,source_event_sha256,payload::text FROM plugins.correspondence_offscreen_mail WHERE playthrough_id=$1 AND status='in_transit' AND due_gamets<=$2 AND (".$recheck." <= $2 OR ".$recheck." > 9223372036854775807::numeric) ORDER BY correspondence_offscreen_mail.due_gamets,correspondence_offscreen_mail.created_gamets,message_id LIMIT 1", [$scope,(string)$gamets]);
         if ($rows === []) return null;
-        $mail = $this->normalizeMail($rows[0]);
-        $this->assertMailCreation($mail);
+        try {
+            $mail = $this->normalizeMail($rows[0]);
+            $this->assertMailCreation($mail);
+        } catch (DomainException|InvalidArgumentException|JsonException) {
+            $this->quarantineInvalidMail($scope, (string)$rows[0]['message_id']);
+            return ['result_kind'=>'processed','reason'=>'mail_quarantined'];
+        }
         return $mail;
     }
 
     private function quarantineInvalidLiveMail(string $scope): bool
     {
-        $rows = $this->store->query("SELECT playthrough_id,message_id::text,sender_id::text,recipient_id::text,root_message_id::text,depth,status,body,created_gamets::text,due_gamets::text,arrived_gamets::text,source_event_id::text,source_event_sha256,payload::text FROM plugins.correspondence_offscreen_mail WHERE playthrough_id=$1 AND status IN ('in_transit','arrived','exposed') ORDER BY created_gamets,message_id", [$scope]);
+        $rows = $this->store->query("SELECT playthrough_id,message_id::text,sender_id::text,recipient_id::text,root_message_id::text,depth,status,body,created_gamets::text,due_gamets::text,arrived_gamets::text,source_event_id::text,source_event_sha256,payload::text FROM plugins.correspondence_offscreen_mail WHERE playthrough_id=$1 AND status IN ('in_transit','arrived','exposed') ORDER BY CASE WHEN payload->>'validation_checked_at' ~ '^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9][.][0-9]{6}Z$' AND payload->>'validation_checked_at' <= to_char(statement_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"') THEN payload->>'validation_checked_at' ELSE '' END,correspondence_offscreen_mail.created_gamets,message_id LIMIT 16", [$scope]);
         $actors = null;
+        $validated = [];
         foreach ($rows as $row) {
             try {
                 $mail = $this->normalizeMail($row);
             } catch (DomainException|InvalidArgumentException|JsonException) {
+                $this->markMailValidation($scope, $validated);
                 $this->quarantineInvalidMail($scope, (string)$row['message_id']);
                 return true;
             }
@@ -761,11 +783,22 @@ final class CorrespondenceOffscreenPg
                 elseif ($mail['status'] === 'arrived') $this->assertMailArrival($mail);
                 elseif ($mail['status'] === 'exposed') $this->assertMailExposure($mail, $actors);
             } catch (DomainException|InvalidArgumentException|JsonException) {
+                $this->markMailValidation($scope, $validated);
                 $this->quarantineInvalidMail($scope, (string)$row['message_id']);
                 return true;
             }
+            $validated[] = $mail['message_id'];
         }
+        $this->markMailValidation($scope, $validated);
         return false;
+    }
+
+    private function markMailValidation(string $scope, array $messageIds): void
+    {
+        if ($messageIds === []) return;
+        // This cursor schedules maintenance only; every consumed source still revalidates its anchors.
+        $rows = $this->store->query("UPDATE plugins.correspondence_offscreen_mail SET payload=jsonb_set(payload,'{validation_checked_at}',to_jsonb(to_char(statement_timestamp() AT TIME ZONE 'UTC', 'YYYY-MM-DD\"T\"HH24:MI:SS.US\"Z\"')),true) WHERE playthrough_id=$1 AND message_id=ANY($2::uuid[]) AND status IN ('in_transit','arrived','exposed') RETURNING message_id::text", [$scope,'{'.implode(',', $messageIds).'}']);
+        if (count($rows) !== count($messageIds)) throw new DomainException('mail_validation_progress_conflict');
     }
 
     private function quarantineInvalidMail(string $scope, string $messageId): void
@@ -810,8 +843,13 @@ final class CorrespondenceOffscreenPg
             return strcmp((string)($left['message_id'] ?? ''), (string)($right['message_id'] ?? ''));
         });
         foreach ($rows as $row) {
-            $mail = $this->normalizeMail($row);
-            $this->assertMailArrival($mail);
+            try {
+                $mail = $this->normalizeMail($row);
+                $this->assertMailArrival($mail);
+            } catch (DomainException|InvalidArgumentException|JsonException) {
+                $this->quarantineInvalidMail($scope, (string)$row['message_id']);
+                return ['result_kind'=>'processed','reason'=>'mail_quarantined'];
+            }
             $mailPayload = $mail['payload_array'];
             $reconsiderable = $mailPayload['reconsiderable'] ?? false;
             if (($reconsiderable === true || $reconsiderable === 'true')
@@ -841,7 +879,12 @@ final class CorrespondenceOffscreenPg
                 $this->deferArrival($scope, $mail, 'actor_cooldown', $cooldown);
                 continue;
             }
-            $source = $this->sourceForMail($mail, $actors);
+            try {
+                $source = $this->sourceForMail($mail, $actors);
+            } catch (DomainException|InvalidArgumentException|JsonException) {
+                $this->quarantineInvalidMail($scope, (string)$mail['message_id']);
+                return ['result_kind'=>'processed','reason'=>'mail_quarantined'];
+            }
             if ($source === null) {
                 $this->deferArrival($scope, $mail, 'source_unavailable', $this->recheckAfterGamets($gamets));
                 continue;
@@ -919,11 +962,7 @@ final class CorrespondenceOffscreenPg
         foreach ($rows as $row) {
             $senderRaw = $rawActors[(int)$row['sender_id']] ?? null;
             $recipientRaw = $rawActors[(int)$row['recipient_id']] ?? null;
-            $bothActorsPresent = is_array($senderRaw) && is_array($recipientRaw);
-            $explicitlyIneligible = (is_array($senderRaw) && $this->actorProfileExplicitlyIneligible($senderRaw))
-                || (is_array($recipientRaw) && $this->actorProfileExplicitlyIneligible($recipientRaw));
-            if ($bothActorsPresent && !$explicitlyIneligible
-                && ($this->actorProfileNeedsDeferral($senderRaw) || $this->actorProfileNeedsDeferral($recipientRaw))) {
+            if ($this->profilesNeedDeferral($senderRaw, $recipientRaw)) {
                 try {
                     $mail = $this->normalizeMail($row);
                     $this->assertMailArrival($mail);
@@ -940,6 +979,23 @@ final class CorrespondenceOffscreenPg
             if ($this->retireIneligibleArrival($scope, $mail, 'actor_ineligible')) return true;
         }
         return false;
+    }
+
+    private function profilesNeedDeferral(?array $sender, ?array $recipient): bool
+    {
+        return $sender !== null && $recipient !== null
+            && !$this->actorProfileExplicitlyIneligible($sender) && !$this->actorProfileExplicitlyIneligible($recipient)
+            && ($this->actorProfileNeedsDeferral($sender) || $this->actorProfileNeedsDeferral($recipient));
+    }
+
+    private function deferTransit(string $scope, array $mail, int $gamets): void
+    {
+        $this->assertMailCreation($mail);
+        $rows = $this->store->query("UPDATE plugins.correspondence_offscreen_mail SET payload=payload||jsonb_build_object('reconsiderable',TRUE,'reason_code','profile_construction_failed','recheck_after_gamets',$4::text) WHERE playthrough_id=$1 AND message_id=$2 AND status='in_transit' AND payload=$3::jsonb AND body=$5 AND sender_id=$6 AND recipient_id=$7 AND created_gamets=$8 AND due_gamets=$9 AND arrived_gamets IS NULL AND source_event_id IS NULL AND source_event_sha256 IS NULL RETURNING message_id::text", [
+            $scope,$mail['message_id'],correspondenceJson($mail['payload_array']),$this->recheckAfterGamets($gamets),
+            $mail['body'],$mail['sender_id'],$mail['recipient_id'],$mail['created_gamets'],$mail['due_gamets'],
+        ]);
+        if (count($rows) !== 1) throw new DomainException('mail_deferral_conflict');
     }
 
     private function retireIneligibleArrival(string $scope, array $mail, string $reason): bool
@@ -1334,6 +1390,8 @@ final class CorrespondenceOffscreenPg
         $args = [$scope];
         if ($actorId !== null) { $sql .= ' AND actor_id=$2'; $args[] = (string)$actorId; }
         if ($excludeClaimId !== null) { $sql .= ' AND claim_id<>$' . (count($args) + 1); $args[] = $excludeClaimId; }
+        $sql .= " AND payload->>'restore_generation'=$" . (count($args) + 1);
+        $args[] = $restoreGeneration;
         $rows = $this->store->query($sql, $args);
         $latest = null;
         $invalid = false;
@@ -1462,18 +1520,19 @@ final class CorrespondenceOffscreenPg
     {
         $restoreGeneration = $this->restoreGeneration();
         if ($restoreGeneration === null || ($this->clock()['playthrough_id'] ?? null) !== $scope) return null;
-        $rows = $this->store->query("SELECT playthrough_id,job_id::text,trigger_event_id::text,actor_id::text,source_message_id::text,goal_hash,claim_id::text,status,action,payload::text,created_at FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id=$1 AND status='claimed' AND source_message_id IS NOT NULL AND payload->>'restore_generation' IS DISTINCT FROM $2 ORDER BY created_at,job_id LIMIT 16 FOR UPDATE", [$scope,$restoreGeneration]);
+        $rows = $this->store->query("SELECT playthrough_id,job_id::text,trigger_event_id::text,actor_id::text,source_message_id::text,goal_hash,claim_id::text,status,action,payload::text,created_at FROM plugins.correspondence_offscreen_jobs WHERE playthrough_id=$1 AND status='claimed' AND payload->>'restore_generation' IS DISTINCT FROM $2 ORDER BY created_at,job_id LIMIT 16 FOR UPDATE", [$scope,$restoreGeneration]);
         foreach ($rows as $row) {
             $payload = $this->jsonObject($row['payload'] ?? null);
             $claimRestoreGeneration = $payload['restore_generation'] ?? null;
             if ($claimRestoreGeneration === $restoreGeneration) continue;
-            $claimGamets = ($payload['kind'] ?? null) === 'react' && is_string($claimRestoreGeneration)
+            $claimGamets = in_array($payload['kind'] ?? null, ['react','initiate'], true) && is_string($claimRestoreGeneration)
                 ? $this->validatedClaimGamets($row, $payload)
                 : null;
             $claimProofValid = $claimGamets !== null;
             $reason = $claimProofValid ? 'restore_changed' : 'claim_anchor_invalid';
-            $closed = $this->store->query("UPDATE plugins.correspondence_offscreen_jobs SET status='stale',action=NULL,payload=payload||jsonb_build_object('reason_code',$3::text,'claim_invalidated',TRUE,'invalidated_restore_generation',$4::text) WHERE playthrough_id=$1 AND job_id=$2::uuid AND claim_id=$5::uuid AND status='claimed' AND source_message_id=$6::uuid AND payload->>'restore_generation' IS DISTINCT FROM $4::text RETURNING job_id::text", [$scope,$row['job_id'],$reason,$restoreGeneration,$row['claim_id'],$row['source_message_id']]);
+            $closed = $this->store->query("UPDATE plugins.correspondence_offscreen_jobs SET status='stale',action=NULL,payload=payload||jsonb_build_object('reason_code',$3::text,'claim_invalidated',TRUE,'invalidated_restore_generation',$4::text) WHERE playthrough_id=$1 AND job_id=$2::uuid AND claim_id=$5::uuid AND status='claimed' AND source_message_id IS NOT DISTINCT FROM $6::uuid AND payload->>'restore_generation' IS DISTINCT FROM $4::text RETURNING job_id::text", [$scope,$row['job_id'],$reason,$restoreGeneration,$row['claim_id'],$row['source_message_id']]);
             if (count($closed) !== 1) continue;
+            if ($row['source_message_id'] === null) return $reason;
 
             try {
                 $mail = $this->mailById($scope, (string)$row['source_message_id']);

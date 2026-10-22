@@ -163,3 +163,19 @@ Department owns its source and TEST execution; Sealed Fates owns its release che
 Department prealpha.4 is published from `08680e31635a4ed91bd9efcb46d7d9b8f30d95e1`; all 33 disposable PostgreSQL facade cases and 11 prechecks pass. Independent source/package review binds all 128 committed source files, 133 frozen inputs and 47 server files. Eleven anonymous asset downloads and the public source archive match the reviewed candidate. The separate pairing ZIP carries the four exact preflight files and its own checksums.
 
 Twenty release tests and 33 package tests pass in both source layouts. Causal source-edit regressions bind receipt validation, packaging and the catalog to the same source snapshot. The actual corrected paired CLI produces the original acceptance output byte for byte and reproduces all four owner dev.20 assets unchanged. The server runtime and bridge remain identical to the published tag. Native/HTTP/gameplay, actual transfers, model quality and autonomous forwarding are not newly established. TEST and its owned cluster stopped; live/game/core/providers remain untouched.
+
+
+## dev.22 bughunt review and repairs — 2026-10-22
+
+- [x] Verify all nine reported findings against dev.21 and record agree/partly/disagree with evidence.
+- [x] Add causal regressions and implement the smallest valid fixes without weakening restore/receipt/no-resend safety.
+- [x] Run relevant pure and disposable PostgreSQL checks, then a fresh independent bughunt; fix any new findings.
+- [x] Synchronize canonical source, verify release assets/interface status, and gate authorized publication on those checks.
+
+Scope: live/game/core/providers remain untouched. No native recompilation. Preserve full forwarded text and historical release bytes. Reuse the clean owned source checkout; no new source trees or copied CHIM core.
+
+### Dev.22 review
+
+All 34 final PostgreSQL jobs and 37 Linux pure checks pass on the exact manifest-22 server bytes. Five original causal PG failures and two pre-sentinel failures were reproduced; fresh independent review is clear after fixing candidate-quarantine rollback and numeric time ordering. The legacy liveness fixture now verifies all 17 newly retired foreign initiation claims before its unchanged one-reply/no-repeat assertions. Ninety-four PHP lints, 35 package checks, 20 release-gate checks, 60 translated parser and 41 fake-native state checks pass. Renderer rollback, manual child ownership and real status/start locking have host regression evidence.
+
+The exact private dev22 cluster is stopped and released; TEST remains running for its other owners. Protected live stayed stopped with unchanged VHD identity/size/mtime. Original launcher tool-session continuity was lost; cleanup used the retained exact-run/root/PID/system-ID proof, with a separate successful release receipt. No provider, installed game, core or native compile action occurred. The release candidate has four deterministic assets and an explicit web-only decision. The Department author received the exact version/hashes for a small adapter-contract check; no dev22 interface pairing is claimed. Final Git refs and public downloads are recorded in the retained publication receipt, not inferred from preparation. Evidence: artifacts/chim-sealed-fates-bughunt-dev22-20261022. Limits: actual gameplay/inventory, model quality, campaign-scale scan/sort cost and simultaneous persistence failures remain.

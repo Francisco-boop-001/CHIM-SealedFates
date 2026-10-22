@@ -1,3 +1,34 @@
+# CHIM Sealed Fates 0.1.0-dev.22 — PRE-ALPHA
+
+Skyrim has one courier. I gave him everybody's emotional baggage, then discovered the paperwork was eating his letters. A visionary management decision, if your vision is terrible. The paperwork has been corrected. His pension remains theoretical.
+
+Temporarily unreadable NPC settings now postpone delivery instead of losing the letter, and a temporarily unavailable player identity no longer destroys an already queued reply. Scheduler-owned letters no longer offer a manual Retry that strands them. A renderer refusal leaves no phantom web-composed document; an unavailable executor still leaves a legitimate queued letter.
+
+Claims interrupted by a restore retire safely, including NPCs beginning a new conversation. If the live caller can prove its callback never started, a failed attempt-counter write releases only that exact claim and records why. Historical zero counters do not grant permission to resend. Status checks no longer make a starting supervisor mistake a brief lock probe for another courier.
+
+Integrity checks rotate through 16 letters per observation, while every consumed letter still validates its full body and anchors. Corrupt selected mail is quarantined without undoing that progress. Numeric game-time ordering keeps delivery chronological. This bounds proof work; it does not establish constant-time database queries or campaign-scale performance. Complete forwarded letters, original receipts and unknown/no-resend protections remain intact.
+
+**The Skyrim interface is optional; the existing web plugin page still works. This is a web-only release.** Published Department prealpha.5 adds dev.21 source compatibility, while dev.20/prealpha.4 retains the earlier disposable facade proof. Neither published adapter accepts dev.22. Keep your existing pair for PRISMA, or use the web page for dev.22 until an exact pairing is released. The physical delivery bridge is unchanged from dev.17 and remains required for notes, items and gold.
+
+Sender death or an explicit Background Life/Letters opt-out still suppresses current NPC prompt exposure. The complete stored letter and audit evidence remain; restored eligibility allows the same valid letter again. No rules have been relaxed to make the post office look productive.
+
+Verification: all **34 PostgreSQL jobs**, **37 Linux pure checks**, **94 PHP lints**, **35 package checks**, **20 release-gate checks**, **60 translated parser checks** and **41 fake-native state checks** pass. Five original PostgreSQL regressions fail on dev.21 and pass after repair; two additional regressions reproduce and fix the bounded-sweep rollback problem found during fresh independent review. UI ownership, compose rollback and the status/start race have causal host checks. The final independent review found no remaining actionable issues. Earlier failed/superseded fixtures are retained, not counted as passing evidence.
+
+Testing used a separate system-ID-guarded, socket-only PostgreSQL cluster in a network-isolated namespace inside the disposable TEST server. Only that marked cluster was stopped; existing TEST services/jobs remained alone. Protected live stayed stopped and its VHD metadata is unchanged. No provider, installed game, CHIM core or native recompilation was involved. Actual Skyrim inventory/co-save/gameplay, fresh model quality and campaign-scale performance remain unverified. If both persistence attempts fail, a claim can still require conservative recovery after storage repair. See [the report assessment, proof limits and recovery details](DEV22-RECOVERY.md), [installation](INSTALL.md) and [PRISMA compatibility](PRISMA-COMPATIBILITY.md).
+
+## Dev.22 assets
+
+[Download this PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22). Keep one correspondence version enabled and use the matching paired ZIP for physical delivery.
+
+| File | SHA-256 | Bytes |
+| --- | --- | ---: |
+| [CHIM-Sealed-Fates-0.1.0-dev.22.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/CHIM-Sealed-Fates-0.1.0-dev.22.zip) | `d871f8e85509c18fc361ffb54242683c15da20e9057c6706a2e790c37f063acd` | 2834804 |
+| [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/SHA256SUMS.txt) | `6763189aad99e1f4804d3d25e3e5745eabd139e2ce8c0083fed461c927813428` | 289 |
+| [correspondence-0.1.0-dev.22.dwpkg](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/correspondence-0.1.0-dev.22.dwpkg) | `4e307116232a8dbd2a7f91eda57d1aae3cdea25e773b39ff3b657fda380d9b79` | 2814613 |
+| [correspondence.tar.gz](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/correspondence.tar.gz) | `c0471e24d5248ab6f296f463044649b599f96d343b90ada9ef1b79b936123f6e` | 2427321 |
+
+---
+
 # CHIM Sealed Fates 0.1.0-dev.21 — PRE-ALPHA
 
 The courier had stopped delivering to anyone whose paperwork had a smudge on it. Smudges are not a crime. He has been reminded.
