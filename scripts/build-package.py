@@ -270,7 +270,7 @@ def build(root,pex,output):
         raise ValueError('Candidate version already contains different bytes; bump version')
     server.write_bytes(raw)
     verify(server,root)
-    combined={'Scripts/CHIMCorrespondenceBridge.pex':bridge,'CHIM/server-plugins/correspondence/'+name:raw}
+    combined={'Scripts/CHIMCorrespondenceBridge.pex':bridge,'CHIM/server-plugins/correspondence/'+manifest['version']+'.dwpkg':raw}
     bundle=output/('CHIM-Sealed-Fates-'+manifest['version']+'.zip')
     bundle_raw=packed(combined)
     if bundle.exists() and bundle.read_bytes()!=bundle_raw:

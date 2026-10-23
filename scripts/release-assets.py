@@ -70,7 +70,7 @@ def build_current_release(release_version, expected_source_closure=None):
         if server_path.read_bytes() != expected_server:
             raise ValueError('Staged server package differs from the validated source snapshot')
         with ZipFile(result['bundle']) as archive:
-            embedded = 'CHIM/server-plugins/correspondence/' + server_path.name
+            embedded = 'CHIM/server-plugins/correspondence/' + manifest['version'] + '.dwpkg'
             if archive.testzip() is not None or archive.read(embedded) != expected_server:
                 raise ValueError('Embedded server package differs from the validated source snapshot')
         stream = io.BytesIO()
@@ -135,7 +135,17 @@ def build():
             raise ValueError('Server source differs from the tested kit')
         if archive.read('Scripts/CHIMCorrespondenceBridge.pex') != pkg.verify_bridge(ROOT):
             raise ValueError('Bridge differs from the tested kit')
-    pkg.build(ROOT, None, out)
+    # Reproduce the frozen dev.14 layout; new bundles use CHIM's version-only filename.
+    if not out.resolve().is_relative_to(ROOT.resolve()):
+        raise ValueError('Output must stay inside this project')
+    out.mkdir(parents=True, exist_ok=True)
+    server_name = 'correspondence-' + version + '.dwpkg'
+    server_bytes = pkg.packed(payload)
+    save(out / server_name, server_bytes)
+    save(out / ('CHIM-Sealed-Fates-' + version + '.zip'), pkg.packed({
+        'Scripts/CHIMCorrespondenceBridge.pex': pkg.verify_bridge(ROOT),
+        'CHIM/server-plugins/correspondence/' + server_name: server_bytes,
+    }))
     save(out / source_kit.name, kit)
     for name, expected in EXPECTED.items():
         if sha((out / name).read_bytes()) != expected:

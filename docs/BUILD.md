@@ -20,6 +20,8 @@ Dev.17 includes a newly compiled, metadata-sanitized PEX; the package command ve
 
 For dev.20, `release-assets.py` builds the two packages, the server-only maintenance archive, and checksum list in a fresh local **dist/**. It does not publish or tag a release. The strict four-output allowlist refuses stale names and changed immutable bytes. Keep each checkout's **dist/** separate from historical release outputs. The compatibility preflight was added after the dev.20 tag: use the reviewed current checkout to run it against the unchanged dev.20 runtime. Historical tags retain their original CLI and bundled build instructions; neither their tags nor their assets are replaced.
 
+The standalone asset is named **correspondence-0.1.0-dev.22.dwpkg** for downloading. Inside the MO2 bundle its member name is **CHIM/server-plugins/correspondence/0.1.0-dev.22.dwpkg**. The bytes are identical. CHIM advertises the entire filename stem as the package version; prefixing it with the plugin name makes the server reject the final upload chunk. The package regression checks that the embedded filename equals its declared version. Historical dev.14 reconstruction explicitly retains its original frozen layout and output-containment guard.
+
 The server-only tar archive contains the plugin under **correspondence/**, including **correspondence/manifest.json**; it is a maintenance/manual-administration archive. No catalog import or self-registration path is claimed; use the DWPkg through CHIM's package manager.
 
 ## Web presentation checks

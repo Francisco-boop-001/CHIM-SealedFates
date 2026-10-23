@@ -1,3 +1,26 @@
+# Sealed Fates dev.22 — packaging fix 1 (PRE-ALPHA)
+
+Apparently the courier can cope with forged love letters, but naming a file is where my genius ends.
+
+The original MO2 ZIP named its bundled server package `correspondence-0.1.0-dev.22.dwpkg`. CHIM treats the entire filename stem as its version, so the server rejected the mismatch with the package's declared `0.1.0-dev.22` on the final upload chunk. This download fixes that member to `CHIM/server-plugins/correspondence/0.1.0-dev.22.dwpkg`.
+
+**No server code, schema, bridge or owner version changes.** The DWPkg bytes, bridge PEX and maintenance tar are identical to the original dev.22 release. The ZIP and checksum list change. This is a separate corrected download; original tags/assets are preserved. Department prealpha.7's exact dev.22 source pins remain applicable; its TEST-only source/package evidence does not establish new runtime or gameplay acceptance. The in-game interface is optional and the web page still works.
+
+Install the corrected paired ZIP as your single Sealed Fates MO2 mod. If you already have the original dev.22 payload, renaming that one bundled DWPkg to `0.1.0-dev.22.dwpkg` is equivalent; retain only one package in the folder. Do not reset your database or replace the identical bridge. CHIM synchronizes on a normal full game restart/save load. The exhausted startup retry is not reset by refreshing the browser; no server restart is needed for this filename correction. A live installation can run migrations, so use your normal backup and approval procedure before triggering it.
+
+Verification: the original mismatch was reproduced offline against a byte-exact copy of the installed server validator. The corrected name clears that check; the fixture deliberately stops at the migration boundary without a database connection. All 37 package tests and 20 release-gate checks pass, including filename/declared-version consistency, unchanged embedded bytes, reproducibility, immutable output refusal and preserved historical dev.14 reconstruction. Independent review is clear after restoring the historical output-containment guard and adding its causal regression. No game/server restart, live-data/database/provider action, native compile or gameplay test was performed for this correction.
+
+[Download packaging fix 1](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22-syncfix.1). Use this release's checksum list for the corrected ZIP.
+
+| File | SHA-256 | Bytes |
+| --- | --- | ---: |
+| [CHIM-Sealed-Fates-0.1.0-dev.22.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22-syncfix.1/CHIM-Sealed-Fates-0.1.0-dev.22.zip) | `7f2f81df1db9bf3db2a13440f84d8baea9acb723e7759bd25d4ef1b141a0f6ac` | 2834774 |
+| [SHA256SUMS.txt](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22-syncfix.1/SHA256SUMS.txt) | `1ec547d5324bcb2df1a1b09419641947151789acbe8850acfb24439c8c50bcca` | 289 |
+| [correspondence-0.1.0-dev.22.dwpkg](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22-syncfix.1/correspondence-0.1.0-dev.22.dwpkg) | `4e307116232a8dbd2a7f91eda57d1aae3cdea25e773b39ff3b657fda380d9b79` | 2814613 |
+| [correspondence.tar.gz](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22-syncfix.1/correspondence.tar.gz) | `c0471e24d5248ab6f296f463044649b599f96d343b90ada9ef1b79b936123f6e` | 2427321 |
+
+---
+
 # CHIM Sealed Fates 0.1.0-dev.22 — PRE-ALPHA
 
 Skyrim has one courier. I gave him everybody's emotional baggage, then discovered the paperwork was eating his letters. A visionary management decision, if your vision is terrible. The paperwork has been corrected. His pension remains theoretical.

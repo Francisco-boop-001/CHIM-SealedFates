@@ -233,6 +233,20 @@ class PackageTest(unittest.TestCase):
         self.assertNotRegex(metadata['source'],r'(?i)([a-z]:[\\/]|\\\\)')
         self.assertEqual(metadata['user'],'anonymous')
         self.assertEqual(metadata['computer'],'anonymous')
+    def test_game_sync_filename_matches_declared_package_version(self):
+        result = pkg.build(self.root, self.pex, self.root / 'sync-out')
+        with ZipFile(result['bundle']) as bundle:
+            packages = [name for name in bundle.namelist() if name.endswith('.dwpkg')]
+            self.assertEqual(len(packages), 1)
+            member = packages[0]
+            raw = bundle.read(member)
+        with ZipFile(io.BytesIO(raw)) as archive:
+            manifest = json.loads(archive.read('manifest.json'))
+        # CHIM advertises the entire filename stem as version, without removing a plugin prefix.
+        self.assertEqual(Path(member).stem, manifest['version'])
+        self.assertEqual(Path(member).parent.name, manifest['name'])
+        self.assertEqual(raw, Path(result['server']).read_bytes())
+
     def test_art_and_style_are_packaged_byte_for_byte(self):
         expected = {}
         for name in ('dashboard-art.webp', 'assets/style.css'):
@@ -244,8 +258,38 @@ class PackageTest(unittest.TestCase):
             for name, data in expected.items():
                 self.assertEqual(archive.read(name), data)
         with ZipFile(result['bundle']) as archive:
-            nested = archive.read('CHIM/server-plugins/correspondence/' + Path(result['server']).name)
+            nested = archive.read('CHIM/server-plugins/correspondence/' + json.loads((self.root / 'server/manifest.json').read_text(encoding='utf-8'))['version'] + '.dwpkg')
         self.assertEqual(nested, Path(result['server']).read_bytes())
+
+    def test_pinned_dev14_reproduction_keeps_historical_bundle(self):
+        manifest_path = self.root / 'server/manifest.json'
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.14'}), encoding='utf-8')
+        _, payload = pkg.entries(self.root)
+        server = pkg.packed(payload)
+        historical = {'Scripts/CHIMCorrespondenceBridge.pex': pkg.verify_bridge(self.root),
+                      'CHIM/server-plugins/correspondence/correspondence-0.1.0-dev.14.dwpkg': server}
+        bundle = pkg.packed(historical)
+        kit = pkg.packed({**historical, 'historical-evidence.txt': b'retained fixture'})
+        kit_name = 'CHIM-Sealed-Fates-Recovery-Playtest-20261019-v1.zip'
+        (self.root / 'release-inputs').mkdir()
+        (self.root / 'release-inputs' / kit_name).write_bytes(kit)
+        expected = {'correspondence-0.1.0-dev.14.dwpkg': hashlib.sha256(server).hexdigest(),
+                    'CHIM-Sealed-Fates-0.1.0-dev.14.zip': hashlib.sha256(bundle).hexdigest(),
+                    kit_name: hashlib.sha256(kit).hexdigest()}
+        with patch.object(release, 'ROOT', self.root), patch.object(release, 'EXPECTED', expected):
+            actual_resolve = Path.resolve
+            output = self.root / 'dist'
+            outside = self.root.parent / 'outside-project'
+            def redirected(path, *args, **kwargs):
+                return outside if path == output else actual_resolve(path, *args, **kwargs)
+            # Model a redirected output on filesystems that cannot create test symlinks.
+            with patch.object(Path, 'resolve', redirected):
+                with self.assertRaisesRegex(ValueError, 'Output must stay inside this project'):
+                    release.build()
+            self.assertFalse(output.exists())
+            self.assertFalse(outside.exists())
+            release.build()
+        self.assertEqual((self.root / 'dist/CHIM-Sealed-Fates-0.1.0-dev.14.zip').read_bytes(), bundle)
 
     def test_dev15_release_has_only_current_four_assets(self):
         manifest_path = self.root / 'server/manifest.json'
@@ -450,7 +494,7 @@ class PackageTest(unittest.TestCase):
                 self.assertEqual(server_archive.read('server/' + name), data)
             server_bytes = (out / server_name).read_bytes()
         with ZipFile(out / 'CHIM-Sealed-Fates-0.1.0-dev.22.zip') as bundle:
-            nested = bundle.read('CHIM/server-plugins/correspondence/' + server_name)
+            nested = bundle.read('CHIM/server-plugins/correspondence/0.1.0-dev.22.dwpkg')
         self.assertEqual(nested, server_bytes)
         with tarfile.open(out / 'correspondence.tar.gz', 'r:gz') as archive:
             for name, data in expected_files.items():
@@ -543,7 +587,7 @@ class PackageTest(unittest.TestCase):
         with ZipFile(a['server']) as z:
             self.assertEqual(json.loads(z.read('manifest.json'))['name'], 'correspondence')
         with ZipFile(a['bundle']) as z:
-            self.assertEqual(set(z.namelist()), {'Scripts/CHIMCorrespondenceBridge.pex', 'CHIM/server-plugins/correspondence/'+Path(a['server']).name})
+            self.assertEqual(set(z.namelist()), {'Scripts/CHIMCorrespondenceBridge.pex', 'CHIM/server-plugins/correspondence/0.1.0-dev.1.dwpkg'})
         archive = Path(a['server'])
         with ZipFile(archive,'a') as z: z.writestr('server/conf.php','private')
         with self.assertRaises(ValueError): pkg.verify(archive,self.root)

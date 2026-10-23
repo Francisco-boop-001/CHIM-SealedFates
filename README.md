@@ -1,4 +1,4 @@
-**0.1.0-dev.22 — PRE-ALPHA.** Fewer lost letters, fewer stuck claims, same catastrophically overworked courier. Web-only release; the optional PRISMA pairing remains separate. [Release and downloads](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22) · [Release notes](docs/RELEASE.md).
+**0.1.0-dev.22 — PRE-ALPHA, packaging fix 1.** Corrects the bundled server filename so CHIM can synchronize it. Server code and bridge are unchanged. [Corrected download](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22-syncfix.1) · [Release notes](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -16,13 +16,15 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The optional [Department/PRISMA prealpha.5](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.5) adds dev.21 source compatibility; the dev.20/prealpha.4 pair has the earlier disposable server-facade proof. Neither published adapter accepts dev.22. Keep your existing pair if you use PRISMA, or use the existing web plugin page for dev.22 until an exact pairing is released. No sibling plugins are bundled, and installed Skyrim behavior remains unverified. Read [the source identities and verification limits](docs/PRISMA-COMPATIBILITY.md).
+The optional [Department/PRISMA prealpha.7](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.7) includes exact dev.22 source support. This packaging correction keeps every server and bridge byte unchanged, so those source pins remain valid. Prealpha.7 is TEST-only and adds source/package checks, not new live or Skyrim gameplay certification. The earlier dev.20/prealpha.4 pair retains its own disposable server-facade proof. The web plugin page remains available. See [compatibility and limits](docs/PRISMA-COMPATIBILITY.md).
 
 ## Download
 
-Download the [dev.22 PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22). See the [release notes](docs/RELEASE.md) for the current and historical checksums.
+Download the [dev.22 PRE-ALPHA release](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22-syncfix.1). See the [release notes](docs/RELEASE.md) for the current and historical checksums.
 
-Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/CHIM-Sealed-Fates-0.1.0-dev.22.zip) for the main install path; it contains the matching bridge PEX and server package. The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/correspondence-0.1.0-dev.22.dwpkg) is for CHIM's package manager. The server-only maintenance [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22/correspondence.tar.gz) is not automatically listed by CHIM.
+Use the [paired MO2 and CHIM package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22-syncfix.1/CHIM-Sealed-Fates-0.1.0-dev.22.zip) for the main install path; it contains the matching bridge PEX and server package. The [server-only package](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22-syncfix.1/correspondence-0.1.0-dev.22.dwpkg) is for administrator-managed installation; use the paired ZIP for automatic game synchronization. The server-only maintenance [tar archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.22-syncfix.1/correspondence.tar.gz) is not automatically listed by CHIM.
+
+The paired ZIP must contain `CHIM/server-plugins/correspondence/0.1.0-dev.22.dwpkg`. CHIM uses that filename as the version. The original dev.22 ZIP included an incorrect `correspondence-` prefix and was rejected during synchronization. Keep only one DWPkg in that directory; the corrected package content is identical. Existing published downloads are preserved as historical assets.
 
 ## The web page
 
