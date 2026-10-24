@@ -260,8 +260,14 @@ Canonical source is synchronized, the repaired candidate is separate from earlie
 ## Publish verified dev.23 — 2026-10-24
 
 - [x] Bind current runtime/native bytes to the tested repair; update current release/install notes with explicit gameplay and interface limits.
-- [ ] Commit only reviewed source/evidence, create immutable dev.23 tag, and reproduce the four release assets from a clean tag export.
-- [ ] Upload a draft, verify downloaded assets and checksums, publish PRE-ALPHA, then advance main without force.
-- [ ] Verify public refs/downloads and unchanged live metadata; preserve prior tags/assets and record the publication result.
+- [x] Commit only reviewed source/evidence, create immutable dev.23 tag, and reproduce the four release assets from a clean tag export.
+- [x] Upload a draft, verify downloaded assets and checksums, publish PRE-ALPHA, then advance main without force.
+- [x] Verify public refs/downloads and unchanged live metadata; preserve prior tags/assets and record the publication result.
 
 Scope: authorized GitHub commit/push/publication only. No live/game/core/provider installation, restart or data mutation. Preserve tested runtime and both compiled PEX files exactly.
+
+### Dev.23 publication review
+
+Committed the exact tested runtime/native source at tag correspondence-v0.1.0-dev.23, rebuilt from a clean tag export, and matched the verified repair ZIP/DWPkg bytes. Published PRE-ALPHA only after all four draft downloads matched; anonymous public downloads and checksums also match. Main advanced by fast-forward after publication. Source/tag checks pass; the portable receipt and docs/DEV23-PUBLICATION.md record exact identities and evidence boundaries.
+
+Release notes clearly retain unverified Skyrim VM, unloaded actors, first-new-game Narrator, co-save and actual physical delivery; no dev.23 Department pairing or untouched real-model hold-out claim is made. Existing web UI remains usable and one complete MO2 ZIP is the install path. No live/game/core/provider change; owned PostgreSQL stopped and live disk metadata unchanged. Original releases/candidates remain intact.
