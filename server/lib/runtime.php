@@ -60,6 +60,26 @@ function correspondenceRetryableReason(string $reason):bool
     if (!is_string($body) || trim($body)==='' || strlen($body)>8000 || preg_match('//u',$body)!==1 || preg_match_all('/./us',$body)>2000 || str_contains($body,"\0")) throw new InvalidArgumentException('invalid_body');
     return $body;
 }
+function correspondenceCompanionEpoch(string $restoreToken): string
+{
+    $hex=substr(hash('sha256',"correspondence_companion_v1\0".$restoreToken),0,32);
+    $hex[12]='8';$hex[16]='a';
+    return substr($hex,0,8).'-'.substr($hex,8,4).'-'.substr($hex,12,4).'-'.substr($hex,16,4).'-'.substr($hex,20,12);
+}
+function correspondenceCompanionCooldownUntil(object $store,string $scope,?int $actorId,int $gamets): int
+{
+    if(!method_exists($store,'query')||!method_exists($store,'restoreGeneration'))return 0;
+    $table=$store->query("SELECT to_regclass('plugins.correspondence_companion_decision') AS companion")[0]['companion']??null;
+    if($table===null)return 0;
+    $token=$store->restoreGeneration();if(!is_string($token))return PHP_INT_MAX;
+    $epoch=correspondenceCompanionEpoch($token);
+    $args=[$scope,$epoch];$where='';
+    if($actorId!==null){$where=' AND actor_id=$3';$args[]=(string)$actorId;}
+    $rows=$store->query('SELECT COALESCE(MAX(claimed_gamets),0)::text AS attempted_at FROM plugins.correspondence_companion_decision WHERE playthrough_id=$1 AND epoch=$2::uuid'.$where,$args);
+    $at=(int)($rows[0]['attempted_at']??0);
+    if($at<1||$at>$gamets)return 0;
+    return $at+($actorId===null?416667:2500000);
+}
 function correspondenceActorName(mixed $name):bool
 {
     return is_string($name)&&$name!==''&&strlen($name)<=200&&preg_match('//u',$name)===1&&preg_match_all('/./us',$name)<=128&&!str_contains($name,'|')&&preg_match('/\p{Cc}/u',$name)!==1&&preg_match('/\A[\p{Z}\p{Cc}]|[\p{Z}\p{Cc}]\z/u',$name)!==1;
@@ -323,10 +343,18 @@ final class CorrespondenceService
             $this->store->saveDocument($doc); return ['document_id'=>$doc['document_id'],'state'=>'queued','operation_id'=>null];
         });
     }
-    public function dispatch(string $id, bool $reconcile=false): array
+    private function companionOwned(string $id): bool
     {
-        return $this->store->transaction(function()use($id,$reconcile){
+        if (!method_exists($this->store,'query')) return false;
+        $table=$this->store->query("SELECT to_regclass('plugins.correspondence_companion_decision') AS owned")[0]['owned']??null;
+        return $table!==null && $this->store->query('SELECT 1 FROM plugins.correspondence_companion_decision WHERE document_id=$1::uuid LIMIT 1',[$id])!==[];
+    }
+    public function dispatch(string $id, bool $reconcile=false, bool $companionScheduler=false): array
+    {
+        return $this->store->transaction(function()use($id,$reconcile,$companionScheduler){
             $doc=$this->document($id,true); $state=$this->state($doc);
+            $companionOwned=$this->companionOwned($id);
+            if ($companionOwned && !$companionScheduler && !$reconcile) throw new DomainException('companion_scheduler_owned');
             if (!$reconcile && isset($doc['operator_close'])) throw new DomainException('operator_closed');
             if ($doc['operation_id']!==null && !$reconcile) return ['document_id'=>$id,'state'=>$state,'operation_id'=>$doc['operation_id']];
             $op=null;
@@ -336,7 +364,7 @@ final class CorrespondenceService
                 if (!$op) throw new DomainException('operation_unavailable');
                 if (!$this->dispatchAnchorMatches($doc,$op)) throw new DomainException('dispatch_anchor_unavailable');
             }
-            $executor=$this->store->managedExecutor();
+            $executor=$companionOwned&&($companionScheduler||$reconcile)?'The Narrator':$this->store->managedExecutor();
             if ($executor===null || $executor==='' || preg_match('/[|@\r\n]/',$executor)) return ['document_id'=>$id,'state'=>$state,'reason'=>'executor_unavailable'];
             if (!$reconcile) {
                 $items=[]; foreach($doc['attachments'] as $item) $items[]=$this->store->physicalItem($item);
@@ -355,6 +383,7 @@ final class CorrespondenceService
     public function retry(string $id):array
     {
         return $this->store->transaction(function()use($id){
+            if ($this->companionOwned($id)) throw new DomainException('companion_scheduler_owned');
             $doc=$this->document($id,true);if(isset($doc['operator_close'])||$this->state($doc)!=='failed')throw new DomainException('retry_unsafe');
             $op=$this->store->loadOperation($doc['operation_id']);if(!$op||$op['receipt']['note_form_id']!==0||!correspondenceRetryableReason($op['receipt']['reason']))throw new DomainException('retry_unsafe');
             foreach($op['receipt']['attachments']as$item)if($item['quantity']!==0||$item['before_source']!==$item['after_source']||$item['before_recipient']!==$item['after_recipient'])throw new DomainException('retry_unsafe');

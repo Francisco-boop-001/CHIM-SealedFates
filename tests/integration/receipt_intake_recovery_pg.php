@@ -50,7 +50,7 @@ try{
     intakePgCheck($result['state']==='delivered'&&microtime(true)-$started>=3.0,'receipt_must_recover_after_first_writer_timeout');
     intakePgCheck(count(Logger::$rows)===2&&Logger::$rows[0][0]==='warn'&&Logger::$rows[1][0]==='info','real_retry_and_recovery_must_be_logged');
     intakePgCheck((int)intakePgSql("WITH rows AS MATERIALIZED (SELECT data FROM public.eventlog WHERE type='info' AND sess='correspondence_v1') SELECT count(*) AS n FROM rows WHERE data::jsonb ? 'receipt_hash'")[0]['n']===1,'recovered_intake_must_commit_one_receipt');
-    intakePgCheck((int)intakePgSql("SELECT count(*) AS n FROM public.responselog WHERE action LIKE 'command|ExtCmdCHIMCorrespondenceBridge_Deliver@%'")[0]['n']===1,'intake_retry_must_not_queue_a_second_inventory_transfer');
+    intakePgCheck((int)intakePgSql("SELECT count(*) AS n FROM public.responselog WHERE concat(action,chr(124),text) LIKE 'command|ExtCmdCHIMCorrespondenceBridge_Deliver@%'")[0]['n']===1,'intake_retry_must_not_queue_a_second_inventory_transfer');
 }finally{
     $childError=stream_get_contents($pipes[2]);fclose($pipes[1]);fclose($pipes[2]);$code=proc_close($child);
     intakePgCheck($code===0,'fence_child_failed:'.$childError);

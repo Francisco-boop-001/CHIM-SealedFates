@@ -53,9 +53,9 @@ $sent=$service->dispatch($doc['document_id']);pgCheck($sent['state']==='dispatch
 $books=fixtureSql('SELECT * FROM public.books');$expectedNote="From: Jarl Balgruuf\nTo: Camilla\n\n".$input['body'];
 pgCheck(count($books)===1&&$books[0]['content']===$expectedNote&&$preparedNotes===[['title'=>'letter '.$doc['document_id'],'text'=>$expectedNote]],'books and actual renderer callback must receive exact public header plus original body without author/payer');
 pgCheck($store->loadDocument($doc['document_id'])['body']===$input['body'],'physical projection must preserve immutable original body');
-$commands=fixtureSql('SELECT actor,action FROM public.responselog ORDER BY localts,action');pgCheck(count($commands)===2,'render download plus actor transport required');
+$commands=fixtureSql('SELECT actor,concat(action,chr(124),text) AS action FROM public.responselog ORDER BY localts,action');pgCheck(count($commands)===2,'render download plus actor transport required');
 $deliver=array_values(array_filter($commands,fn($r)=>$r['actor']==='Lydia'))[0]['action'];$originalWire=explode('@',$deliver,2)[1];
-$service->dispatch($doc['document_id'],true);$commands=fixtureSql("SELECT actor,action FROM public.responselog WHERE actor='Lydia'");pgCheck(count($commands)===2,'readonly reconcile queue missing');
+$service->dispatch($doc['document_id'],true);$commands=fixtureSql("SELECT actor,concat(action,chr(124),text) AS action FROM public.responselog WHERE actor='Lydia'");pgCheck(count($commands)===2,'readonly reconcile queue missing');
 $reconcile=array_values(array_filter($commands,fn($r)=>str_contains($r['action'],'_Reconcile@')))[0]['action'];pgCheck(explode('@',$reconcile,2)[1]===$originalWire,'native JSONB reordered replay wire');
 $op=$store->loadOperation($sent['operation_id']);
 $receipt=['protocol_version'=>1,'document_id'=>$doc['document_id'],'operation_id'=>$op['operation_id'],'receipt_id'=>$op['receipt_id'],'playthrough_id'=>'unprofiled','scope_token'=>$op['scope_token'],'nonce'=>$op['nonce'],'status'=>'delivered','reason'=>'physical_only','note_form_id'=>12345,'attachments'=>[['form_id'=>15,'quantity'=>50,'before_source'=>100,'after_source'=>50,'before_recipient'=>0,'after_recipient'=>50]]];

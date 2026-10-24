@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "exit_code": 0,
+  "evidence_kind": "portable projection of private Caprica compilation",
+  "private_receipt_sha256": "fcf3aaaec60b4451217bd12a7f41d0f6d21525fa5b32c6b38ef0810ff8c9feca",
+  "source": {
+    "path": "game/Source/Scripts/CHIMCorrespondenceCompanion.psc",
+    "sha256": "94aff5cc0f898d8a176cf6e5477257e9e8006c0959c6f0fb31f6004daf3cfcb1"
+  },
+  "compiler": {
+    "version": "0.3.0",
+    "sha256": "389fef19a803c36342fa7f733c96b6e27ef10fcd0b171af10427e29cbe153ec6"
+  },
+  "pex": {
+    "path": "bridge/companion/Data/Scripts/CHIMCorrespondenceCompanion.pex",
+    "sha256": "c7888997f647f35f86d1641a84cec165cd166ce8819bb101c0edd8eaf5b3e9ca",
+    "bytes": 12404,
+    "body_sha256": "2f78cd0125705019d86d4d7b637243a54bd251659b88312e1d6b22e275e20655"
+  },
+  "raw_pex": {
+    "sha256": "3d66d527ca36ca800c813b167e807e79dfb98de788458712f15e964018f0343f",
+    "body_sha256": "2f78cd0125705019d86d4d7b637243a54bd251659b88312e1d6b22e275e20655",
+    "retained_for_private_review": true,
+    "not_distributed": true
+  },
+  "anonymization": {
+    "header_only": true,
+    "source": "CHIMCorrespondenceCompanion.psc",
+    "user": "anonymous",
+    "computer": "anonymous",
+    "compiled_body_preserved": true
+  },
+  "tests": {
+    "path": "K:\\ActorwrightExchange\\artifacts\\chim-sealed-fates-release-dev14-20261020\\source\\tests\\companion-native.py",
+    "sha256": "0afd42006a5349689f3d27e3cc6993dba04c933e6d49cf3d447be3a146612852",
+    "translated_checks": 66,
+    "is_skyrim_vm_evidence": false
+  },
+  "imports": [
+    {
+      "role": "source",
+      "label": "input-0/CHIMCorrespondenceCompanion.psc",
+      "sha256": "94aff5cc0f898d8a176cf6e5477257e9e8006c0959c6f0fb31f6004daf3cfcb1"
+    },
+    {
+      "role": "staged_source",
+      "label": "input-1/CHIMCorrespondenceCompanion.psc",
+      "sha256": "94aff5cc0f898d8a176cf6e5477257e9e8006c0959c6f0fb31f6004daf3cfcb1"
+    },
+    {
+      "role": "policy_test",
+      "label": "input-2/companion-native.py",
+      "sha256": "0afd42006a5349689f3d27e3cc6993dba04c933e6d49cf3d447be3a146612852"
+    },
+    {
+      "role": "compiler",
+      "label": "input-3/Caprica.exe",
+      "sha256": "389fef19a803c36342fa7f733c96b6e27ef10fcd0b171af10427e29cbe153ec6"
+    },
+    {
+      "role": "compiler_flags",
+      "label": "input-4/TESV_Papyrus_Flags.flg",
+      "sha256": "ab61d098ef7a1402d8ee4d7bc77f26851d5380cd142ee4f3bf57ce41d0e7afa7"
+    },
+    {
+      "role": "sanitizer",
+      "label": "input-5/build-package.py",
+      "sha256": "b44a3efa10146757a4a6a33f431d7e213de234baed2c8c7c431742e7e32965cd"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-6/CHIMCorrespondenceBridge.psc",
+      "sha256": "2e8366eded1458c23f5bc3d0fa1368455e4a20461b173737ea4275facc030061"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-7/AIAgentFunctions.psc",
+      "sha256": "e03a4f6bb6e4c4889361a9c189cf0ea015f0c8a369fb7108a47dd09d54c50659"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-8/Actor.psc",
+      "sha256": "62e5f68123c8874c49153b5d0bc032cecfe8de9c082fc7d56f3f28bc5be09cee"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-9/Cell.psc",
+      "sha256": "8f25d61b314720b988034b51e88c7777d1e0284d28995741283d7303b2f93b58"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-10/Faction.psc",
+      "sha256": "5c13a8e4c4eda13787dc62dc602a11c67e82a99691d1c707c7230dc707dd44b8"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-11/Form.psc",
+      "sha256": "998e6eca3dd1d1c32c1c9691e37fe05bff7affe11118c9a2b0359f748a50ebe4"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-12/Game.psc",
+      "sha256": "f797381ed02771847507b5ddab2775d6c7a6eb995c4717c3dae4ace590865d3b"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-13/ObjectReference.psc",
+      "sha256": "faafbed615ddfe6dfb6db37ced7deb9a9b1b3a0a1ab392de04621e49ae6579e7"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-14/Package.psc",
+      "sha256": "9c1f2a0bd75ceaf98d6bf11f7f8bcc035ccd195bea4c9339d96356314e19bbd1"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-15/StringUtil.psc",
+      "sha256": "0cdb83f02ff4ea95dac9efca7230c7a50014fe3d30aac2d4eaa2bdf9feebcf5b"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-16/Utility.psc",
+      "sha256": "3f58548fdb0c0ab315a671967aad3abb130c2a391a5b908fe951fc8615c7a945"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-17/JArray.psc",
+      "sha256": "4d3a319b2c913d34d5630ff7930d2295de770fd2761b1c4e1a406d0ff44d409f"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-18/JAtomic.psc",
+      "sha256": "8ece97b7d9792620688a2e3d5f7e2e4f89ee90b4c5ba890415540d5ad144da27"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-19/JContainers.psc",
+      "sha256": "1464c4bd75f87d3e98d9a866e413a400399db63b1d9c21c4a2b11165eff9da62"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-20/JDB.psc",
+      "sha256": "299660a3a6892c4df55c6ecb48ac36d70a95f342643cc922b7159d86b0f8bf0c"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-21/JMap.psc",
+      "sha256": "06532036b8e8a5bb0d760fbaaace23c2e7fc74b69901bd27dab40cc35087405e"
+    },
+    {
+      "role": "papyrus_import",
+      "label": "input-22/JValue.psc",
+      "sha256": "0125c0e1b5723b2f6ed87160228a128e6c9c68794e2a76bd4db51c96b2a383a8"
+    }
+  ]
+}

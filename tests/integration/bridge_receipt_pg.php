@@ -12,7 +12,7 @@ if($phase==='setup'){
     $store->observeManaged(base64_encode(correspondenceJson(['source'=>'plugin_player_routing_v2','present_actors'=>[['form_id'=>hexdec('000A2C94'),'name'=>'Lydia','distance'=>10,'managed'=>true,'creature'=>false]]])));
     $doc=$service->compose(['request_id'=>correspondenceUuid(),'author'=>$playerMode?'npc:900002':'player','payer'=>'player','recipient'=>$playerMode?'player':'npc:900001','claimed_sender'=>'npc:900002','body'=>'Bridge receipt interoperability fixture.','attachments'=>$playerMode?[]:[['kind'=>'gold','form_id'=>'Skyrim.esm|0000000F','quantity'=>5]]]);
     $result=$service->dispatch($doc['document_id']);if($result['state']!=='dispatched')throw new RuntimeException('dispatch failed');
-    $rows=$store->query("SELECT action FROM responselog WHERE action LIKE $1",['command|ExtCmdCHIMCorrespondenceBridge_Deliver@%'.$doc['document_id'].'%']);
+    $rows=$store->query("SELECT concat(action,chr(124),text) AS action FROM responselog WHERE concat(action,chr(124),text) LIKE $1",['command|ExtCmdCHIMCorrespondenceBridge_Deliver@%'.$doc['document_id'].'%']);
     if(count($rows)!==1)throw new RuntimeException('exact queued wire missing');
     file_put_contents($out.($playerMode?'/server-wire-player.json':'/server-wire-exact.json'),explode('@',$rows[0]['action'],2)[1]);
     echo "PASS actual Pg producer setup; exact wire exported without record newline\n";

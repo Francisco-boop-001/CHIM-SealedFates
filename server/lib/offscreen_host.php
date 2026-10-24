@@ -35,7 +35,7 @@ function correspondenceOffscreenReservedNativeRequest(array $request): bool
     if (!is_string($type)) return true;
     if (in_array($type, [
         'written_evidence', 'correspondence_anchor', 'correspondence_dispatch',
-        'correspondence_receipt_confirmed', 'correspondence_presence',
+        'correspondence_receipt_confirmed', 'correspondence_presence', 'correspondence_companion_observation',
     ], true)) return true;
     return $type === 'info' && in_array($request[4] ?? null, ['written_evidence_v1', 'correspondence_v1'], true);
 }
@@ -339,11 +339,19 @@ function correspondenceOffscreenServiceStatus(): array
     return ['status' => 'paused', 'reason' => $last['reason'] ?? 'waiting_for_native_clock'];
 }
 
-function correspondenceOffscreenServiceStart(?array $nativeRequest = null): array
+function correspondenceOffscreenNativeStartTrigger(array $request, bool $validatedCompanion = false): bool
+{
+    if (correspondenceOffscreenNativeObservation($request)) return true;
+    if (!$validatedCompanion || !is_string($request[0] ?? null) || strtolower($request[0]) !== 'correspondence_companion') return false;
+    try { correspondenceRequestClock($request); return true; }
+    catch (Throwable) { return false; }
+}
+
+function correspondenceOffscreenServiceStart(?array $nativeRequest = null, bool $validatedCompanion = false): array
 {
     if (correspondenceOffscreenStateDirectory(true) === null) return ['status' => 'unavailable', 'reason' => 'state_directory_unavailable'];
     if ($nativeRequest !== null) {
-        if (!correspondenceOffscreenNativeObservation($nativeRequest)) return ['status' => 'unavailable', 'reason' => 'native_clock_unavailable'];
+        if (!correspondenceOffscreenNativeStartTrigger($nativeRequest, $validatedCompanion)) return ['status' => 'unavailable', 'reason' => 'native_clock_unavailable'];
         if (!correspondenceOffscreenSignalNativeObservation()) return ['status' => 'unavailable', 'reason' => 'wake_signal_unavailable'];
     }
     $paths = correspondenceOffscreenServicePaths();

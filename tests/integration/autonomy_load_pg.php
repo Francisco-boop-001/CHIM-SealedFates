@@ -293,7 +293,7 @@ SQL;
     $status = $autonomy->status();
     loadCheck(count($status) === 20 && count(array_unique(array_column($status, 'source_document_id'))) === 20, 'public_status_is_bounded_and_distinct');
     foreach ($status as $row) loadCheck(($row['status'] ?? null) === 'silent' && ($row['action'] ?? null) === 'none' && ($row['child_document_id'] ?? null) === null, 'public_status_silence_shape');
-    $dispatchRows = loadSql("SELECT count(*)::int AS n FROM public.responselog WHERE action LIKE 'command|ExtCmdCHIMCorrespondenceBridge_Deliver@%'");
+    $dispatchRows = loadSql("SELECT count(*)::int AS n FROM public.responselog WHERE concat(action,chr(124),text) LIKE 'command|ExtCmdCHIMCorrespondenceBridge_Deliver@%'");
     loadCheck((int)($dispatchRows[0]['n'] ?? 0) === $npcCount, 'no_autonomous_delivery_commands_from_silence');
 
     $inputValues = array_column($metrics, 'input_chars');

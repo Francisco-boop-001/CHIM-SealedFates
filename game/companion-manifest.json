@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "protocol_version": 1,
+  "source": {
+    "path": "game/Source/Scripts/CHIMCorrespondenceCompanion.psc",
+    "sha256": "94aff5cc0f898d8a176cf6e5477257e9e8006c0959c6f0fb31f6004daf3cfcb1"
+  },
+  "compiler": {
+    "version": "0.3.0",
+    "sha256": "389fef19a803c36342fa7f733c96b6e27ef10fcd0b171af10427e29cbe153ec6"
+  },
+  "pex": {
+    "path": "bridge/companion/Data/Scripts/CHIMCorrespondenceCompanion.pex",
+    "sha256": "c7888997f647f35f86d1641a84cec165cd166ce8819bb101c0edd8eaf5b3e9ca",
+    "bytes": 12404,
+    "body_sha256": "2f78cd0125705019d86d4d7b637243a54bd251659b88312e1d6b22e275e20655"
+  },
+  "build_receipt": "bridge/companion/build-receipt.json",
+  "build_receipt_sha256": "72ec8218f60c76834f412f2d613bc6d5d044852ccffebaa024de318f807924c1",
+  "status": "unreleased candidate; native VM acceptance pending"
+}

@@ -42,10 +42,15 @@ final class CorrespondenceAutonomyPg
 
     public function setEnabled(bool $enabled): void
     {
-        $this->store->transaction(function() use ($enabled) {
+        $companionDocuments=$this->store->transaction(function() use ($enabled):array {
             $scope = $this->clock()['playthrough_id'];
             $this->store->query('INSERT INTO plugins.correspondence_autonomy_settings(playthrough_id,enabled) VALUES($1,$2) ON CONFLICT(playthrough_id) DO UPDATE SET enabled=EXCLUDED.enabled,updated_at=clock_timestamp()', [$scope, $enabled ? 'true' : 'false']);
+            if($enabled||($this->store->query("SELECT to_regclass('plugins.correspondence_companion_decision') AS companion")[0]['companion']??null)===null)return [];
+            $rows=$this->store->query("UPDATE plugins.correspondence_companion_decision SET status='stale',reason_code='disabled' WHERE playthrough_id=$1 AND status='queued' RETURNING document_id::text",[$scope]);
+            $this->store->query('DELETE FROM plugins.correspondence_companion_episode WHERE playthrough_id=$1',[$scope]);
+            return array_column($rows,'document_id');
         });
+        foreach($companionDocuments as $id)if(is_string($id))try{$this->service->close($id);}catch(Throwable){}
     }
 
     public function status(): array
@@ -335,7 +340,7 @@ final class CorrespondenceAutonomyPg
         $sql = $this->cooldownSql('global_cooldown_until_gamets', false, $excludeClaim !== null);
         $params = [$scope, (string)$gamets];
         if ($excludeClaim !== null) $params[] = $excludeClaim;
-        return (int)($this->store->query($sql, $params)[0]['until_gamets'] ?? 0);
+        return max((int)($this->store->query($sql, $params)[0]['until_gamets'] ?? 0),correspondenceCompanionCooldownUntil($this->store,$scope,null,$gamets));
     }
 
     private function actorCooldownUntil(string $scope, int $actorId, int $gamets, ?string $excludeClaim = null): int
@@ -343,7 +348,7 @@ final class CorrespondenceAutonomyPg
         $sql = $this->cooldownSql('actor_cooldown_until_gamets', true, $excludeClaim !== null);
         $params = [$scope, (string)$gamets, (string)$actorId];
         if ($excludeClaim !== null) $params[] = $excludeClaim;
-        return (int)($this->store->query($sql, $params)[0]['until_gamets'] ?? 0);
+        return max((int)($this->store->query($sql, $params)[0]['until_gamets'] ?? 0),correspondenceCompanionCooldownUntil($this->store,$scope,$actorId,$gamets));
     }
 
     private function cooldownSql(string $field, bool $byActor, bool $excludeClaim): string

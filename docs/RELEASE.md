@@ -1,3 +1,38 @@
+# Sealed Fates dev.23 — PRE-ALPHA: the courier clocks in
+
+Your companion can now consider sending a written "are we still doing this?" while you are elsewhere conducting important Dragonborn business. Such as stealing every cheese wheel in Falkreath. The courier has been informed. His resignation has been declined.
+
+## Install one file
+
+Download **[CHIM-Sealed-Fates-0.1.0-dev.23.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.23/CHIM-Sealed-Fates-0.1.0-dev.23.zip)** and install it as your Sealed Fates MO2 mod, replacing the previous version. It contains the matching delivery bridge, new companion observer and server package together. Keep one correspondence package enabled. Start with a disposable game profile and server: this remains PRE-ALPHA. Checksums are supplied for optional integrity verification.
+
+**The in-game Department/PRISMA interface is optional; the existing web plugin page still works. No dev.23 Department pairing is verified.** Use the web page for this release. Older exact-source adapters should retain their refusal of unsupported versions. The delivery/observer scripts are included in the ZIP and are separate from that optional interface.
+
+## What changed
+
+With global autonomous correspondence enabled and the NPC's Background Life and Send letters enabled, an active teammate explicitly waiting apart can consider one attachment-free letter after two observed game-days. Silence is valid. Personality and relationship shape the tone; they do not establish romance, promises, abandonment or exact continuous absence. The first supported signals are vanilla WaitingForPlayer and CHIM's active wait package/faction; unsupported follower frameworks remain unknown.
+
+CHIM's existing idle request heartbeat and player-backed Narrator carry companion observations and scheduler-owned delivery/reconciliation. Recent NPC dialogue or another nearby NPC is no longer required. CHIM must be active and initialized; paused/suppressed heartbeats and long observation gaps delay or reset the evidence. Server wall-clock waiting does not count. Transit uses twelve game-hours and is rechecked before dispatch.
+
+The bughunt repairs keep an unready letter pending while other fresh mail and eligible companions progress, skip per-NPC BGL/cooldown deferrals without bypassing global limits, and require the exact request ID when marking/completing a reclaimed claim. Command framing and interaction-generation stamping are also corrected. Freshness, restore/playthrough, identity and no-resend transfer safeguards remain enforced.
+
+## Verified, and what that actually means
+
+All three bug reproductions fail before repair and pass after repair on the isolated test2 server. The full companion recovery/concurrency/restore suite, actual-core dequeue/response idle test, 18 affected pure suites and 60 package/release checks pass. The source-bound observer has 66 translated policy checks and Caprica compilation evidence. The source/tag build and distributed assets are checked separately. These are server, queue, static and package results.
+
+Six earlier synthetic real-model regression cases produced five queued letters and one silence after recipient-schema and fabricated-history failures were fixed. Those same cases helped refine the prompt, so they are **not an untouched held-out evaluation**. They used a private callback with the configured provider, not CHIM's full installed connector bootstrap. This repair changes no model prompt and makes no new model-quality claim.
+
+## Remaining gameplay testing — explicitly unverified
+
+- Actual Skyrim DLL-to-Papyrus command execution and first-ever new-game Narrator initialization.
+- Reading unloaded actors, follower-framework compatibility and real reunion/wait-state observations.
+- Actual co-save/save-load behavior and end-to-end restoration in a running game.
+- Renderer downloads, note appearance and physical letter/item/gold delivery in Skyrim. A queued server document is not proof that a physical note arrived.
+
+A release upload is not a gameplay playtest, however flattering that interpretation would be to my workload. Test on a disposable setup before trusting a cherished save. No live server, installed game, provider settings or campaign data was changed to prepare or publish this release. The previous delivery bridge remains unchanged; the read-only companion observer is new in dev.23.
+
+[Companion behavior](COMPANION-CHECKINS.md) · [Idle route and limits](COMPANION-IDLE.md) · [Verification receipt](../release-inputs/dev23-verification.json) · [Installation](INSTALL.md)
+
 # Sealed Fates dev.22 — packaging fix 1 (PRE-ALPHA)
 
 Apparently the courier can cope with forged love letters, but naming a file is where my genius ends.

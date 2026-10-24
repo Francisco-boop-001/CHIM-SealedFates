@@ -23,7 +23,7 @@ if($path==='/fixture/presence'){
     $gameRequest=['inputtext',100,100,'synthetic fixture',$raw];require $base.'/preprocessing.php';echo '{"ok":true}';exit;
 }
 if($path==='/fixture/summary'){
-    echo correspondenceJson(['documents'=>$service->list(),'sources'=>$store->query("SELECT rowid,data,people FROM public.eventlog WHERE type='info' AND sess='written_evidence_v1'"),'commands'=>$store->query('SELECT actor,action FROM public.responselog'),'books'=>$store->query('SELECT title,content FROM public.books')]);exit;
+    echo correspondenceJson(['documents'=>$service->list(),'sources'=>$store->query("SELECT rowid,data,people FROM public.eventlog WHERE type='info' AND sess='written_evidence_v1'"),'commands'=>$store->query('SELECT actor,concat(action,chr(124),text) AS action FROM public.responselog'),'books'=>$store->query('SELECT title,content FROM public.books')]);exit;
 }
 if($path==='/fixture/receipt'){
     $id=$_GET['id']??'';$doc=$store->loadDocument($id);$op=$store->loadOperation($doc['operation_id']);

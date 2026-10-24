@@ -1374,12 +1374,12 @@ final class CorrespondenceOffscreenPg
 
     private function globalCooldown(string $scope, int $gamets, ?string $excludeClaimId = null): int
     {
-        return $this->cooldownUntil($this->latestAttemptGamets($scope, null, $excludeClaimId), 1, $gamets);
+        return max($this->cooldownUntil($this->latestAttemptGamets($scope, null, $excludeClaimId), 1, $gamets),correspondenceCompanionCooldownUntil($this->store,$scope,null,$gamets));
     }
 
     private function actorCooldown(string $scope, int $actorId, int $gamets, ?string $excludeClaimId = null): int
     {
-        return $this->cooldownUntil($this->latestAttemptGamets($scope, $actorId, $excludeClaimId), 6, $gamets);
+        return max($this->cooldownUntil($this->latestAttemptGamets($scope, $actorId, $excludeClaimId), 6, $gamets),correspondenceCompanionCooldownUntil($this->store,$scope,$actorId,$gamets));
     }
 
     private function latestAttemptGamets(string $scope, ?int $actorId, ?string $excludeClaimId = null): ?int

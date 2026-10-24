@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-dev.23 — PRE-ALPHA
+
+- Add optional evidence-based waiting-companion letters to the player, carried by CHIM's idle heartbeat and built-in Narrator.
+- Preserve fresh native observations, explicit wait signals, scope/restore fences, shared cooldowns and one attempt per episode; unknown state and silence remain valid.
+- Repair blocked due mail, per-NPC BGL/cooldown deferrals and reclaimed-request ownership. Fix queue framing and interaction-generation stamping.
+- Include the source-bound read-only observer alongside the unchanged physical bridge in one MO2 ZIP.
+- Verify isolated test2 recovery and real core queue behavior; actual Skyrim execution, co-save and physical delivery remain unverified. No dev.23 Department pairing is claimed.
+
 ## 0.1.0-dev.21 — PRE-ALPHA
 
 - Let offscreen letters proceed for eligible NPCs whose metadata, stats, death flag or relationships have unusual shapes; explicit opt-out and death stay terminal, and unreadable Background Life or Letters settings stay recheckable.

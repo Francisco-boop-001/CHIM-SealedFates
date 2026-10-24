@@ -494,8 +494,8 @@ final class CorrespondencePgStore implements CorrespondenceStore
     public function appendEvent(string $type,string $data,string $people,string $sess):array
     {
         $this->requireWriterTransaction();
-        if(!in_array($type,['written_evidence','correspondence_anchor','correspondence_dispatch','correspondence_receipt_confirmed','correspondence_presence','correspondence_operator_closed'],true)||$sess!==($type==='written_evidence'?'written_evidence_v1':'correspondence_v1'))throw new InvalidArgumentException('invalid_event_carrier');
-        if(in_array($type,['written_evidence','correspondence_receipt_confirmed','correspondence_presence'],true)&&$this->requestClock===null)throw new DomainException('request_clock_unavailable');
+        if(!in_array($type,['written_evidence','correspondence_anchor','correspondence_dispatch','correspondence_receipt_confirmed','correspondence_presence','correspondence_companion_observation','correspondence_operator_closed'],true)||$sess!==($type==='written_evidence'?'written_evidence_v1':'correspondence_v1'))throw new InvalidArgumentException('invalid_event_carrier');
+        if(in_array($type,['written_evidence','correspondence_receipt_confirmed','correspondence_presence','correspondence_companion_observation'],true)&&$this->requestClock===null)throw new DomainException('request_clock_unavailable');
         if($type==='written_evidence'){
             $source=json_decode($data,true,512,JSON_THROW_ON_ERROR);
             $existing=$this->query("WITH marked AS MATERIALIZED (SELECT rowid,data FROM public.eventlog WHERE type='info' AND sess='written_evidence_v1') SELECT rowid FROM marked WHERE data::jsonb->>'document_id'=$1 LIMIT 1",[$source['document_id']]);
@@ -526,7 +526,17 @@ final class CorrespondencePgStore implements CorrespondenceStore
     public function queueCommand(string $actor,string $action):void
     {
         $this->requireWriterTransaction();
-        $this->query("INSERT INTO public.responselog(localts,sent,actor,text,action,tag) VALUES($1,0,$2,'',$3,'')",[time(),$actor,$action]);
+        $parts=explode('|',$action,2);
+        if(count($parts)!==2||!in_array($parts[0],['command','rolecommand'],true)||$parts[1]==='')throw new InvalidArgumentException('invalid_command');
+        [$channel,$payload]=$parts;
+        if(function_exists('chimInteractionAllowed')){
+            if(!chimInteractionAllowed())throw new DomainException('interaction_unavailable');
+            $generation=$GLOBALS['chim_interaction_generation']??null;
+            if(!is_int($generation)||$generation<0)throw new DomainException('interaction_unavailable');
+            $this->query("INSERT INTO public.responselog(localts,sent,actor,text,action,tag,interaction_generation) VALUES($1,0,$2,$3,$4,'',$5)",[time(),$actor,$payload,$channel,$generation]);
+            return;
+        }
+        $this->query("INSERT INTO public.responselog(localts,sent,actor,text,action,tag) VALUES($1,0,$2,$3,$4,'')",[time(),$actor,$payload,$channel]);
     }
     private function pluginRows():array{return $this->query('SELECT plugin_name,formid_prefix FROM public.game_plugins');}
     private function signed(int $id):int{return $id>2147483647?$id-4294967296:$id;}

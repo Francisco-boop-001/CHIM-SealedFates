@@ -16,6 +16,8 @@ SERVER_FILES = (
     'offscreen-worker.php', 'offscreen-service.php', 'lib/offscreen_host.php',
     'lib/offscreen.php', 'lib/offscreen_policy.php', 'migrations/003_offscreen.sql',
     'dashboard-art.webp', 'assets/style.css',
+    'lib/companion.php', 'lib/companion_policy.php', 'lib/companion_host.php',
+    'migrations/005_companion.sql',
 )
 PEX_MAGIC = bytes.fromhex('FA57C0DE')
 BRIDGE_SOURCE = 'game/Source/Scripts/CHIMCorrespondenceBridge.psc'
@@ -63,6 +65,43 @@ def anonymize_pex(data):
 
 def hash_bytes(data):
     return hashlib.sha256(data).hexdigest()
+
+def verify_companion(root):
+    root = Path(root).resolve()
+    try:
+        manifest = json.loads((root / 'game/companion-manifest.json').read_text(encoding='utf-8'))
+        if manifest['source']['path'] != 'game/Source/Scripts/CHIMCorrespondenceCompanion.psc':
+            raise ValueError('Companion source path is invalid')
+        files = []
+        for relative in (manifest['source']['path'], manifest['pex']['path'], manifest['build_receipt']):
+            if not isinstance(relative, str) or Path(relative).is_absolute() or re.match(r'^[A-Za-z]:', relative) or '..' in Path(relative).parts:
+                raise ValueError('Companion evidence path is unsafe')
+            path = root / relative
+            if any(parent.is_symlink() for parent in (path, *path.parents)) or not path.resolve().is_relative_to(root) or not path.is_file():
+                raise ValueError('Companion evidence file is missing or unsafe')
+            files.append(path)
+        source, pex, receipt_path = files
+        if hash_bytes(source.read_bytes()) != manifest['source']['sha256']:
+            raise ValueError('Companion source hash differs')
+        data = pex.read_bytes()
+        header = pex_header(data)
+        if (header['source'], header['user'], header['computer']) != ('CHIMCorrespondenceCompanion.psc', ANONYMOUS, ANONYMOUS):
+            raise ValueError('Companion PEX metadata is not anonymous')
+        if hash_bytes(data) != manifest['pex']['sha256'] or len(data) != manifest['pex']['bytes']:
+            raise ValueError('Companion PEX hash differs')
+        receipt = json.loads(receipt_path.read_text(encoding='utf-8'))
+        body = hash_bytes(data[header['end']:])
+        if hash_bytes(receipt_path.read_bytes()) != manifest['build_receipt_sha256'] or receipt.get('exit_code') != 0:
+            raise ValueError('Companion build receipt is invalid')
+        if receipt['source'] != manifest['source'] or receipt['compiler'] != manifest['compiler'] or receipt['pex'] != manifest['pex']:
+            raise ValueError('Companion build receipt does not bind its inputs and output')
+        if receipt['pex'].get('body_sha256') != body or receipt['raw_pex'].get('body_sha256') != body:
+            raise ValueError('Companion compiled body provenance differs')
+        if not re.fullmatch(r'[0-9a-fA-F]{64}', manifest['compiler'].get('sha256', '')):
+            raise ValueError('Companion compiler identity is missing')
+        return data
+    except (OSError, KeyError, TypeError, json.JSONDecodeError) as error:
+        raise ValueError('Missing or invalid companion manifest/evidence') from error
 
 def bridge_directory(evidence_root):
     evidence_root = Path(evidence_root)
@@ -258,6 +297,7 @@ def verify(path,root):
 def build(root,pex,output):
     manifest,payload=entries(root)
     bridge=verify_bridge(root,pex)
+    companion = verify_companion(root) if manifest.get('companion_observation_protocol') == 1 else None
     output=Path(output).resolve()
     if not output.is_relative_to(Path(root).resolve()):
         raise ValueError('Output must stay inside this project')
@@ -271,6 +311,8 @@ def build(root,pex,output):
     server.write_bytes(raw)
     verify(server,root)
     combined={'Scripts/CHIMCorrespondenceBridge.pex':bridge,'CHIM/server-plugins/correspondence/'+manifest['version']+'.dwpkg':raw}
+    if companion is not None:
+        combined['Scripts/CHIMCorrespondenceCompanion.pex'] = companion
     bundle=output/('CHIM-Sealed-Fates-'+manifest['version']+'.zip')
     bundle_raw=packed(combined)
     if bundle.exists() and bundle.read_bytes()!=bundle_raw:

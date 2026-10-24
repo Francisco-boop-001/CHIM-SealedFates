@@ -1,6 +1,6 @@
 # Installation and removal
 
-**PRE-ALPHA:** use a disposable CHIM server and MO2 profile for the first install. The package is a matched pair: server package and Papyrus bridge must come from the same paired archive. Dev.22 retains the byte-identical, source-bound dev.17 bridge and its original build provenance. Install the server and bridge from the dev.22 paired archive together; do not relabel an older archive.
+**Dev.23 PRE-ALPHA:** install the single matching MO2 ZIP in a disposable game profile with a disposable server for the first playtest. It contains the unchanged physical delivery bridge, new companion observer and server package together. Native gameplay acceptance is still pending; see [release notes](RELEASE.md) and [companion requirements](COMPANION-CHECKINS.md).
 
 ## Pick your interface
 
@@ -8,19 +8,17 @@
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-The optional [Department/PRISMA prealpha.7](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.7) includes exact dev.22 source support. This packaging correction keeps every server and bridge byte unchanged, so those source pins remain valid. Prealpha.7 is TEST-only and adds source/package checks, not new live or Skyrim gameplay certification. The earlier dev.20/prealpha.4 pair retains its own disposable server-facade proof. The web plugin page remains available. See [compatibility and limits](PRISMA-COMPATIBILITY.md). Normal CHIM update checks may replace historical kit candidates and invalidate that pairing. Confirm active files and keep exactly one correspondence DWPkg enabled.
+**Dev.23 has no verified Department/PRISMA pairing. Use the web page.** Department prealpha.7 supports dev.22 only; keep its exact-source rejection intact. [Compatibility details](PRISMA-COMPATIBILITY.md).
 
-## Main paired install
+## Main install — one ZIP
 
-Download the [packaging-fix-1 paired archive](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.22-syncfix.1), **CHIM-Sealed-Fates-0.1.0-dev.22.zip**, and verify it against that release's **SHA256SUMS.txt**. Its server payload remains dev.22. The original dev.22 tag and assets remain unchanged.
+Download **[CHIM-Sealed-Fates-0.1.0-dev.23.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.23/CHIM-Sealed-Fates-0.1.0-dev.23.zip)**. This is the complete MO2 download; it includes the matching scripts and server payload.
 
-1. Stop the offscreen service before replacing files (see **Updating** below). Install that ZIP as an MO2 mod. Confirm that exactly one active mod supplies **Data/Scripts/CHIMCorrespondenceBridge.pex** and exactly one correspondence **.dwpkg** remains in the merged **CHIM/server-plugins/correspondence/** directory. Disable older playtest/recovery mods that supply either file.
-2. On the next full game start/save load, CHIM automatically transfers **CHIM/server-plugins/correspondence/0.1.0-dev.22.dwpkg**. The filename must be the version alone; CHIM compares it with the version declared inside the package. Confirm installation in the server Plugin Manager before enabling correspondence. An MO2 checkbox alone does not prove the server component installed.
-3. Keep the bridge and server package from the dev.22 paired archive. Do not pair the server package with a bridge from another release.
+1. Follow **Updating** below to stop the offscreen service before replacing files. Replace the previous Sealed Fates MO2 mod with this ZIP. Confirm exactly one active version supplies `Scripts/CHIMCorrespondenceBridge.pex`, `Scripts/CHIMCorrespondenceCompanion.pex` and the correspondence DWPkg.
+2. On the next normal full game start/save load, CHIM synchronizes `CHIM/server-plugins/correspondence/0.1.0-dev.23.dwpkg`. Confirm dev.23 in the server Plugin Manager before enabling correspondence. An MO2 checkbox alone does not prove synchronization succeeded.
+3. In the web page, enable global autonomous correspondence and the selected NPC's Background Life and Send letters settings. Test the [supported wait signals and remaining limits](COMPANION-CHECKINS.md) on that disposable setup.
 
-The paired ZIP includes the unchanged, hash-verified MO2 bridge PEX and the dev.22 server package, including its stylesheet and artwork. It does not include Mind Poisoning or Sworn & Scorned. Their optional integrations remain separate. The [dev.14 recovery kit](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.14) remains historical evidence for that exact older three-package pairing, not a dev.22 install bundle or a new integration test. Dev.15 release notes and checks likewise remain evidence for dev.15 only.
-
-If you already installed the original dev.22 ZIP and synchronization failed, the filename-only correction is `correspondence-0.1.0-dev.22.dwpkg` → `0.1.0-dev.22.dwpkg`. Keep the same file bytes and only one DWPkg; do not reset campaign data or replace the unchanged bridge. Normal synchronization runs once per game process with one retry, so a full game restart/save load is needed for another attempt. Renaming does not itself trigger installation, and no server restart is required for this correction. Do not trigger that live installation without approving its migrations and following your backup procedure.
+Mind Poisoning, Sworn & Scorned and the optional Department interface remain separate downloads. This publication does not install anything into an existing live game/server or reset campaign data.
 
 CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Older playtest ZIPs contain 2026 timestamps; current reproducible archives use a fixed 1980 timestamp. With both enabled, the courier may diligently install the older package. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
 

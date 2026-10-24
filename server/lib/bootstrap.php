@@ -5,6 +5,8 @@ require_once __DIR__.'/boundaries.php';
 require_once __DIR__.'/autonomy_policy.php';
 require_once __DIR__.'/autonomy_store.php';
 require_once __DIR__.'/autonomy_host.php';
+require_once __DIR__.'/companion.php';
+require_once __DIR__.'/companion_host.php';
 if(is_file(__DIR__.'/offscreen.php'))require_once __DIR__.'/offscreen.php';
 require_once __DIR__.'/offscreen_host.php';
 function correspondenceEngineRoot():string
@@ -157,6 +159,12 @@ function correspondenceOffscreenProduction():array
     }
     $runtime['offscreen']=$offscreen;return $runtime;
 }
+function correspondenceCompanionProduction():array
+{
+    static $companion=null;$runtime=correspondenceAutonomyProduction();
+    if($companion===null){$companion=new CorrespondenceCompanionPg($runtime['store'],$runtime['service']);$companion->ensureSchema();}
+    $runtime['companion']=$companion;return $runtime;
+}
 function correspondenceReceiveWithRetry(array $request,array $receipt,callable $runtimeFactory):array
 {
     $receiptId=$receipt['receipt_id']??null;
@@ -178,7 +186,7 @@ function correspondenceReceiveWithRetry(array $request,array $receipt,callable $
 }
 function correspondenceDiagnostic(string $code, array $details = []):void
 {
-    $allowed=['receipt_rejected','receipt_retry_pending','receipt_retry_succeeded','runtime_unavailable','presence_rejected','context_unavailable','social_unavailable','ui_rejected','core_prompt_api_unavailable','init_fence_unavailable','autonomy_unavailable','offscreen_unavailable','offscreen_worker_result','autonomy_outcome'];
+    $allowed=['receipt_rejected','receipt_retry_pending','receipt_retry_succeeded','runtime_unavailable','presence_rejected','context_unavailable','social_unavailable','ui_rejected','core_prompt_api_unavailable','init_fence_unavailable','autonomy_unavailable','offscreen_unavailable','offscreen_worker_result','autonomy_outcome','companion_rejected','companion_unavailable'];
     if(!in_array($code,$allowed,true))$code='runtime_unavailable';
     $workerResult=$code==='offscreen_worker_result';
     $autonomyOutcome=$code==='autonomy_outcome';

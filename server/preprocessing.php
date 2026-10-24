@@ -6,7 +6,7 @@ $type=is_string($gameRequest[0]??null)?strtolower(trim($gameRequest[0])):null;
 if(is_array($gameRequest??null))correspondenceBeginRequestIngress($gameRequest);
 if($type==='info'&&in_array($gameRequest[4]??null,['written_evidence_v1','correspondence_v1'],true)){correspondenceDiagnostic('receipt_rejected');if(function_exists('terminate'))terminate();exit;}
 if($type==='init'){correspondencePrepareRestoreInit(is_array($gameRequest??null)?$gameRequest:[]);return;}
-if(in_array($type,['written_evidence','correspondence_anchor','correspondence_dispatch','correspondence_receipt_confirmed','correspondence_presence'],true)){
+if(in_array($type,['written_evidence','correspondence_anchor','correspondence_dispatch','correspondence_receipt_confirmed','correspondence_presence','correspondence_companion_observation'],true)){
     correspondenceDiagnostic('receipt_rejected');if(function_exists('terminate'))terminate();exit;
 }
 if($type==='correspondence_receipt'){
@@ -17,10 +17,18 @@ if($type==='correspondence_receipt'){
     }catch(Throwable){correspondenceDiagnostic('receipt_rejected');}
     if(function_exists('terminate'))terminate();exit;
 }
+if($type==='correspondence_companion'){
+    $result=correspondenceCompanionReceiveNativeRequest($gameRequest,'correspondenceCompanionProduction','correspondenceOffscreenServiceStart');
+    if(($result['status']??null)==='rejected')correspondenceDiagnostic('companion_rejected');
+    elseif(($result['worker_status']??null)==='unavailable')correspondenceDiagnostic('companion_unavailable');
+    if(function_exists('terminate'))terminate();exit;
+}
 if(in_array($type,['inputtext','inputtext_s','ginputtext','ginputtext_s'],true)&&is_string($gameRequest[4]??null)){
     try{$runtime=correspondenceProduction();$runtime['store']->bindRequestClock($gameRequest);$raw=$gameRequest[4];if(strlen($raw)>45000)throw new InvalidArgumentException('invalid_snapshot');$runtime['store']->observeManaged($raw);}catch(Throwable){correspondenceDiagnostic('presence_rejected');}
 }
 if(is_array($gameRequest??null)){
+    $poll=correspondenceCompanionPollNativeRequest($gameRequest,'correspondenceCompanionProduction');
+    if(($poll['status']??null)==='failed')correspondenceDiagnostic('companion_unavailable');
     $result=correspondenceOffscreenObserveNativeRequest($gameRequest,'correspondenceOffscreenProduction','correspondenceOffscreenServiceStart');
     if(($result['status']??null)==='unavailable')correspondenceDiagnostic('offscreen_unavailable');
 }

@@ -193,3 +193,75 @@ Scope: no game/server restart, live data/database/provider/bootstrap or live ins
 ### Packaging review
 
 Installed filename rename is complete and its DWPkg SHA256 is unchanged. No game/server restart or live install occurred. New current bundles use the declared version only; standalone asset names remain descriptive. Thirty-seven package and twenty gate checks pass. The real package extracted from the corrected ZIP passes the copied live validator's filename/version boundary with migrations deliberately blocked; the original control fails exactly on chunk3. Server runtime, contracts, manifest, bridge and standalone DWPkg/tar remain byte-identical to the original dev.22 release. The independent review's historical-output containment finding was reproduced and fixed before final verification. Original dev.14 reconstruction retains its exact frozen layout. `tasks/lessons.md` records the missed consumer-contract check. Publication uses a distinct packaging-fix tag; existing tags/assets remain immutable. Final remote/download confirmation is retained with evidence under artifacts/chim-sealed-fates-live-install-diagnosis-20261023/packaging.
+# Companion-to-player correspondence — 2026-10-24
+
+- [x] Establish raw native companion-state signals, plugin hooks, player route, BGL overlap and test2 isolation.
+- [x] Document evidence-based state transitions, ranked adjacent uses and the smallest feasible design.
+- [x] Implement only supported behavior with causal targeted tests; preserve restore, cooldown and transfer safeguards.
+- [x] Verify synthetic recovery/concurrency and real-model grounding on owned test2 fixtures; record gameplay limits and review.
+
+Scope: only DwemerAI4Skyrim3-test2 for runtime tests. No live distro, installed game, production/provider configuration, publication or unrelated code changes. Unknown companion state must not create an abandonment assertion.
+
+### Companion candidate review
+
+Unreleased dev.23 implements conditional waiting-companion check-ins, not a fully idle native watcher. A new read-only source-bound observer provides explicit wait/proximity/calendar samples; the existing physical bridge is unchanged. Forty-eight observed game-hours allow one optional decision, with shared cooldowns and twelve-hour transit. Native sampling depends on fresh managed executor evidence; long gaps reset rather than invent separation.
+
+The owned socket-only test2 cluster passes causal recovery, restore, concurrency, lost-receipt, actor-isolation, in-flight reunion, identity-change, closure, BGL-overlap and opt-out cases. Eighteen affected pure suites, 66 translated native checks, 37 existing package checks, three companion package checks and twenty release-gate checks pass. The native creation regression failed before its JContainers path fix; the corrected source compiled with Caprica and has independently verified anonymous PEX provenance.
+
+Six real-model regression cases passed final mechanical and independent qualitative review after retaining and fixing recipient-schema and fabricated-history failures. Five queued letters and one silence used synthetic state only; repeat attempts and reunion cancellation were checked. The private HTTPS callback tests production messages/parsing/tick with the configured model, not installed connector bootstrap. These prompt-development cases do not prove arbitrary output semantics or constitute an untouched final hold-out set.
+
+No live/game install or publication is performed. Actual Skyrim unloaded-actor observations, native command scheduling, co-save behavior and physical note delivery remain unverified; no dev.23 Department pairing is claimed. See `docs/COMPANION-CHECKINS.md` and retained `artifacts/chim-sealed-fates-companion-20261024` evidence.
+
+## Idle-play companion execution — 2026-10-24
+
+- [x] Verify actorless transport, idle native events and executor semantics against the actual CHIM source; distinguish nearby idle from solitary idle.
+- [x] Select the smallest supported route and document its authority, restore rules and complete player-delivery boundary before coding.
+- [x] Add causal regressions, implement only feasible behavior, and test isolated failure/idle recovery on test2.
+- [x] Independently review the result, preserve candidate history, synchronize owned source and report exact remaining gaps.
+
+Scope: live distro/data, installed game, main-mod/core files, provider configuration and publication stay untouched. A stale presence snapshot cannot establish waiting, and nearby-only idle support must not be reported as solitary idle support.
+
+### Idle execution review
+
+Implemented the existing native request-heartbeat route through the player-backed Narrator without weakening actor/nonce/calendar/restore authority. No recent managed NPC presence is required for companion observations or scheduler-owned physical dispatch/reconciliation. Ordinary manual documents keep their existing executor rule. Actual core dequeue/response fixtures exposed and verified fixes for interaction generation and trailing-pipe framing in the shared queue writer.
+
+The final owned test2 fixtures pass solo/expired-presence, due delivery, no duplicate operation, reconciliation, Off/On generation changes and rejected writes. The full companion recovery/concurrency suite and privately adapted existing gift/gold/receipt/restore suite pass. Eighteen pure suites, 37 package checks, three companion package checks and twenty release-gate checks pass. Independent review found no remaining product finding; its legacy SQL fixture projection finding was corrected and verified. Evidence: `artifacts/chim-sealed-fates-companion-idle-20261024`.
+
+The fresh single-ZIP candidate is separate from the immutable earlier candidate. Canonical source is synchronized with its prior historical differences preserved. The owned PostgreSQL cluster is stopped; test2 tracked core remains clean; live VHD size and timestamp are unchanged. No live/game/core/provider installation, provider call or publication occurred. Skyrim VM execution, first-new-game Narrator initialization, unloaded actor sampling, co-save and physical delivery still need gameplay proof. No new model-quality or Department pairing claim is made.
+
+## Idle candidate bughunt — 2026-10-24
+
+- [x] Pin the exact candidate, map inputs/scheduling/native delivery and inspect connected recovery paths.
+- [x] Reproduce concrete suspected failures in isolated disposable fixtures; reject hypotheses disproved by code or tests.
+- [x] Write ranked findings with exact code evidence, smallest fixes and verification limits; preserve product/package bytes and live state.
+
+Scope: audit only. Product code, installed game, live server, providers and publication remain untouched. Only owned synthetic test2 databases and audit evidence may be written. Candidate baseline: `artifacts/chim-sealed-fates-companion-idle-bughunt-20261024/baseline-freeze.json`.
+
+### Bughunt review
+
+Three concrete P2 defects were reproduced on owned test2 synthetic data: due-mail head-of-line blocking (BH-01), per-NPC BGL deferral blocking another candidate (BH-02), and reclaimed-claim request ownership not fenced (BH-03). The claim probe uses a documented test-only pause hook; the scheduling probes use unmodified production classes and positive controls. The existing actual-core idle regression and 18 pure suites still pass. Full report and reproducible evidence: `artifacts/chim-sealed-fates-companion-idle-bughunt-20261024/critique.md`.
+
+Audit only: product and candidate package bytes unchanged; no provider/game/live access or publication. Owned PostgreSQL stopped, test2 tracked core clean, live VHD metadata unchanged. Actual Skyrim and new model-quality tests were not run.
+
+## Companion bughunt repairs — 2026-10-24
+
+- [x] Promote BH-01/02/03 reproductions to failing regression cases against the unchanged candidate on owned test2.
+- [x] Remove scheduling stalls and fence claim request ownership; retain fresh samples, restore epochs, global budget and no-resend rules.
+- [x] Rerun repaired cases, full companion recovery, actual-core idle and affected pure/package checks on test2; audit final changes and synchronize owned canonical source.
+
+Scope: offline source and owned synthetic test2 fixture only. Live data, installed game, CHIM core, providers and publishing untouched. Preserve previous candidates/evidence.
+
+### Companion repair review
+
+BH-01/02/03 have causal failing-before/passing-after tests on owned test2. The full companion recovery/restore/concurrency suite and actual-core idle suite pass, as do 18 pure suites and 60 package/release checks. The independent delta review found no further correctness issue. Freshness, restore epochs, per-NPC/global budgets and no-resend rules remain intact; request ID now fences reclaimed work at mark and completion. Product changes are confined to companion.php; test, documentation and checklist changes accompany them.
+
+Canonical source is synchronized, the repaired candidate is separate from earlier immutable ZIPs, and evidence lives in `artifacts/chim-sealed-fates-companion-repair-20261024`. No live/game/core/provider installation or publication occurred. Gameplay and new model-quality evaluation remain outside this server-only repair.
+
+## Publish verified dev.23 — 2026-10-24
+
+- [x] Bind current runtime/native bytes to the tested repair; update current release/install notes with explicit gameplay and interface limits.
+- [ ] Commit only reviewed source/evidence, create immutable dev.23 tag, and reproduce the four release assets from a clean tag export.
+- [ ] Upload a draft, verify downloaded assets and checksums, publish PRE-ALPHA, then advance main without force.
+- [ ] Verify public refs/downloads and unchanged live metadata; preserve prior tags/assets and record the publication result.
+
+Scope: authorized GitHub commit/push/publication only. No live/game/core/provider installation, restart or data mutation. Preserve tested runtime and both compiled PEX files exactly.

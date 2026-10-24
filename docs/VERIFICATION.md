@@ -1,5 +1,9 @@
 # Verification and limits
 
+## Dev.23 PRE-ALPHA
+
+See [companion check-ins](COMPANION-CHECKINS.md) for the native signal contract, disposable PostgreSQL recovery/concurrency checks, real-model iterations and package evidence. The [idle transport follow-up](COMPANION-IDLE.md) removes the recent NPC executor snapshot requirement; actual Skyrim observation/co-save/delivery and unverified Department pairing remain explicit limits. Published releases below retain their original evidence.
+
 ## Dev.21 PRE-ALPHA release
 
 Dev.21 changes one offscreen eligibility check and the release identity. A new pure-PHP regression failed against the previous check and passes after the change; all 29 pure PHP suites pass. A fresh, network-isolated disposable PostgreSQL cluster ran all 28 dev.20 PostgreSQL jobs against the exact executable server bytes, with owned cleanup and unchanged protected live-disk metadata. The release changes only manifest version metadata from those bytes. Release-gate and package tests pass. Dev.21 is released web-only; no Department/PRISMA dev.21 pairing is claimed. No live/game/core/provider deployment occurred.

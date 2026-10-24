@@ -150,6 +150,13 @@ function correspondenceOffscreenRunOneWorkerTick(): array
             return $finish(correspondenceOffscreenWorkerResult('paused', 'disabled'));
         }
 
+        $companion = correspondenceCompanionProduction()['companion'];
+        $companionDue = $companion->tick(null);
+        if (in_array($companionDue['status'] ?? null, ['dispatched','stale','unknown'], true)) {
+            return $finish(correspondenceOffscreenWorkerResult(($companionDue['status'] ?? null)==='stale'?'stale':'processed',
+                (string)($companionDue['reason'] ?? 'companion_dispatch')));
+        }
+
         $model = correspondenceAutonomyPreserveNativeGlobals(static fn() => correspondenceAutonomyCoreModelFactory());
         if (!is_callable($model)) return $finish(correspondenceOffscreenWorkerResult('unavailable', 'model_unavailable'));
         $guardedModel = static function (array $messages) use ($model, &$modelCalls): string {
@@ -161,6 +168,13 @@ function correspondenceOffscreenRunOneWorkerTick(): array
                 return $response;
             });
         };
+
+        $companionResult = $companion->tick($guardedModel);
+        if (!in_array($companionResult['status'] ?? null, ['idle','paused'], true)) {
+            return $finish(correspondenceOffscreenWorkerResult(
+                in_array($companionResult['status'] ?? null,['failed','stale'],true)?$companionResult['status']:'processed',
+                (string)($companionResult['reason'] ?? 'companion_tick'),$modelCalls));
+        }
 
         $result = $engine->tick($guardedModel);
         if (!is_array($result) || !in_array($result['status'] ?? null, ['processed','idle','paused','stale','failed'], true)) {

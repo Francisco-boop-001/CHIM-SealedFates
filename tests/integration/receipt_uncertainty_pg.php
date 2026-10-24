@@ -95,7 +95,7 @@ try {
 } catch (DomainException|InvalidArgumentException $expected) {
 }
 $service->dispatch($queued['document_id'], true);
-$actions = array_column($store->query('SELECT action FROM public.responselog WHERE action LIKE $1 ORDER BY localts', ['%'.$queued['document_id'].'%']), 'action');
+$actions = array_column($store->query('SELECT concat(action,chr(124),text) AS action FROM public.responselog WHERE concat(action,chr(124),text) LIKE $1 ORDER BY localts', ['%'.$queued['document_id'].'%']), 'action');
 $deliverCount = count(array_filter($actions, static fn($action) => str_starts_with($action, 'command|ExtCmdCHIMCorrespondenceBridge_Deliver@')));
 if ($deliverCount !== 1 || !str_starts_with((string)end($actions), 'command|ExtCmdCHIMCorrespondenceBridge_Reconcile@')) {
     throw new RuntimeException('unknown_receipt_reconcile_must_not_queue_a_second_transfer');

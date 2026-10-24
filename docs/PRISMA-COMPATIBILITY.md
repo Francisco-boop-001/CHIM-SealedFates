@@ -1,10 +1,12 @@
 # Department / PRISMA compatibility
 
+**Dev.23 PRE-ALPHA:** no Department pairing has been verified. Current source preflight targets dev.23; the published dev.22 pairing described below remains historical and must not be relabelled. Use the existing web interface for this release, and preserve exact-source rejection in the optional Department adapter.
+
 The Department Skyrim interface is optional. The Sealed Fates web plugin page remains available; the separate delivery bridge is still required for physical notes, items and gold. The courier's workload is terrible. Making the settings page mandatory would be adding insult to occupational injury.
 
 Compatibility belongs to an exact pair of sources. A successful Sealed Fates test run, unchanged bridge bytes, or a version added to Department's allowlist does not establish that its adapter understands the new server behavior. Unknown or changed sources must continue to be refused.
 
-The preflight targets dev.22 explicitly. Published Department prealpha.7 adds exact dev.22 source/package support and remains TEST-only; it does not add new database, HTTP or Skyrim gameplay acceptance. Packaging fix 1 preserves the entire dev.22 server source closure and bridge, so no owner pin changes are needed. The release builder still deliberately uses a web-only decision unless the separate runtime-pairing receipt required by its gate is available. Older dev.20/prealpha.4 server-facade evidence remains historical, not dev.22 runtime certification.
+The released dev.22 preflight targets dev.22 explicitly. Published Department prealpha.7 adds exact dev.22 source/package support and remains TEST-only; it does not add new database, HTTP or Skyrim gameplay acceptance. Packaging fix 1 preserves the entire dev.22 server source closure and bridge, so no owner pin changes are needed for that download. The release builder deliberately uses a web-only decision unless the separate runtime-pairing receipt required by its gate is available. Older dev.20/prealpha.4 server-facade evidence remains historical, not dev.22 runtime certification.
 
 ## Verified dev.20 server pairing — 2026-10-21
 

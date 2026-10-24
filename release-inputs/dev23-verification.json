@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "release": "0.1.0-dev.23",
+  "maturity": "PRE-ALPHA",
+  "scope": "source-bound isolated server/queue tests and package checks; not Skyrim gameplay certification",
+  "tested_at_utc": "2026-10-24T21:41:49.543834+00:00",
+  "source_closure_sha256": "70642403ff7cf91ad76a72f8691262c2c5a49a118d07649425121c5e2cd54d5b",
+  "server_files": {
+    "server/.htaccess": {
+      "sha256": "d410901a2696bbbf835f13b9f1da90a7914f6d7e6f4634cd05ad6681ae012be2",
+      "bytes": 65
+    },
+    "server/manifest.json": {
+      "sha256": "8c36e6703c3dfe70183034e855e0709f34593b90d8d3819c17adc1b260d012b1",
+      "bytes": 825
+    },
+    "server/index.php": {
+      "sha256": "817d18a5eaf606ca2d8a4c960df454f8b6ed65a5c25927204b46177817d6c516",
+      "bytes": 5605
+    },
+    "server/preprocessing.php": {
+      "sha256": "0777e6bedbc7baa0372f67e1b8ee1d069b902161dcc63b97df8b501e164b09d2",
+      "bytes": 2757
+    },
+    "server/context_pre.php": {
+      "sha256": "6345e1c7d98c4dd1f9f56b098b692db86789b310ee6084b680d00f04b40547ed",
+      "bytes": 1581
+    },
+    "server/lib/bootstrap.php": {
+      "sha256": "4cf8e693705ad78a8fdd5420ea682060f8712088b1a3b03a1b84510b4672f151",
+      "bytes": 17789
+    },
+    "server/lib/boundaries.php": {
+      "sha256": "21034b79e36d208b30ed0ea5aa6892581ae6749c5a9190a3b4a422f4f74b7d0f",
+      "bytes": 4601
+    },
+    "server/lib/runtime.php": {
+      "sha256": "804554dcce9b9f3fbcb5ffb57958f36007ac4624f07c33fd813f8e312839146e",
+      "bytes": 43849
+    },
+    "server/lib/store.php": {
+      "sha256": "ee86741a203b998d5c05c668e52073402248a42290fd23fe153c912f56cfeb28",
+      "bytes": 45373
+    },
+    "server/lib/view.php": {
+      "sha256": "76897c9ba7627643f5a44e8d2561289f194f28ffd088e6460250e716e86dbafd",
+      "bytes": 16660
+    },
+    "server/lib/consumers.php": {
+      "sha256": "b3621800a80ce366700385ea5c7717cb591c36ed57460d2ba81b1ebc8877040f",
+      "bytes": 4388
+    },
+    "server/migrations/001_initial.sql": {
+      "sha256": "b2052570036697147dacb5d041c0a692294af78a83f946e7819d83235e16dc99",
+      "bytes": 967
+    },
+    "server/migrations/004_restore_state.sql": {
+      "sha256": "d6a13622ece3af538996558d892852c5126581d99b4964eec0203a5b5b1a559e",
+      "bytes": 526
+    },
+    "server/postrequest.php": {
+      "sha256": "ddff0a6c8f8bf9b07022a6a9a0b2696b15e4d2df8d8e42bd185a94cae7f1b5ee",
+      "bytes": 523
+    },
+    "server/lib/autonomy_policy.php": {
+      "sha256": "db83aa3f1bc85c80c12c57294262ee7d4c93dc4bfcbd9eef4de8ced31b6fba18",
+      "bytes": 19079
+    },
+    "server/lib/autonomy_store.php": {
+      "sha256": "c163243334c8a558c800fd946d27564acf2f49d8df51ddf914899d784809a795",
+      "bytes": 88622
+    },
+    "server/lib/autonomy_host.php": {
+      "sha256": "dfa257dbb68f1ade87b7f13750e4fb25dd306c695b3c4ddd070e7ca1a4140a61",
+      "bytes": 7086
+    },
+    "server/migrations/002_autonomy.sql": {
+      "sha256": "20e0ba2901f9ff352311e00a706c976c793e1e1185c224afcb599f426acb63d3",
+      "bytes": 1563
+    },
+    "server/offscreen-worker.php": {
+      "sha256": "555a59351bdd3c7181362e3af978ce76f4302f56430ca666c0ccf6116e62014f",
+      "bytes": 12514
+    },
+    "server/offscreen-service.php": {
+      "sha256": "b27dd4d12b59244c23aae97aa10c8ef97e25f3aac321b8fbd177852058c9b629",
+      "bytes": 1152
+    },
+    "server/lib/offscreen_host.php": {
+      "sha256": "7ae21d2db282d9de0f1d37ca27a43624343fefd5e371b671a5f543177e1a2155",
+      "bytes": 44189
+    },
+    "server/lib/offscreen.php": {
+      "sha256": "26f9f9a31844bfb433d7d6bf2c996e8ad6e0c9f6c15c5a054d96cb3630e0f439",
+      "bytes": 146239
+    },
+    "server/lib/offscreen_policy.php": {
+      "sha256": "23639437e41eafaebd98ec85ce81cf3815ac51365f036c9e33b373fc17504058",
+      "bytes": 7457
+    },
+    "server/migrations/003_offscreen.sql": {
+      "sha256": "245ae41800da5d9d291cf25df9e4766059677710241a086c15ca6999d7500855",
+      "bytes": 3196
+    },
+    "server/dashboard-art.webp": {
+      "sha256": "43aee0fb45404314a5ab9f8ed6a9259e29543e032bc7582ca591a6e49f0a40c5",
+      "bytes": 2331264
+    },
+    "server/assets/style.css": {
+      "sha256": "f4d5ad6a20d6b2a75fa8679d47e0156422d07f035a43ee351e0536876ffc2642",
+      "bytes": 5808
+    },
+    "server/lib/companion.php": {
+      "sha256": "b93244fdf64206fefd21960b17a73844a57c5dbd98ed8e83a3b18ffc048a7597",
+      "bytes": 25409
+    },
+    "server/lib/companion_policy.php": {
+      "sha256": "b245767ef4764e82e4fd945f0ab0508993b4095b3bba6012ebeb3a1f09754be5",
+      "bytes": 6671
+    },
+    "server/lib/companion_host.php": {
+      "sha256": "b632693d26720fa063b7bbcd771cbce4997039aadff1c6755cb361c0239d1203",
+      "bytes": 1954
+    },
+    "server/migrations/005_companion.sql": {
+      "sha256": "b5b65588aea68eacd97907b1c548ba0c8d2c00b064b8d2c405a5aba5239a9cee",
+      "bytes": 1699
+    }
+  },
+  "repaired_candidate_assets": {
+    "CHIM-Sealed-Fates-0.1.0-dev.23.zip": {
+      "sha256": "6fbf1154df8de5eb34ef3d48658ea4ff43d2946742bdeab2247a58b7e9046260",
+      "bytes": 2889222
+    },
+    "correspondence-0.1.0-dev.23.dwpkg": {
+      "sha256": "7b9002f37970011b3c41c5728aca8f138082f70826ed25ca3e56748f8b03ae81",
+      "bytes": 2856503
+    }
+  },
+  "checks": {
+    "causal_reproductions_failed_before_passed_after": [
+      "BH-01",
+      "BH-02",
+      "BH-03"
+    ],
+    "full_companion_recovery": true,
+    "actual_core_dequeue_idle": true,
+    "affected_pure_suites": 18,
+    "existing_package_checks": 37,
+    "companion_package_checks": 3,
+    "release_gate_checks": 20,
+    "translated_native_checks": 66,
+    "native_vm_executed": false,
+    "independent_repair_review": "no correctness finding in bounded repair delta"
+  },
+  "models": {
+    "earlier_synthetic_cases": 6,
+    "letters": 5,
+    "silence": 1,
+    "cases_used_to_refine_prompt": true,
+    "untouched_holdout": false,
+    "full_installed_connector_bootstrap": false,
+    "repair_makes_new_model_quality_claim": false
+  },
+  "external_retained_evidence": {
+    "repair_freeze_sha256": "bc6d950eafb0a60d336590ca4bca2af3b57c4a68979d17e8517e9cf9460d448e",
+    "report_sha256": "e45cddc3081d1487add7f684d0fb0089f56fac0c1df9a7913abc39daf48f8a6b",
+    "portable_test_entry": "tests/integration/companion_pg.php",
+    "recovery_cases": "tests/integration/companion_recovery_cases.php",
+    "note": "Guarded fixture harness targets the author-owned private test2 cluster; complete raw run receipts are retained outside the distribution source."
+  },
+  "gameplay_unverified": [
+    "Skyrim native/Papyrus execution",
+    "initial new-game Narrator initialization",
+    "unloaded actor and follower framework observations",
+    "co-save and actual save/load restoration",
+    "renderer, physical note and inventory delivery"
+  ],
+  "department_interface": "web-only; no verified dev.23 pairing",
+  "live_or_game_installation": false
+}
