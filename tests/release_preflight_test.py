@@ -328,6 +328,57 @@ class ReleasePreflightTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             gate.preflight(self.root, 'tested-paired', receipt)
 
+    def preserved_running_fixture(self):
+        envelope, readiness, behavior, freeze = self.pairing_fixtures()
+        behavior['testDistroStopVerified'] = False
+        behavior['testDistroLifecycle'] = {
+            'schemaVersion': 1, 'distro': 'DwemerAI4Skyrim3-test2',
+            'initialState': 'running', 'finalState': 'running',
+            'startedByRun': False, 'stopRequested': False,
+            'preservationVerified': True,
+        }
+        return envelope, readiness, behavior, freeze
+
+    def test_tested_pair_accepts_verified_preexisting_running_test2(self):
+        receipt = self.write_pairing(*self.preserved_running_fixture())
+        self.assertEqual(gate.preflight(self.root, 'tested-paired', receipt)['status'], 'pass')
+
+    def test_tested_pair_refuses_incomplete_or_changed_distro_lifecycle(self):
+        mutations = [
+            ('schemaVersion', True), ('schemaVersion', 2), ('distro', 'DwemerAI4Skyrim3'),
+            ('initialState', 'stopped'), ('finalState', 'stopped'),
+            ('startedByRun', True), ('startedByRun', 0),
+            ('stopRequested', True), ('stopRequested', 0),
+            ('preservationVerified', False), ('preservationVerified', 1),
+            ('unexpected', True),
+        ]
+        for key, value in mutations:
+            with self.subTest(field=key, value=value):
+                envelope, readiness, behavior, freeze = self.preserved_running_fixture()
+                behavior['testDistroLifecycle'][key] = value
+                receipt = self.write_pairing(envelope, readiness, behavior, freeze)
+                with self.assertRaises(ValueError):
+                    gate.preflight(self.root, 'tested-paired', receipt)
+        for key in self.preserved_running_fixture()[2]['testDistroLifecycle']:
+            with self.subTest(missing=key):
+                envelope, readiness, behavior, freeze = self.preserved_running_fixture()
+                del behavior['testDistroLifecycle'][key]
+                receipt = self.write_pairing(envelope, readiness, behavior, freeze)
+                with self.assertRaises(ValueError):
+                    gate.preflight(self.root, 'tested-paired', receipt)
+
+    def test_preserved_distro_does_not_replace_cleanup_or_explicit_stop_result(self):
+        for key, value in [('ownedPostgresStopVerified', False),
+                           ('sourcePreservationPassed', False),
+                           ('protectedBaselinesMatched', False),
+                           ('testDistroStopVerified', None), ('testDistroStopVerified', 0)]:
+            with self.subTest(field=key, value=value):
+                envelope, readiness, behavior, freeze = self.preserved_running_fixture()
+                behavior[key] = value
+                receipt = self.write_pairing(envelope, readiness, behavior, freeze)
+                with self.assertRaises(ValueError):
+                    gate.preflight(self.root, 'tested-paired', receipt)
+
     def test_unknown_owner_version_fails_closed_in_web_only_mode(self):
         path = self.root / 'server' / 'manifest.json'
         path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.24'}), encoding='utf-8')

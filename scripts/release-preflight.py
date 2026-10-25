@@ -248,10 +248,24 @@ def _verify_behavior(behavior, owner, department, freeze_hash):
         raise ValueError('Runtime behavior coverage is incomplete')
     required_true = (
         'sourcePreservationPassed', 'ownedPostgresStopVerified',
-        'testDistroStopVerified', 'protectedBaselinesMatched',
+        'protectedBaselinesMatched',
     )
     if any(behavior.get(field) is not True for field in required_true):
         raise ValueError('Runtime behavior preservation or cleanup did not pass')
+    # A shared TEST distro may already be running; the run's own PostgreSQL still must stop.
+    if behavior.get('testDistroStopVerified') is not True:
+        expected = {
+            'schemaVersion': 1, 'distro': 'DwemerAI4Skyrim3-test2',
+            'initialState': 'running', 'finalState': 'running',
+            'startedByRun': False, 'stopRequested': False,
+            'preservationVerified': True,
+        }
+        actual = behavior.get('testDistroLifecycle')
+        if (behavior.get('testDistroStopVerified') is not False or
+                not isinstance(actual, dict) or set(actual) != set(expected) or
+                any(type(actual[key]) is not type(value) or actual[key] != value
+                    for key, value in expected.items())):
+            raise ValueError('Runtime behavior test distro lifecycle did not pass')
     if type(behavior.get('providerCalls')) is not int or behavior['providerCalls'] != 0:
         raise ValueError('Runtime behavior gate used a provider')
     manifest_hash = _sha_value(behavior.get('runtimeSourceManifestSha256'), 'runtime source manifest hash')
