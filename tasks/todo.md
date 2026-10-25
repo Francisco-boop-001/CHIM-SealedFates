@@ -271,3 +271,19 @@ Scope: authorized GitHub commit/push/publication only. No live/game/core/provide
 Committed the exact tested runtime/native source at tag correspondence-v0.1.0-dev.23, rebuilt from a clean tag export, and matched the verified repair ZIP/DWPkg bytes. Published PRE-ALPHA only after all four draft downloads matched; anonymous public downloads and checksums also match. Main advanced by fast-forward after publication. Source/tag checks pass; the portable receipt and docs/DEV23-PUBLICATION.md record exact identities and evidence boundaries.
 
 Release notes clearly retain unverified Skyrim VM, unloaded actors, first-new-game Narrator, co-save and actual physical delivery; no dev.23 Department pairing or untouched real-model hold-out claim is made. Existing web UI remains usable and one complete MO2 ZIP is the install path. No live/game/core/provider change; owned PostgreSQL stopped and live disk metadata unchanged. Original releases/candidates remain intact.
+
+## Department / Sealed Fates dev.23 pairing — 2026-10-24
+
+- [x] Coordinate ownership, frozen sources and isolated test2 fixture use with the World of Drama-Llama owner; preserve published owner bytes.
+- [x] Review Department's minimal adapter/UI changes and verify exact-source rejection including all new transitive companion code, plus supported older versions.
+- [x] Independently verify the exact pair on test2: catalog/mailbox/detail/compose/reconcile, companion-owned sends, unknown/closed receipts, restore/freshness/leases, concurrent replay and full forwards; bind results to frozen sources.
+- [x] Accept valid source/runtime pairing receipts, reproduce unchanged dev.23 owner assets through the paired release gate, then coordinate verified Department publication.
+- [x] Verify public assets/refs and document the exact supported build and remaining gameplay limits; keep old owner tags/assets unchanged and live untouched.
+
+Scope: user-authorized cross-chat coordination, isolated test2 verification and verified publication. Department owner owns interface implementation/release. This chat owns owner-contract acceptance, independent proof and Sealed Fates compatibility documentation. No live/game/core/provider changes; no source-pin bypass or unknown-result resend.
+
+### Dev.23 pairing review
+
+Published Department prealpha.13 at source ada38ef84f7cb4e8a17684c4a5dfda4cd528d5a6 after independent run 20261025T011803Z-95a75e6d passed 38/38 case groups and eight prechecks. Both owners reviewed the raw SQL, source and cleanup. All 3,231 frozen entries and 38 SQL/table deltas match; 51 browser checks plus the fifth-tab test pass and match the published UI. The paired owner release command reproduces all four unchanged Sealed Fates assets. All four new Department public downloads match; its 186 source members match Git and its DLL/20 unchanged mod members match prealpha.12. Original releases/assets/tags are preserved.
+
+The verification-gate change is public at 29866b2 with 20 preflight and three asset-gate tests; it validates strict kept-running lifecycle proof without replacing private PostgreSQL cleanup. Canonical docs retain historical differences. The portable dev23-department-compatibility.json and compatibility notes preserve direct-facade, pinned-core, synthetic-receipt and gameplay boundaries. No live/game/provider/core installation, restart or production configuration change. Exact owned PostgreSQL is stopped; test2 remains running and protected live disk metadata matches. Failed fixture runs and original freezes remain separate from accepted proof.

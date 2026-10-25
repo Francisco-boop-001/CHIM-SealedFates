@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "kind": "department-compatibility",
+  "status": "published-server-tested",
+  "owner": {
+    "version": "0.1.0-dev.23",
+    "tag": "correspondence-v0.1.0-dev.23",
+    "releaseCommit": "01d62982d9b10ca4fce040af9d97fe7111231ba3",
+    "sourceClosureSha256": "70642403ff7cf91ad76a72f8691262c2c5a49a118d07649425121c5e2cd54d5b",
+    "assetsUnchanged": true,
+    "assets": {
+      "CHIM-Sealed-Fates-0.1.0-dev.23.zip": {
+        "sha256": "6fbf1154df8de5eb34ef3d48658ea4ff43d2946742bdeab2247a58b7e9046260",
+        "bytes": 2889222
+      },
+      "correspondence-0.1.0-dev.23.dwpkg": {
+        "sha256": "7b9002f37970011b3c41c5728aca8f138082f70826ed25ca3e56748f8b03ae81",
+        "bytes": 2856503
+      },
+      "correspondence.tar.gz": {
+        "sha256": "7595a7e717beafe4b426612b04da1775b510bf276918d18f1c42123c7d67456a",
+        "bytes": 2436607
+      },
+      "SHA256SUMS.txt": {
+        "sha256": "467b8ff3ffcbbb36e2706e868b2e14fa59d18a43bbd78202b7a05c1045b40795",
+        "bytes": 289
+      }
+    }
+  },
+  "department": {
+    "version": "0.1.0-prealpha.13",
+    "tag": "v0.1.0-prealpha.13",
+    "tagObject": "4f5b0e7b41883da665d68257b3a924bb679865d9",
+    "releaseCommit": "ada38ef84f7cb4e8a17684c4a5dfda4cd528d5a6",
+    "testedRuntimeCommit": "79b7e2c3e74b8a05285744c4f5f0d489743468d9",
+    "publishedAt": "2026-10-25T01:48:19Z",
+    "url": "https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.13",
+    "anonymousDownloadsMatched": true,
+    "assets": {
+      "WorldOfDramaLlama-0.1.0-prealpha.13.zip": {
+        "sha256": "039f0b40afa9173b82a21ea7d26cbe727d153a3d830c964aba0e35769feb5d7d",
+        "bytes": 579302,
+        "assetId": 673818188
+      },
+      "WorldOfDramaLlama-0.1.0-prealpha.13-source.zip": {
+        "sha256": "bb7c2ffb800fc4831791fa4ad6feed7654cd4f5ca8fded1a9bbcba68aab49534",
+        "bytes": 804602,
+        "assetId": 673818186
+      },
+      "WorldOfDramaLlama-0.1.0-prealpha.13-pairing.zip": {
+        "sha256": "2f4f5e8e076de27e3bc8ad01c0b662b0e62dadd2395c9c2d233dcf462812e977",
+        "bytes": 185985,
+        "assetId": 673818187
+      },
+      "SHA256SUMS.txt": {
+        "sha256": "8ea5a75b03fa58db005c28c2968e645df87e484a4cd20b023bbec82ab594367b",
+        "bytes": 333,
+        "assetId": 673818189
+      }
+    },
+    "nativeDllSha256": "1451c64dc8285be897d6eeac8754980a0b90a3228f75c8780d2f5566aeacb4c9",
+    "nativePayloadUnchangedFromPrealpha12": true
+  },
+  "runtime": {
+    "distro": "DwemerAI4Skyrim3-test2",
+    "runId": "20261025T011803Z-95a75e6d",
+    "caseGroupsPassed": 38,
+    "existingCaseGroups": 33,
+    "companionCaseGroups": 5,
+    "prechecksPassed": 8,
+    "frozenInputEntriesVerified": 3231,
+    "sqlChunksAndDynamicTableDeltasVerified": 38,
+    "sourcePostcheckPassed": true,
+    "ownerFacadePins": 19,
+    "ownerFullPayloadFiles": 30,
+    "departmentBoundServerInputs": 86,
+    "ownedPostgresStopVerified": true,
+    "testDistroLifecycle": {
+      "schemaVersion": 1,
+      "distro": "DwemerAI4Skyrim3-test2",
+      "initialState": "running",
+      "finalState": "running",
+      "startedByRun": false,
+      "stopRequested": false,
+      "preservationVerified": true
+    },
+    "providerCalls": 0,
+    "syntheticCompanionCallbackAttempts": 3,
+    "samplingBoundary": "Prepared synthetic eligible episode rows; actual pinned companion.tick compose and receipt paths. No native poll or Skyrim observation.",
+    "coreSourceCommit": "0ec590b42c8087860138bb4e9aab470049ff9a2b",
+    "installedTest2CoreObservation": {
+      "commit": "468584f7bfc34c2eaf76e6188efaf3294f4fd63c",
+      "selectedPhpInputsLfEquivalent": 8,
+      "stockAssetsByteIdentical": 2,
+      "fullInstalledCoreExecution": false
+    },
+    "excludedFailedFixtureRuns": [
+      "20261025T002354Z-da0f6d84",
+      "20261025T003853Z-3e234a42",
+      "20261025T010425Z-1d87b3fc"
+    ]
+  },
+  "ui": {
+    "functionalChecksPassed": 51,
+    "fifthTabCheckPassed": true,
+    "finalArchiveMatchesTestedInputs": true,
+    "inputs": {
+      "app.css": {
+        "sha256": "4aef1c24e7465ce17eaf7abc1b8e9cb5c6773f0c0daf6a8c9406b8553215758f",
+        "bytes": 15451
+      },
+      "app.js": {
+        "sha256": "511575703802c6e915da55ad7c28a2993682e9e8c1b284c1ac9cd0ae32860f6b",
+        "bytes": 163481
+      },
+      "brainwash-editor.js": {
+        "sha256": "4da2d56c482aa698c7c93440fc24375e26354a5a4d192ee525bf6e7eef45392f",
+        "bytes": 21951
+      },
+      "index.html": {
+        "sha256": "16917b35cf96174ae6c2ff16fc7291b31a50feb40c1eaf7b28547bd3badd0ba1",
+        "bytes": 18723
+      },
+      "brainwash-editor.css": {
+        "sha256": "53bc44ec9e7d509da1f16cd56556f677e8f55e23a7691c286c935cfde15c35f8",
+        "bytes": 2371
+      },
+      "tests/brainwash.cjs": {
+        "sha256": "3fe334a4d97edf8c4d67ab00ed49a0de35d8c28d196298c23b3787141bf106e1",
+        "bytes": 13321
+      },
+      "tests/ui-functional.cjs": {
+        "sha256": "aad51b2ca25ac30aa1fbee9b0904d7ab9d59ae48398a3cade694767832d4d741",
+        "bytes": 137052
+      },
+      "tests/ui-interactions.cjs": {
+        "sha256": "5f5c0bd50e664e4886d6fe05ea76f8f805a393dd7d1cfe7459e73a07433e2303",
+        "bytes": 4504
+      },
+      "tests/ui-render.cjs": {
+        "sha256": "bdd043d9a33ecc21e264e7f952696c566024cb1d9809a8ea1b7170084cdf13e9",
+        "bytes": 12993
+      },
+      "tests/fixtures/fifth-tab.html": {
+        "sha256": "c9e180fba4257c1a1434c80456af32cec73c422e4c1cf6eae9b07bfec6f6b8e2",
+        "bytes": 519
+      }
+    }
+  },
+  "pairingProof": {
+    "download": "https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.13/WorldOfDramaLlama-0.1.0-prealpha.13-pairing.zip",
+    "files": {
+      "department-owner-pairing.json": {
+        "sha256": "d55ed02d53a00890dced142a39fa8557bc55d52546cb390f4effd63bdd72a8d2",
+        "bytes": 18692
+      },
+      "source-readiness.json": {
+        "sha256": "c6b7f951510cded65387133580185cd6c1f8cf940d6cb14a0064eb33077e1ca7",
+        "bytes": 6913
+      },
+      "runtime-release.json": {
+        "sha256": "8c3e8e1ffcc86207b24ff4a8de951084510c7925e83e86d2b289c06b54377c9b",
+        "bytes": 24786
+      },
+      "runtime-input-freeze.json": {
+        "sha256": "06ccd015eda271136ec5d590a0f2e8045593ce74d820b7efacb948d5cbba2657",
+        "bytes": 729765
+      }
+    }
+  },
+  "verificationTool": {
+    "commit": "29866b20925c4d1b3e0aa49b6014332dcc868e7f",
+    "path": "scripts/release-preflight.py",
+    "sha256": "7338226dcc520b56eca762dca2c5b2175da9e30a30bf094309e182c8bc46c19d",
+    "pairedReleaseEntryPassed": true,
+    "allFourOwnerAssetsReproduced": true
+  },
+  "safety": {
+    "liveDataTouched": false,
+    "liveVhdMetadataUnchanged": true,
+    "installedGameTouched": false,
+    "providersOrProductionConfigurationChanged": false,
+    "priorReleasesAndAssetsPreserved": true
+  },
+  "unverified": [
+    "HTTP transport through an installed CHIM server",
+    "Actual Skyrim DLL/PRISMA/Papyrus execution",
+    "Actual companion detection, unloaded actors and follower frameworks",
+    "First-new-game Narrator initialization",
+    "In-game co-save/save-load restoration",
+    "Physical note/item/gold delivery",
+    "New model-quality or untouched hold-out evaluation"
+  ]
+}

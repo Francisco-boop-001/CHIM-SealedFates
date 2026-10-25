@@ -16,7 +16,7 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**No dev.23 Department/PRISMA pairing has been verified. Use the existing web interface for this release.** Department prealpha.7 supports the older dev.22 source; its historical checks do not certify dev.23. See [compatibility and limits](docs/PRISMA-COMPATIBILITY.md).
+**[Department prealpha.13](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.13) is the server-tested optional interface for Sealed Fates dev.23.** Existing dev.23 users need only update the Department mod; Sealed Fates' files stay unchanged. The web page still works. The courier has survived another departmental meeting. See [the exact pairing and gameplay limits](docs/PRISMA-COMPATIBILITY.md).
 
 ## Download
 

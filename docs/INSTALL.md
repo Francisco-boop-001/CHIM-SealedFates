@@ -8,7 +8,7 @@
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**Dev.23 has no verified Department/PRISMA pairing. Use the web page.** Department prealpha.7 supports dev.22 only; keep its exact-source rejection intact. [Compatibility details](PRISMA-COMPATIBILITY.md).
+**Optional: use [Department prealpha.13](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.13) with Sealed Fates dev.23.** This exact pair passed isolated server/API tests; Skyrim gameplay acceptance remains pending. If dev.23 is already installed, update only the Department mod using its single MO2 ZIP. Its source and pairing-proof downloads are developer extras. [Compatibility details](PRISMA-COMPATIBILITY.md).
 
 ## Main install — one ZIP
 

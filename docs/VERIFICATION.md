@@ -2,7 +2,7 @@
 
 ## Dev.23 PRE-ALPHA
 
-See [companion check-ins](COMPANION-CHECKINS.md) for the native signal contract, disposable PostgreSQL recovery/concurrency checks, real-model iterations and package evidence. The [idle transport follow-up](COMPANION-IDLE.md) removes the recent NPC executor snapshot requirement; actual Skyrim observation/co-save/delivery and unverified Department pairing remain explicit limits. Published releases below retain their original evidence.
+See [companion check-ins](COMPANION-CHECKINS.md) for the native signal contract, disposable PostgreSQL recovery/concurrency checks, real-model iterations and package evidence. The [idle transport follow-up](COMPANION-IDLE.md) removes the recent NPC executor snapshot requirement; actual Skyrim observation/co-save/delivery remain explicit limits. The subsequent [Department prealpha.13 server pairing](PRISMA-COMPATIBILITY.md) adds isolated facade and browser proof without changing the dev.23 payload. Published releases below retain their original evidence.
 
 ## Dev.21 PRE-ALPHA release
 

@@ -6,7 +6,7 @@ Your companion can now consider sending a written "are we still doing this?" whi
 
 Download **[CHIM-Sealed-Fates-0.1.0-dev.23.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.23/CHIM-Sealed-Fates-0.1.0-dev.23.zip)** and install it as your Sealed Fates MO2 mod, replacing the previous version. It contains the matching delivery bridge, new companion observer and server package together. Keep one correspondence package enabled. Start with a disposable game profile and server: this remains PRE-ALPHA. Checksums are supplied for optional integrity verification.
 
-**The in-game Department/PRISMA interface is optional; the existing web plugin page still works. No dev.23 Department pairing is verified.** Use the web page for this release. Older exact-source adapters should retain their refusal of unsupported versions. The delivery/observer scripts are included in the ZIP and are separate from that optional interface.
+**The in-game Department/PRISMA interface is optional; the existing web plugin page still works.** [Department prealpha.13](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.13) is now the server-tested match for dev.23: 38/38 server case groups and 51/51 browser checks pass. This pairing was verified after the original Sealed Fates publication; its four assets and release tag remain unchanged. Existing dev.23 users need only update the optional Department mod using its single MO2 ZIP. [Exact proof and remaining gameplay limits](PRISMA-COMPATIBILITY.md). The delivery/observer scripts remain separate from that interface.
 
 ## What changed
 

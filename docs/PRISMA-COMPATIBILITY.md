@@ -1,12 +1,38 @@
 # Department / PRISMA compatibility
 
-**Dev.23 PRE-ALPHA:** no Department pairing has been verified. Current source preflight targets dev.23; the published dev.22 pairing described below remains historical and must not be relabelled. Use the existing web interface for this release, and preserve exact-source rejection in the optional Department adapter.
+**Dev.23 PRE-ALPHA:** [Department prealpha.13](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.13) is the exact-source, server-tested optional interface pairing. The web page still works. Earlier dev.22/dev.20 records below retain their original scope; exact-source rejection remains enforced.
 
 The Department Skyrim interface is optional. The Sealed Fates web plugin page remains available; the separate delivery bridge is still required for physical notes, items and gold. The courier's workload is terrible. Making the settings page mandatory would be adding insult to occupational injury.
 
 Compatibility belongs to an exact pair of sources. A successful Sealed Fates test run, unchanged bridge bytes, or a version added to Department's allowlist does not establish that its adapter understands the new server behavior. Unknown or changed sources must continue to be refused.
 
 The released dev.22 preflight targets dev.22 explicitly. Published Department prealpha.7 adds exact dev.22 source/package support and remains TEST-only; it does not add new database, HTTP or Skyrim gameplay acceptance. Packaging fix 1 preserves the entire dev.22 server source closure and bridge, so no owner pin changes are needed for that download. The release builder deliberately uses a web-only decision unless the separate runtime-pairing receipt required by its gate is available. Older dev.20/prealpha.4 server-facade evidence remains historical, not dev.22 runtime certification.
+
+## Verified dev.23 server pairing — 2026-10-25
+
+[Department v0.1.0-prealpha.13](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.13) is the optional interface match for the unchanged Sealed Fates dev.23 payload at `01d62982d9b10ca4fce040af9d97fe7111231ba3`. Existing dev.23 users need only update the optional Department mod, using its single MO2 ZIP. The web page still works.
+
+The independent run `20261025T011803Z-95a75e6d` on disposable test2 passed **38/38 case groups: 33 existing facade/recovery groups and five companion groups, plus eight prechecks**. All 3,231 frozen input entries, all 38 raw SQL chunks and their dynamic table-row deltas were independently checked after execution. The integrated UI passed 51/51 functional checks and a separate fifth-tab check. Department's runtime source was frozen at `79b7e2c3e74b8a05285744c4f5f0d489743468d9`; published source commit `ada38ef84f7cb4e8a17684c4a5dfda4cd528d5a6` adds only documentation to those tested bytes. The [portable compatibility record](../release-inputs/dev23-department-compatibility.json) binds the public downloads and evidence.
+
+- Companion-authored, NPC-funded mail is recognized only through its exact document/request/playthrough/actor ownership record, with the player as recipient and no attachments. Inactive ownership records do not turn companion mail into a manual draft. Ordinary player-funded impersonation with items and gold remains supported.
+- Manual companion dispatch/retry is refused. Original-operation reconciliation stays read-only; unknown, partial and closed-unconfirmed deliveries remain locked. Mailbox/detail visibility still requires confirmed delivery. Ownership changes invalidate old mailbox cursors.
+- Restore overlap, freshness, leases, concurrent replay, late receipts, source drift and no-resend checks pass. The 19 facade-transitive owner pins include the new companion dependencies; the complete owner payload remains 30 files. Unknown or changed sources continue to fail closed.
+- A complete 775-character forwarded letter matches source, persisted and receipt-confirmed facade bodies. The 1,845-character overflow case remains whole and queued, with no delivery operation, note or transfer command; unconfirmed public detail remains unavailable.
+
+The private PostgreSQL instance stopped only after exact PID, system identifier, datadir and namespace checks. Test2 was already running and remained running; the launcher did not start or stop it. Protected sources matched; provider calls were zero. No live/game/provider installation or production configuration changed.
+
+These are direct PHP facade and PostgreSQL results with synthetic game observations and signed test receipts. They do not establish HTTP transport, actual companion detection, model quality, installed native UI/Papyrus execution, co-save/save-load behavior or physical note/item/gold delivery. The fixture pins CHIM `0ec590b42c8087860138bb4e9aab470049ff9a2b`; a bounded comparison found eight selected current test2 PHP inputs LF-equivalent and two stock assets byte-identical. That comparison is not a full execution of test2's installed CHIM revision.
+
+The actual `tested-paired` release command accepts the four-file proof and reproduces all four published Sealed Fates dev.23 assets byte-for-byte. Its tag and runtime/native payload remain unchanged. Replay the kept-running test2 receipt with the [verification gate at commit 29866b2](https://github.com/Francisco-boop-001/CHIM-SealedFates/tree/29866b20925c4d1b3e0aa49b6014332dcc868e7f), which adds strict lifecycle validation and three regression tests (20 preflight and three asset-gate tests pass). The original immutable dev.23 tag predates that additive verification-tool change; do not relabel or replace it.
+
+The optional [pairing-proof download](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.13/WorldOfDramaLlama-0.1.0-prealpha.13-pairing.zip) (SHA-256 `2f4f5e8e076de27e3bc8ad01c0b662b0e62dadd2395c9c2d233dcf462812e977`) contains only these four JSON files. It installs nothing and is not another step for players. Keep the files together for developer replay:
+
+| File | SHA-256 |
+| --- | --- |
+| `department-owner-pairing.json` | `d55ed02d53a00890dced142a39fa8557bc55d52546cb390f4effd63bdd72a8d2` |
+| `source-readiness.json` | `c6b7f951510cded65387133580185cd6c1f8cf940d6cb14a0064eb33077e1ca7` |
+| `runtime-release.json` | `8c3e8e1ffcc86207b24ff4a8de951084510c7925e83e86d2b289c06b54377c9b` |
+| `runtime-input-freeze.json` | `06ccd015eda271136ec5d590a0f2e8045593ce74d820b7efacb948d5cbba2657` |
 
 ## Verified dev.20 server pairing — 2026-10-21
 
