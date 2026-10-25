@@ -306,7 +306,11 @@ One shared-query line repaired; local RED then GREEN (15 checks), 18/19 PHP suit
 ## Dev.24 personal-playtest publication — 2026-10-25
 
 - [x] Advance release identity and current docs; preserve historical pairing proof and disclose pending test2/gameplay/Department limits.
-- [ ] Rerun local checks; build reviewed assets, commit and tag, then rebuild from the clean tag and compare.
-- [ ] Push, verify draft downloads, publish the prerelease, verify public bytes, then advance main without overwriting other work.
+- [x] Rerun local checks; build reviewed assets, commit and tag, then rebuild from the clean tag and compare.
+- [x] Push, verify draft downloads, publish the prerelease, verify public bytes, then advance main without overwriting other work.
 
 Publication is explicitly authorized by the user. Test2 remains unavailable; live and installed game/MO2 remain untouched. Do not contact Department. The earlier pending test2 checkbox remains pending.
+
+### Dev.24 publication review
+
+Published commit 80821db59d3e1c299bee56b4496cf20a144984fd at immutable tag correspondence-v0.1.0-dev.24. Clean-tag and reviewed-source builds match all four assets; draft and anonymous public downloads match. Both native scripts match dev.23. Main advanced by non-forced fast-forward only after public verification. Current README, install guide, release notes and portable receipt state web-only compatibility and the pending test2/gameplay limits. The old dev.23 tag is unchanged. No server/game/provider access, installation or Department contact. Test2 regressions remain pending as requested. See docs/DEV24-PUBLICATION.md.
