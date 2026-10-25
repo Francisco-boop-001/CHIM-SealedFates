@@ -1,5 +1,9 @@
 # Department / PRISMA compatibility
 
+**Current dev.24: web interface only; Department pairing is unverified.** The optional prealpha.13 adapter pins unchanged dev.23. Its historical proof below does not cover dev.24, and its exact-source refusal remains in force. No Department work or contact was requested for this release.
+
+## Historical dev.23 and earlier pairings
+
 **Dev.23 PRE-ALPHA:** [Department prealpha.13](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.13) is the exact-source, server-tested optional interface pairing. The web page still works. Earlier dev.22/dev.20 records below retain their original scope; exact-source rejection remains enforced.
 
 The Department Skyrim interface is optional. The Sealed Fates web plugin page remains available; the separate delivery bridge is still required for physical notes, items and gold. The courier's workload is terrible. Making the settings page mandatory would be adding insult to occupational injury.

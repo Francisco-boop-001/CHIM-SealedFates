@@ -1,6 +1,6 @@
 # Installation and removal
 
-**Dev.23 PRE-ALPHA:** install the single matching MO2 ZIP in a disposable game profile with a disposable server for the first playtest. It contains the unchanged physical delivery bridge, new companion observer and server package together. Native gameplay acceptance is still pending; see [release notes](RELEASE.md) and [companion requirements](COMPANION-CHECKINS.md).
+**Dev.24 PRE-ALPHA:** install the single matching MO2 ZIP in a disposable game profile with a disposable server for the first playtest. It contains the unchanged physical delivery bridge, new companion observer and server package together. Native gameplay acceptance is still pending; see [release notes](RELEASE.md) and [companion requirements](COMPANION-CHECKINS.md).
 
 ## Pick your interface
 
@@ -8,14 +8,14 @@
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**Optional: use [Department prealpha.13](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.13) with Sealed Fates dev.23.** This exact pair passed isolated server/API tests; Skyrim gameplay acceptance remains pending. If dev.23 is already installed, update only the Department mod using its single MO2 ZIP. Its source and pairing-proof downloads are developer extras. [Compatibility details](PRISMA-COMPATIBILITY.md).
+**Dev.24 uses the existing CHIM web plugin page. Department/PRISMA compatibility is not claimed.** Department prealpha.13 remains the historical exact-source pairing for unchanged dev.23; it should refuse this new payload. The optional interface and its pins were not changed. [Compatibility details](PRISMA-COMPATIBILITY.md).
 
 ## Main install — one ZIP
 
-Download **[CHIM-Sealed-Fates-0.1.0-dev.23.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.23/CHIM-Sealed-Fates-0.1.0-dev.23.zip)**. This is the complete MO2 download; it includes the matching scripts and server payload.
+Download **[CHIM-Sealed-Fates-0.1.0-dev.24.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.24/CHIM-Sealed-Fates-0.1.0-dev.24.zip)**. This is the complete MO2 download; it includes the matching scripts and server payload.
 
 1. Follow **Updating** below to stop the offscreen service before replacing files. Replace the previous Sealed Fates MO2 mod with this ZIP. Confirm exactly one active version supplies `Scripts/CHIMCorrespondenceBridge.pex`, `Scripts/CHIMCorrespondenceCompanion.pex` and the correspondence DWPkg.
-2. On the next normal full game start/save load, CHIM synchronizes `CHIM/server-plugins/correspondence/0.1.0-dev.23.dwpkg`. Confirm dev.23 in the server Plugin Manager before enabling correspondence. An MO2 checkbox alone does not prove synchronization succeeded.
+2. On the next normal full game start/save load, CHIM synchronizes `CHIM/server-plugins/correspondence/0.1.0-dev.24.dwpkg`. Confirm dev.24 in the server Plugin Manager before enabling correspondence. An MO2 checkbox alone does not prove synchronization succeeded.
 3. In the web page, enable global autonomous correspondence and the selected NPC's Background Life and Send letters settings. Test the [supported wait signals and remaining limits](COMPANION-CHECKINS.md) on that disposable setup.
 
 Mind Poisoning, Sworn & Scorned and the optional Department interface remain separate downloads. This publication does not install anything into an existing live game/server or reset campaign data.

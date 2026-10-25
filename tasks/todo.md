@@ -287,3 +287,26 @@ Scope: user-authorized cross-chat coordination, isolated test2 verification and 
 Published Department prealpha.13 at source ada38ef84f7cb4e8a17684c4a5dfda4cd528d5a6 after independent run 20261025T011803Z-95a75e6d passed 38/38 case groups and eight prechecks. Both owners reviewed the raw SQL, source and cleanup. All 3,231 frozen entries and 38 SQL/table deltas match; 51 browser checks plus the fifth-tab test pass and match the published UI. The paired owner release command reproduces all four unchanged Sealed Fates assets. All four new Department public downloads match; its 186 source members match Git and its DLL/20 unchanged mod members match prealpha.12. Original releases/assets/tags are preserved.
 
 The verification-gate change is public at 29866b2 with 20 preflight and three asset-gate tests; it validates strict kept-running lifecycle proof without replacing private PostgreSQL cleanup. Canonical docs retain historical differences. The portable dev23-department-compatibility.json and compatibility notes preserve direct-facade, pinned-core, synthetic-receipt and gameplay boundaries. No live/game/provider/core installation, restart or production configuration change. Exact owned PostgreSQL is stopped; test2 remains running and protected live disk metadata matches. Failed fixture runs and original freezes remain separate from accepted proof.
+
+# Companion cooldown repair — 2026-10-25
+
+- [x] Add a failing local regression for recent-plus-future claims, shared scheduler callers, actor/global intervals and restore/playthrough boundaries.
+- [x] Bound the aggregate by request game time in the shared helper; preserve all freshness, epoch and ownership safeguards.
+- [x] Run applicable local policy, restore and packaging checks; inspect the installed MO2 package/logs read-only and report the actual discovery boundary.
+- [ ] Once the user releases test2, rerun the PostgreSQL reproduction and recovery/replay regression groups in a fresh isolated fixture.
+
+Constraints: no test2 access while reserved for play; live and installed game/MO2 files are read-only. Do not contact Department. No publication or installation requested. Preserve audited dev.23 sources and packages; develop in this isolated worktree.
+
+Scope: shared helper, one focused regression, task record and any directly justified packaging correction. No changes to providers, observation freshness, restore fences, native scripts or Department pins.
+
+## Local review
+
+One shared-query line repaired; local RED then GREEN (15 checks), 18/19 PHP suites and 63 package/preflight checks pass. The remaining PHP host-path assertion also fails on the unchanged Windows baseline and awaits Linux. Three PHP lint checks pass. Other 29 server payload files and both native sources match audited dev.23. The installed enabled MO2 package is old dev.22 with the wrong filename stem; cached CHIM importer reproduces the rejection, matching both current-game HTTP 400 sync failures. Existing public dev.23 ZIP already has the correct filename. No installation, provider, server access or Department contact. PostgreSQL reproduction and freshness/restore/replay regressions remain unchecked until the user releases test2. Evidence: artifacts/chim-sealed-fates-cooldown-fix-20261025/LOCAL-REVIEW.md.
+
+## Dev.24 personal-playtest publication — 2026-10-25
+
+- [x] Advance release identity and current docs; preserve historical pairing proof and disclose pending test2/gameplay/Department limits.
+- [ ] Rerun local checks; build reviewed assets, commit and tag, then rebuild from the clean tag and compare.
+- [ ] Push, verify draft downloads, publish the prerelease, verify public bytes, then advance main without overwriting other work.
+
+Publication is explicitly authorized by the user. Test2 remains unavailable; live and installed game/MO2 remain untouched. Do not contact Department. The earlier pending test2 checkbox remains pending.

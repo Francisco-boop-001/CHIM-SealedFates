@@ -1,5 +1,9 @@
 # Verification and limits
 
+## Current dev.24 — local verification only
+
+The cooldown query repair passes the new 15-check local query-contract regression, 18 PHP suites and all 65 package/preflight tests. The Windows host-path assertion also fails on unchanged dev.23; its Linux rerun is pending. The new PostgreSQL reproduction and companion freshness/restore/replay tests have not run because test2 remains reserved by the user. No new model, installed-server, physical-delivery or save/load proof is claimed. Department prealpha.13 is an exact dev.23 pairing; dev.24 is released with an explicit web-only compatibility decision. Earlier results below retain their original revisions and scope.
+
 ## Dev.23 PRE-ALPHA
 
 See [companion check-ins](COMPANION-CHECKINS.md) for the native signal contract, disposable PostgreSQL recovery/concurrency checks, real-model iterations and package evidence. The [idle transport follow-up](COMPANION-IDLE.md) removes the recent NPC executor snapshot requirement; actual Skyrim observation/co-save/delivery remain explicit limits. The subsequent [Department prealpha.13 server pairing](PRISMA-COMPATIBILITY.md) adds isolated facade and browser proof without changing the dev.23 payload. Published releases below retain their original evidence.

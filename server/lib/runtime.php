@@ -75,6 +75,7 @@ function correspondenceCompanionCooldownUntil(object $store,string $scope,?int $
     $epoch=correspondenceCompanionEpoch($token);
     $args=[$scope,$epoch];$where='';
     if($actorId!==null){$where=' AND actor_id=$3';$args[]=(string)$actorId;}
+    $args[]=(string)$gamets;$where.=' AND claimed_gamets<=$'.count($args).'::numeric';
     $rows=$store->query('SELECT COALESCE(MAX(claimed_gamets),0)::text AS attempted_at FROM plugins.correspondence_companion_decision WHERE playthrough_id=$1 AND epoch=$2::uuid'.$where,$args);
     $at=(int)($rows[0]['attempted_at']??0);
     if($at<1||$at>$gamets)return 0;

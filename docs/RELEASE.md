@@ -1,4 +1,34 @@
-# Sealed Fates dev.23 — PRE-ALPHA: the courier clocks in
+# Sealed Fates dev.24 — PRE-ALPHA: the courier discovers a calendar
+
+One courier. Several strongly worded letters. A scheduling bug that looked at a newer claim, forgot an older cooldown, and apparently decided working conditions were a suggestion. Fixed locally; now available for an explicitly limited personal playtest.
+
+## Install one file
+
+Download **[CHIM-Sealed-Fates-0.1.0-dev.24.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.24/CHIM-Sealed-Fates-0.1.0-dev.24.zip)**. Replace the previous Sealed Fates MO2 mod after ending the current game session; keep exactly one version enabled. The ZIP contains the delivery bridge, companion observer and `CHIM/server-plugins/correspondence/0.1.0-dev.24.dwpkg` together. You do not need to install another archive over it or calculate a checksum. Other assets are administrator alternatives.
+
+On the next normal CHIM startup/synchronization, confirm **0.1.0-dev.24** in the server Plugin Manager before testing. An MO2 checkbox is not a successful upload receipt. The embedded version-only filename avoids the dev.22 package naming mismatch that could produce HTTP 400 during synchronization.
+
+## Interface compatibility — read this bit
+
+**Use the existing Sealed Fates CHIM web plugin page for dev.24.** The optional Department/PRISMA interface is separate. Department prealpha.13 was verified for unchanged dev.23 and pins its exact source; **dev.24 is not verified with Department and should be refused by that adapter**. No Department files or safety checks were changed. If you require that exact optional pairing, retain dev.23 and its matching interface. The courier can survive a browser tab.
+
+## What changed
+
+A newer companion claim could hide an earlier active cooldown from an older in-flight request. The shared query now excludes future claims before choosing the latest eligible claim. Global and per-NPC durations remain the same; both autonomous schedulers use this helper. Restore/playthrough filters, unavailable-authority refusal, observation freshness, native timestamp floors, claim ownership and duplicate-transfer safeguards are unchanged. There is no schema migration, prompt change or native-script change.
+
+## Verified locally
+
+The new regression fails on the old helper and passes all 15 checks with this repair. Eighteen PHP regression suites pass. All 65 package/preflight tests pass, and the modified PHP files pass syntax checks. The existing Windows host-path test fails at the same assertion on unchanged dev.23; its Linux rerun remains pending. Release packages are rebuilt from a clean tagged source and checked before publication.
+
+## Explicitly not tested for this release
+
+**The new PostgreSQL reproduction and companion freshness/restore/replay regression runs on test2 have not run.** The user reserved test2 while playing and requested publication for personal testing. Earlier dev.23 test2 and model results are historical; they do not certify this new payload. No new real-model evaluation was performed.
+
+Actual Skyrim observation of unloaded companions/follower frameworks, first-game Narrator initialization, physical letter/item/gold delivery, rendering and real save/co-save restoration still need gameplay proof. A server inbox or queued command is not a physical delivery receipt. This remains PRE-ALPHA.
+
+Neither server, the installed game/MO2 files, provider settings nor campaign data was accessed or changed to prepare this release. Publication does not install it. Read [installation](INSTALL.md), [companion behavior](COMPANION-CHECKINS.md) and [verification limits](VERIFICATION.md).
+
+## Historical dev.23 — PRE-ALPHA: the courier clocks in
 
 Your companion can now consider sending a written "are we still doing this?" while you are elsewhere conducting important Dragonborn business. Such as stealing every cheese wheel in Falkreath. The courier has been informed. His resignation has been declined.
 

@@ -284,4 +284,5 @@ $renamedDue=$companion->tick(null);
 companionPgCheck($renamedDue['status']==='stale'&&$renamedDue['reason']==='dispatch_state_changed','identity-change cancellation survives optional close validation failure');
 companionPgCheck((companionPgSql($db,"SELECT status FROM plugins.correspondence_companion_decision WHERE document_id=$1",[$ionaDocument])[0]['status']??null)==='stale','identity-change stale retirement committed');
 companionPgCheck((companionPgSql($db,"SELECT count(*)::int AS n FROM plugins.correspondence_operations WHERE document_id=$1",[$ionaDocument])[0]['n']??null)==='0','renamed actor never dispatches owned note');
+require __DIR__.'/companion_cooldown_cases.php';
 echo "companion_pg PASS\n";

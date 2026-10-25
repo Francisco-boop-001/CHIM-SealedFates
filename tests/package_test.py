@@ -422,10 +422,13 @@ class PackageTest(unittest.TestCase):
     def test_dev23_release_has_only_current_four_assets_deterministically(self):
         self.assert_current_release('0.1.0-dev.23')
 
+    def test_dev24_release_has_only_current_four_assets_deterministically(self):
+        self.assert_current_release('0.1.0-dev.24')
+
     def test_release_refuses_source_changed_after_gate_before_snapshot(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.23'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.24'}), encoding='utf-8')
         target = self.root / 'server/lib/store.php'
         original_root = release.ROOT
         release.ROOT = self.root
@@ -448,7 +451,7 @@ class PackageTest(unittest.TestCase):
     def test_release_refuses_package_changed_after_snapshot_before_real_reads(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.23'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.24'}), encoding='utf-8')
         target = self.root / 'server/lib/store.php'
         original_root = release.ROOT
         release.ROOT = self.root
@@ -470,7 +473,7 @@ class PackageTest(unittest.TestCase):
     def test_release_assets_use_one_snapshot_when_source_changes_after_package_build(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.23'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.24'}), encoding='utf-8')
         expected_files = {
             name: (self.root / 'server' / name).read_bytes()
             for name in pkg.SERVER_FILES
@@ -493,13 +496,13 @@ class PackageTest(unittest.TestCase):
             release.ROOT = original_root
 
         out = self.root / 'dist'
-        server_name = 'correspondence-0.1.0-dev.23.dwpkg'
+        server_name = 'correspondence-0.1.0-dev.24.dwpkg'
         with ZipFile(out / server_name) as server_archive:
             for name, data in expected_files.items():
                 self.assertEqual(server_archive.read('server/' + name), data)
             server_bytes = (out / server_name).read_bytes()
-        with ZipFile(out / 'CHIM-Sealed-Fates-0.1.0-dev.23.zip') as bundle:
-            nested = bundle.read('CHIM/server-plugins/correspondence/0.1.0-dev.23.dwpkg')
+        with ZipFile(out / 'CHIM-Sealed-Fates-0.1.0-dev.24.zip') as bundle:
+            nested = bundle.read('CHIM/server-plugins/correspondence/0.1.0-dev.24.dwpkg')
         self.assertEqual(nested, server_bytes)
         with tarfile.open(out / 'correspondence.tar.gz', 'r:gz') as archive:
             for name, data in expected_files.items():
@@ -571,7 +574,7 @@ class PackageTest(unittest.TestCase):
     def test_release_rejects_unsupported_version(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        manifest['version'] = '0.1.0-dev.24'
+        manifest['version'] = '0.1.0-dev.25'
         manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
         original_root = release.ROOT
         release.ROOT = self.root
