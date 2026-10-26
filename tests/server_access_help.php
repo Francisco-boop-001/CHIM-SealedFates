@@ -35,7 +35,7 @@ $post=correspondenceAccessDeniedPage(array_replace($request,['REQUEST_METHOD'=>'
 accessHelpCheck(!str_contains($post,'<form')&&str_contains($post,'does not resend'),'refused POST must not replay the letter');
 $index=file_get_contents(dirname(__DIR__).'/server/index.php');
 accessHelpCheck(is_string($index)&&preg_match('/if\(!correspondenceAccess\(\$_SERVER\)\)\{http_response_code\(403\);header\(\'Content-Type: text\/html; charset=UTF-8\'\);echo correspondenceAccessDeniedPage\(\$_SERVER\);exit;\}/',$index)===1,'real access refusal must retain 403 and exit while rendering HTML help');
-accessHelpCheck(strpos($index,'echo correspondenceAccessDeniedPage($_SERVER)')<strpos($index,'session_start(')&&strpos($index,'echo correspondenceAccessDeniedPage($_SERVER)')<strpos($index,'$runtime=correspondenceAutonomyProduction()'),'refusal must exit before session and production runtime initialization');
+accessHelpCheck(strpos($index,'echo correspondenceAccessDeniedPage($_SERVER)')<strpos($index,'session_start(')&&strpos($index,'echo correspondenceAccessDeniedPage($_SERVER)')<strpos($index,'$runtime=correspondenceCompanionProduction()'),'refusal must exit before session and production runtime initialization');
 foreach(['GET','POST'] as $method){
     $probe='$_SERVER='.var_export(array_replace($request,['REQUEST_METHOD'=>$method]),true).';register_shutdown_function(static function(){fwrite(STDERR,json_encode(["status"=>http_response_code(),"session"=>session_status()]));});require $argv[1];';
     $process=proc_open([PHP_BINARY,'-n','-r',$probe,dirname(__DIR__).'/server/index.php'],[1=>['pipe','w'],2=>['pipe','w']],$pipes);

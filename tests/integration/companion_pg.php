@@ -274,6 +274,7 @@ $ionaQueued=$companion->tick(static fn():string=>'{"action":"letter","recipient"
 companionPgCheck($ionaQueued['status']==='queued','48 received hours after lost first receipt can queue');
 $ionaDocument=companionPgSql($db,"SELECT document_id::text FROM plugins.correspondence_companion_decision WHERE actor_id=900003 AND status='queued'")[0]['document_id']??null;
 companionPgCheck(is_string($ionaDocument),'Iona owns pending document');
+companionPgCheck(in_array($ionaDocument,$companion->ownedDocuments(),true),'operator page treats companion-owned letters as scheduler-managed');
 $observeAfterLoss(431,'waiting');
 $camillaInFlight=$companion->tick(static function()use($observeAfterLoss):string{$observeAfterLoss(432,'nearby');return '{"action":"letter","recipient":"player","body":"I hope you are safe."}';});
 companionPgCheck($camillaInFlight['status']==='stale','reunion during model cancels completion before compose');
@@ -284,5 +285,6 @@ $renamedDue=$companion->tick(null);
 companionPgCheck($renamedDue['status']==='stale'&&$renamedDue['reason']==='dispatch_state_changed','identity-change cancellation survives optional close validation failure');
 companionPgCheck((companionPgSql($db,"SELECT status FROM plugins.correspondence_companion_decision WHERE document_id=$1",[$ionaDocument])[0]['status']??null)==='stale','identity-change stale retirement committed');
 companionPgCheck((companionPgSql($db,"SELECT count(*)::int AS n FROM plugins.correspondence_operations WHERE document_id=$1",[$ionaDocument])[0]['n']??null)==='0','renamed actor never dispatches owned note');
+require __DIR__.'/companion_poll_lock_cases.php';
 require __DIR__.'/companion_cooldown_cases.php';
 echo "companion_pg PASS\n";

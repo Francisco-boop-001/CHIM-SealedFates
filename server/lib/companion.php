@@ -60,16 +60,30 @@ final class CorrespondenceCompanionPg
         return ['id'=>(string)$id]+$this->store->physicalActor(['kind'=>'npc','id'=>$id]);
     }
 
+    private function pollSkip(string $scope,string $epoch,int $gamets,bool $lock): ?array
+    {
+        if(!$this->enabled($scope))return ['status'=>'paused','reason'=>'disabled'];
+        $prior=$this->store->query('SELECT epoch::text,last_poll_gamets::text FROM plugins.correspondence_companion_poll WHERE playthrough_id=$1'.($lock?' FOR UPDATE':''),[$scope])[0]??null;
+        if(is_array($prior)&&$prior['epoch']===$epoch&&is_numeric($prior['last_poll_gamets'])
+            &&$gamets-(int)$prior['last_poll_gamets']<self::HOUR)return ['status'=>'idle','reason'=>'poll_cooldown'];
+        return null;
+    }
+
     public function poll(): array
     {
+        // Every native heartbeat polls; disabled or cooled-down polls must not take the eventlog-locking writer.
+        $skip=$this->store->readTransaction(function():?array {
+            [$scope,$epoch,$gamets]=$this->context();
+            return $this->pollSkip($scope,$epoch,$gamets,false);
+        });
+        if($skip!==null)return $skip;
         return $this->store->transaction(function():array {
             [$scope,$epoch,$gamets]=$this->context();
-            if(!$this->enabled($scope))return ['status'=>'paused','reason'=>'disabled'];
+            $skip=$this->pollSkip($scope,$epoch,$gamets,true);
+            if($skip!==null)return $skip;
             // The built-in player-backed agent carries the command; it is not companion identity evidence.
             $executor='The Narrator';
-            $prior=$this->store->query('SELECT epoch::text,observation_id::text,nonce,actors::text,issued_gamets::text,last_poll_gamets::text,cursor_id::text FROM plugins.correspondence_companion_poll WHERE playthrough_id=$1 FOR UPDATE',[$scope])[0]??null;
-            if(is_array($prior)&&$prior['epoch']===$epoch&&is_numeric($prior['last_poll_gamets'])
-                &&$gamets-(int)$prior['last_poll_gamets']<self::HOUR)return ['status'=>'idle','reason'=>'poll_cooldown'];
+            $prior=$this->store->query('SELECT epoch::text,cursor_id::text FROM plugins.correspondence_companion_poll WHERE playthrough_id=$1',[$scope])[0]??null;
             $eligible=$this->eligible();
             $queued=$this->store->query("SELECT actor_id::text,episode_id::text FROM plugins.correspondence_companion_decision WHERE playthrough_id=$1 AND epoch=$2::uuid AND status='queued'",[$scope,$epoch]);
             foreach($queued as $decision)if(!isset($eligible[(int)$decision['actor_id']])){
@@ -140,6 +154,14 @@ final class CorrespondenceCompanionPg
     {
         $rows=$this->store->query("UPDATE plugins.correspondence_companion_decision SET status='stale',reason_code=$5 WHERE playthrough_id=$1 AND epoch=$2::uuid AND actor_id=$3::bigint AND episode_id=$4::uuid AND status='queued' RETURNING document_id::text",[$scope,$epoch,(string)$actorId,$episode,$reason]);
         foreach($rows as $row)if(is_string($row['document_id']??null))try{$this->service->close($row['document_id']);}catch(DomainException){}
+    }
+
+    public function ownedDocuments(): array
+    {
+        return $this->store->readTransaction(function(): array {
+            $rows=$this->store->query('SELECT document_id::text FROM plugins.correspondence_companion_decision WHERE playthrough_id=$1 AND document_id IS NOT NULL ORDER BY document_id',[$this->store->scope()['playthrough_id']]);
+            return array_map(static fn($row)=>(string)$row['document_id'],$rows);
+        });
     }
 
     public function ownsDocument(string $id): bool

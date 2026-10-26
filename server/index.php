@@ -11,7 +11,7 @@ if(session_status()!==PHP_SESSION_ACTIVE&&!session_start(['cookie_httponly'=>tru
 if(!is_string($_SESSION['correspondence_csrf']??null))$_SESSION['correspondence_csrf']=bin2hex(random_bytes(32));
 $csrf=$_SESSION['correspondence_csrf'];$message='';$opened=null;
 try{
-    $runtime=correspondenceAutonomyProduction();$service=$runtime['service'];$autonomy=$runtime['autonomy'];$choices=$runtime['store']->itemChoices();$managedChildren=$autonomy->managedChildren();
+    $runtime=correspondenceCompanionProduction();$service=$runtime['service'];$autonomy=$runtime['autonomy'];$choices=$runtime['store']->itemChoices();$managedChildren=array_values(array_unique(array_merge($autonomy->managedChildren(),$runtime['companion']->ownedDocuments())));
     if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
         $request=correspondenceAutonomyGuardManualDispatch(correspondencePost($_POST,$csrf,$choices),$managedChildren);
         if($request['action']==='autonomy'){
@@ -39,7 +39,7 @@ try{
     header('Content-Type: text/html; charset=UTF-8');echo str_replace('</main>',$panel.'</main>',$html);
 }catch(DomainException|InvalidArgumentException $e){
     correspondenceDiagnostic('ui_rejected');http_response_code(400);header('Content-Type: text/html; charset=UTF-8');
-    $known=['csrf_failed','invalid_body','invalid_attachments','invalid_quantity','invalid_enabled','item_unavailable','renderer_content_overflow','renderer_dependency_unavailable','document_unavailable','delivery_unconfirmed','scope_unavailable','actor_unavailable','autonomous_dispatch_owned','autonomy_status_unavailable','operator_closed','closure_unavailable'];
+    $known=['csrf_failed','invalid_body','invalid_attachments','invalid_quantity','invalid_enabled','item_unavailable','renderer_content_overflow','renderer_dependency_unavailable','document_unavailable','delivery_unconfirmed','scope_unavailable','actor_unavailable','autonomous_dispatch_owned','companion_scheduler_owned','autonomy_status_unavailable','operator_closed','closure_unavailable'];
     $message=in_array($e->getMessage(),$known,true)?str_replace('_',' ',$e->getMessage()):'The request could not be accepted.';
     echo correspondenceErrorPage($message);
 }catch(Throwable){correspondenceDiagnostic('runtime_unavailable');http_response_code(503);header('Content-Type: text/html; charset=UTF-8');echo correspondenceErrorPage('Sealed Fates is unavailable. Check installation, migrations and core compatibility.');}

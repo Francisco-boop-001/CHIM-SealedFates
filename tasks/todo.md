@@ -344,3 +344,16 @@ Local verification passes 21 of 22 PHP suites, all 66 package/preflight tests an
 ### Dev.25 publication review
 
 Published immutable tag correspondence-v0.1.0-dev.25 at a28cb8333582c59a92c25f67f72073899cd0e63c after reviewed-source and clean-tag builds matched all four assets. Clean-tag local checks match the reviewed result; draft and anonymous public downloads pass all identity/integrity checks. Main advances only after verified publication, without force. The existing native and security boundaries remain unchanged. Historical releases are preserved. See docs/DEV25-PUBLICATION.md for the exact scope and pending Windows/test2/gameplay/Department limits. No live/test2, game, provider or Department action.
+
+## Issue #2 and #4.1 repairs — 2026-10-26
+
+- [x] Reproduce #2 on a disposable PostgreSQL 16: a default-off heartbeat poll waits for the `public.eventlog` writer lock and fails with `storage_failed` while another session holds a conflicting lock.
+- [x] Check `enabled` and the poll cooldown in a read transaction first; take the writer only for a due poll and recheck both under it.
+- [x] Reproduce #4.1: companion-owned letters are missing from the operator page's managed list, and `companion_scheduler_owned` has no readable message.
+- [x] Add companion-owned documents to the managed list and the refusal to the known messages; run focused, companion PostgreSQL, pure and package regressions.
+
+Scope: local source/tests only; no release, version bump, live/test2, game or provider action. #1 (Papyrus note ownership) needs a Caprica rebuild of the source-bound PEX and is not in this change. #3 (HerikaServer 3.4.2 classifier) reverses a tested fail-closed rule and needs an owner decision.
+
+### Review
+
+The new poll-lock case failed on unchanged dev.25 (`storage_failed` at the default-off poll) and passes after the change. It also proves the lock is effective: a due poll still waits for the writer, then issues once. All companion PostgreSQL modes that run without a copied core or model pass: main, poll-lock, cooldown and three recovery cases. Idle and real-model modes were not run. The new pure ownership test failed on the missing message and managed-list merge and now passes. Pure suites match the dev.25 baseline except the access-help literal, updated to the new runtime entry; its refusal-before-runtime rule is unchanged. Package, companion package and build checks pass in a copy with `dist/`. Integration fixtures ran with a scratch-only system-ID guard change for this cluster. No gameplay, Windows or test2 check was performed.
