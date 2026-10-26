@@ -1,6 +1,11 @@
 # Verification and limits
 
-## Current dev.26 — local companion polling/ownership repair verification
+## Current dev.27 — local browser-facing origin-port verification
+
+A localhost:8081 POST with canonical SERVER_PORT=80 fails on the old helper and passes after the repair. Wrong browser-facing host/port/scheme and cross-site metadata remain refused; access, CSRF and server-port sanity checks remain. Local UI, ownership, closure and package/preflight regressions pass apart from the inherited Windows host-path failure. This publication accesses neither live nor test2. The prior authorized read-only observation is separate from a successful installed POST test, which remains unperformed. Pending PostgreSQL, model, browser/gameplay and Department gates from dev.26 remain pending.
+
+
+## Historical dev.26 — local companion polling/ownership repair verification
 
 The reviewed PR #5 polling change and safe-close correction pass local UI/ownership, closure, access, restore-policy and package/preflight checks. The inherited Windows host-path assertion still fails. Test2 is reserved: PostgreSQL poll-lock, concurrent recovery and final safe-close/repeated-tick tests were not rerun, and earlier cooldown/restore/replay checks remain pending. Original-author PostgreSQL reports are separate from independent verification of this repaired release. No new model, browser, installed-server or Skyrim gameplay proof is claimed. Native scripts and access/origin/CSRF remain unchanged. Department pairing is unclaimed; use the web page.
 

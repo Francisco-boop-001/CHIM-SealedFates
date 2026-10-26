@@ -1,4 +1,34 @@
-# Sealed Fates dev.26 — PRE-ALPHA: the courier learns to let go
+# Sealed Fates dev.27 — PRE-ALPHA: the courier discovers ports
+
+The letter was addressed correctly. Unfortunately, the web form and Apache disagreed about which door it had come through. The courier has been reassigned from network administration. This is probably for the best.
+
+## Install one file — after you finish playing
+
+Download **[CHIM-Sealed-Fates-0.1.0-dev.27.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.27/CHIM-Sealed-Fates-0.1.0-dev.27.zip)**. When your game session has ended, follow the [Updating instructions](INSTALL.md), replace the previous Sealed Fates MO2 mod and keep exactly one version enabled. This one ZIP contains both unchanged Papyrus scripts and `CHIM/server-plugins/correspondence/0.1.0-dev.27.dwpkg`. No second archive or manual checksum calculation is required. Confirm **0.1.0-dev.27** in CHIM's Plugin Manager after normal synchronization. Publication does not update your installed server or game.
+
+## What changed
+
+A same-origin form submission such as `http://localhost:8081` could be refused with **Operator origin required** when Apache reported its canonical virtual-host port as `80`. Opening the page worked; pressing Send did not.
+
+The origin check now compares the submitted Origin against the validated browser-facing Host and effective scheme port. Apache's internal/canonical port can differ. Authorization and session CSRF protection remain mandatory; foreign hosts, wrong browser-facing ports, changed schemes, malformed authorities and cross-site Fetch Metadata remain refused. Forwarded protocol headers still grant no trust. Server-port sanity checks remain. There is no automatic resend, new permission, migration, native-script change or provider/configuration change.
+
+## How to use it
+
+On the computer running CHIM, open **CHIM itself through localhost**, keeping your configured port and installation path. Choose **Plugins → Sealed Fates → Plugin Page**. After the updated version is confirmed installed, compose and send normally. A refused origin-check POST is rejected before composition; confirm the mailbox/status before deciding whether to retry a submission with any other error. Pending or unknown delivery is never a reason to create a duplicate.
+
+**The Skyrim interface is optional; the CHIM web plugin page remains available.** Dev.27 has no verified Department/PRISMA pairing. Historical Department prealpha.13 evidence remains limited to exact dev.23 source. No pins were bypassed or interface-owner changes made. Dev.26's companion polling/ownership and safe Close repairs remain included.
+
+## Verification and remaining limits
+
+The new local regression fails on the old origin helper and passes with this fix. It covers localhost:8081 with canonical port 80, default ports, HTTPS topology and wrong host/port/scheme refusal. Existing access, CSRF, UI, scheduler ownership and safe-close checks pass. Clean-tag builds and all draft/public downloads are verified separately during publication.
+
+The known Windows offscreen-host path assertion remains a baseline failure; its Linux rerun is pending. **Neither live nor test2 was accessed for this publication. The user is still playing.** A prior, separately authorized read-only observation supported the diagnosis, but no live request instrumentation or successful installed POST retest is claimed. The fixed files have not been installed by this publication.
+
+Test2 PostgreSQL poll-lock, concurrent-event, safe-close/repeated-tick and earlier cooldown/restore/replay checks remain pending. There is no new real-model, browser-rendering, installed-server or Skyrim gameplay proof. Native delivery, companion observations and save/co-save behavior retain their existing acceptance limits. This remains **PRE-ALPHA**.
+
+Read [installation](INSTALL.md), [verification limits](VERIFICATION.md) and [interface compatibility](PRISMA-COMPATIBILITY.md). Live/test2, installed game/MO2 files, providers and production configuration were left untouched; the Department owner was not contacted.
+
+## Historical dev.26 — PRE-ALPHA: the courier learns to let go
 
 The courier no longer grabs the eventlog writer lock just to announce he has nothing to do. Companion letters also stop offering forbidden manual sends, while keeping the useful button: closing one letter without mailing it again. Apparently "do less" required a departmental meeting.
 

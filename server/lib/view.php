@@ -37,7 +37,9 @@ function correspondencePostOriginAllowed(array $server):bool
     if(preg_match('/\A[0-9]{1,5}\z/D',$port)!==1)return false;$port=(int)$port;if($port<1||$port>65535)return false;
     if(!is_string($server['HTTP_HOST']??null))return false;
     $requestAuthority=correspondenceAuthorityParts($server['HTTP_HOST']);$originAuthority=correspondenceAuthorityParts($origin[2]);
-    if($requestAuthority===null||$originAuthority===null||($requestAuthority['port']!==null&&$requestAuthority['port']!==$port))return false;
+    if($requestAuthority===null||$originAuthority===null)return false;
+    // Apache may report a canonical vhost port instead of the browser-facing port.
+    $port=$requestAuthority['port']??($requestScheme==='https'?443:80);
     $originPort=$originAuthority['port']??($scheme==='https'?443:80);
     return $originAuthority['host']===$requestAuthority['host']&&$originPort===$port;
 }

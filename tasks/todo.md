@@ -389,3 +389,32 @@ Fresh local verification passes 23/24 PHP suites, all 67 package/preflight tests
 ### Dev.26 publication review
 
 Published immutable tag correspondence-v0.1.0-dev.26 at 7fd78802348d5ee7dabee9506ff6ede1c25c0657 after reviewed-source and clean-tag builds matched all four assets. Local and clean-tag results match: 23/24 PHP suites, all 67 package/preflight tests and ten syntax checks pass; the sole Windows path failure remains unchanged. Repair 5994b1166c8c42633f00e3bacc869e87a5036bd9 is pushed to PR #5. Draft and anonymous public downloads pass all identity/integrity checks. Main advances only after verified publication, without force. Both native scripts and access/origin/CSRF protections match dev.25; old releases remain immutable. See docs/DEV26-PUBLICATION.md for unperformed PostgreSQL, gameplay and Department gates. No live/test2, installed game, provider or Department action.
+
+
+## Browser-facing origin port repair — 2026-10-26
+
+- [x] Inspect the requested Hawke → Alice send read-only: no target document/operation was created; the installed server is dev.25. End live observation before local repair.
+- [x] Reproduce a same-origin localhost:8081 POST rejected when Apache reports canonical port 80.
+- [x] Compare the validated Origin to the browser-facing Host authority while preserving access, CSRF, scheme and malformed/cross-origin refusals.
+- [x] Run focused local UI/security/ownership checks, inspect the diff and record runtime proof limits.
+
+Scope: local source/tests only after the completed bounded read-only live observation. User is playing. No further live/test2 access, HTTP/game requests, resend, install, restart, configuration/provider change, push or publication. Apache log/config port evidence plus a failing local reproduction support the diagnosis; exact live PHP request headers/variables were not instrumented.
+
+### Origin-port repair review
+
+The live user-requested bounded read-only observation saw no Hawke → Alice document or operation. Apache access metadata records the POST as 403, listener configuration includes 8081, and its serving vhost reports canonical port 80. Installed Sealed Fates is dev.25. No PHP request-variable instrumentation or live HTTP probe was added; this evidence supports the locally reproduced canonical-port diagnosis without claiming direct observation of all request headers.
+
+The local regression failed for Host/Origin localhost:8081 with SERVER_PORT=80. The helper now compares Origin with the validated browser-facing Host authority and effective scheme port, retaining server-port sanity validation, HTTPS scheme checks, same-host parsing, cross-site refusal, authorization and CSRF. Wrong host/port/scheme remain refused, default ports are explicit, and forwarded protocol headers still confer no trust. All six focused origin/access/UI/autonomy/ownership/closure suites and both syntax checks pass. Index and authorization/CSRF functions match HEAD byte-for-byte. No further live or test2 access after the user reiterated they are playing; no resend, deployment, restart, provider/configuration change or publication. The fix is local and the installed POST issue remains unverified/unresolved until a supported update and retest.
+
+
+## Dev.27 origin-fix publication — 2026-10-26
+
+- [x] Advance release identity/instructions, rerun local checks and freeze assets with explicit installed/server-test limits.
+- [ ] Commit/tag the reviewed source, rebuild and retest the clean export, and verify draft downloads.
+- [ ] Publish PRE-ALPHA, verify anonymous public downloads and old release preservation, then advance main without force.
+
+Scope: explicit user authorization to commit/push/publish only. No live/test2 access of any kind, installation, restart, resend, providers or Department contact. The user is playing; prior read-only diagnosis is not an installed POST retest. Preserve old tags/assets and the pending test2 gates.
+
+### Dev.27 pre-publication review
+
+Fresh local checks pass 23/24 PHP suites, all 68 package/preflight tests and eleven syntax checks. The sole failure remains the known Windows offscreen-host path assertion. The canonical-port regression fails before repair and passes after it; wrong browser-facing host/port/scheme and cross-site metadata remain refused. Access and CSRF functions, index routing, native scripts and all other server modules match dev.26; only the manifest and view helper change. Four reviewed assets are frozen for clean-tag comparison. No live/test2, game, provider or Department access during publication. The prior read-only diagnosis is separate evidence; successful installed POST, pending PostgreSQL and gameplay checks remain unperformed.

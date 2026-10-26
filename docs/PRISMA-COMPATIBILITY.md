@@ -1,6 +1,9 @@
 # Department / PRISMA compatibility
 
-**Current dev.26: web interface only; no new Department pairing.** Companion polling and web ownership/closure change in this release. Historical exact-source pairing evidence does not cover dev.26; pins and refusals remain unchanged.
+**Current dev.27: web interface only; no new Department pairing.** This release repairs web-origin comparison for a different Apache canonical port. Historical pairing evidence does not cover dev.27; exact-source refusals remain intact.
+
+
+**Historical dev.26: web interface only; no new Department pairing.** Companion polling and web ownership/closure change in this release. Historical exact-source pairing evidence does not cover dev.26; pins and refusals remain unchanged.
 
 
 **Historical dev.25: web interface only; no new Department pairing.** This release changes the web refusal message and navigation. Historical exact-source pairing evidence below does not cover dev.25; no pins or safety checks were bypassed.
