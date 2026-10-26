@@ -1,6 +1,11 @@
 # Verification and limits
 
-## Current dev.25 — local web-access verification
+## Current dev.26 — local companion polling/ownership repair verification
+
+The reviewed PR #5 polling change and safe-close correction pass local UI/ownership, closure, access, restore-policy and package/preflight checks. The inherited Windows host-path assertion still fails. Test2 is reserved: PostgreSQL poll-lock, concurrent recovery and final safe-close/repeated-tick tests were not rerun, and earlier cooldown/restore/replay checks remain pending. Original-author PostgreSQL reports are separate from independent verification of this repaired release. No new model, browser, installed-server or Skyrim gameplay proof is claimed. Native scripts and access/origin/CSRF remain unchanged. Department pairing is unclaimed; use the web page.
+
+
+## Historical dev.25 — local web-access verification
 
 The refusal page now gives conditional localhost CHIM Plugins navigation. Local denied-route GET/POST probes confirm 403 before session/runtime initialization; access, origin, CSRF and manifest-relative routing remain intact. Focused UI/security and package/preflight tests pass. The inherited Windows host-path limitation and dev.24 pending test2 regressions remain. No WSL server, browser-rendering, real-model or Skyrim gameplay proof is added. Clean-tag build/public-download identity is recorded separately during publication.
 

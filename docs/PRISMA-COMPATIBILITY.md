@@ -1,6 +1,9 @@
 # Department / PRISMA compatibility
 
-**Current dev.25: web interface only; no new Department pairing.** This release changes the web refusal message and navigation. Historical exact-source pairing evidence below does not cover dev.25; no pins or safety checks were bypassed.
+**Current dev.26: web interface only; no new Department pairing.** Companion polling and web ownership/closure change in this release. Historical exact-source pairing evidence does not cover dev.26; pins and refusals remain unchanged.
+
+
+**Historical dev.25: web interface only; no new Department pairing.** This release changes the web refusal message and navigation. Historical exact-source pairing evidence below does not cover dev.25; no pins or safety checks were bypassed.
 
 
 **Historical dev.24: web interface only; Department pairing is unverified.** The optional prealpha.13 adapter pins unchanged dev.23. Its historical proof below does not cover dev.24, and its exact-source refusal remains in force. No Department work or contact was requested for this release.

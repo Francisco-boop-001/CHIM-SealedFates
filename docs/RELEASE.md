@@ -1,4 +1,36 @@
-# Sealed Fates dev.25 — PRE-ALPHA: the courier asks for directions
+# Sealed Fates dev.26 — PRE-ALPHA: the courier learns to let go
+
+The courier no longer grabs the eventlog writer lock just to announce he has nothing to do. Companion letters also stop offering forbidden manual sends, while keeping the useful button: closing one letter without mailing it again. Apparently "do less" required a departmental meeting.
+
+## Install one file
+
+Download **[CHIM-Sealed-Fates-0.1.0-dev.26.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.26/CHIM-Sealed-Fates-0.1.0-dev.26.zip)**. After ending your game session, replace the previous Sealed Fates MO2 mod and keep one version enabled. The ZIP includes both unchanged Papyrus scripts and `CHIM/server-plugins/correspondence/0.1.0-dev.26.dwpkg`. No second archive or manual checksum calculation is required. Confirm **0.1.0-dev.26** in CHIM's Plugin Manager after normal synchronization. Publication does not install anything.
+
+## What this repairs
+
+- Disabled and cooled-down companion polls check their state in the existing restore-protected read transaction before entering the eventlog-locking writer. Due polls still enter the writer and repeat the enabled/cooldown/context checks there. This is the narrow polling change from PR #5, not the removal of restore or freshness safeguards.
+- The web page recognizes companion-owned letters. Manual Dispatch and Retry remain scheduler-only, instead of presenting buttons the backend refuses.
+- Companion letters retain **Close without resending or refunding**. Closing one letter creates no transfer or delivery claim, and does not enable a manual resend. Unknown/in-flight letters retain read-only reconciliation, and a genuine late receipt can still resolve their delivery status. Existing NPC-to-NPC scheduler closure rules remain unchanged.
+
+The dev.25 localhost guidance and dev.24 cooldown repair remain included. The web interface is opened through **CHIM Plugins → Sealed Fates → Plugin Page**; on the computer running CHIM, use CHIM's localhost address with your configured port/path.
+
+## Compatibility and limits
+
+**The Skyrim interface is optional. Use the existing CHIM web page for dev.26.** No Department/PRISMA pairing is claimed. Historical Department prealpha.13 proof remains limited to exact dev.23 bytes; no pins were bypassed and the Department owner was not contacted.
+
+Access, origin and CSRF protection remain intact. There is no database migration, native-script change or provider configuration change. This release addresses issue #2 and item 1 of issue #4 through reviewed PR #5 plus its safe-close correction. It does not claim to fix the other GitHub issues, stolen-note behavior or older-core compatibility.
+
+## Verification — read before testing a cherished save
+
+Fresh local ownership, closure, access, restore-policy and package/preflight checks pass apart from the existing Windows offscreen-host path assertion, which also fails on the unchanged baseline. The safe-close regression failed before repair and passes after it; it covers queued, failed, unknown and in-flight UI states, malformed ownership lists, no new sends, and preserved NPC-to-NPC policy. Clean-tag builds and draft/public downloads are independently checked during publication.
+
+**The PostgreSQL poll-lock, concurrent-event and safe-close/repeated-scheduler recovery cases were not rerun here. Test2 remains reserved and untouched.** The PR author reports successful separate disposable PostgreSQL tests for the original PR, but those reports do not independently verify this final repaired release. Its strict test2/cluster identity checks were retained; the extended recovery test remains pending. The earlier cooldown/restore/replay reruns also remain pending.
+
+No new real-model, browser-rendering, installed-server or Skyrim gameplay proof is claimed. Actual companion observations, physical note/item/gold delivery, follower frameworks, save/co-save restoration and live lock behavior still need their stated runtime proof. This is **PRE-ALPHA**, with local verification and explicit pending server/gameplay checks.
+
+Live, test2, installed game/MO2 files, providers and production configuration were not accessed or changed for this publication. See [installation](INSTALL.md), [verification](VERIFICATION.md), [companion behavior](COMPANION-CHECKINS.md) and [interface compatibility](PRISMA-COMPATIBILITY.md).
+
+## Historical dev.25 — PRE-ALPHA: the courier asks for directions
 
 The web page used to say "Operator access required" and leave you to negotiate with a WSL address. The courier has now been issued directions. Management considers this an extravagant employee benefit.
 

@@ -376,8 +376,12 @@ The ownership regression failed before the fix, then passed. Local checks pass 2
 
 ## Dev.26 publication — 2026-10-26
 
-- [ ] Commit the reviewed PR #5 safe-close repair and prepare the next immutable version with clear local-only verification limits.
+- [x] Commit the reviewed PR #5 safe-close repair and prepare the next immutable version with clear local-only verification limits.
 - [ ] Rerun local regressions; freeze reviewed assets; commit/tag, rebuild and retest the clean tag.
 - [ ] Push the repair to PR #5, verify draft/public downloads, publish PRE-ALPHA and advance main without force.
 
 Scope: explicit user authorization for commit, push and publication. Live/test2, installed game/MO2 and providers remain untouched. No Department contact; no old release/tag replacement. PostgreSQL poll-lock and recovery checks remain pending because test2 is reserved.
+
+### Dev.26 pre-publication review
+
+Fresh local verification passes 23/24 PHP suites, all 67 package/preflight tests and ten syntax checks. The sole failure is the known Windows offscreen-host path assertion. Four deterministic release assets are frozen; both native scripts match dev.25. Access/origin/CSRF and strict PostgreSQL fixture identity guards are unchanged. PR #5 polling and ownership changes plus the safe-close repair are included. PostgreSQL poll-lock, concurrent recovery and final safe-close/repeated-tick tests remain unrun while test2 is reserved; source/package checks and the original PR author report are not promoted to final server/gameplay proof. No live/test2, game, provider or Department action.
