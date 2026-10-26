@@ -38,6 +38,7 @@ require_once $root.'/server/lib/boundaries.php';
 require_once $root.'/server/lib/autonomy_policy.php';
 require_once $root.'/server/lib/autonomy_store.php';
 require_once $root.'/server/lib/companion.php';
+require_once $root.'/server/lib/view.php';
 
 companionPgSql($db,<<<'SQL'
 CREATE TABLE public.eventlog(rowid bigserial PRIMARY KEY,ts bigint,gamets numeric,type text,data text,sess text,localts bigint,people text,location text,party text);
@@ -229,11 +230,14 @@ companionPgCheck($multiEpisodes['900001']===$multiEpisodes['900002'],'same nativ
 $camillaStatus=companionPgSql($db,"SELECT status FROM plugins.correspondence_companion_decision WHERE document_id=$1",[$multiDocuments['900001']])[0]['status']??null;
 $lydiaStatus=companionPgSql($db,"SELECT status FROM plugins.correspondence_companion_decision WHERE document_id=$1",[$multiDocuments['900002']])[0]['status']??null;
 companionPgCheck($camillaStatus==='stale'&&$lydiaStatus==='queued','one reunion cancels only the matching actor decision');
-$service->close($multiDocuments['900002']);
+$closeRequest=correspondenceAutonomyGuardManualDispatch(['action'=>'close','document_id'=>$multiDocuments['900002']],$autonomy->managedChildren(),$companion->ownedDocuments());
+$service->close($closeRequest['document_id']);
 $store->bindRequestClock(['bored','900',(string)(30000000+380*416667),'synthetic']);
 $closedDue=$companion->tick(null);
 companionPgCheck($closedDue['status']==='stale'&&$closedDue['reason']==='operator_closed','operator-closed owned document retires before due dispatch');
 companionPgCheck((companionPgSql($db,"SELECT count(*)::int AS n FROM plugins.correspondence_operations WHERE document_id=$1",[$multiDocuments['900002']])[0]['n']??null)==='0','closed owned document never creates operation');
+$companion->tick(null);
+companionPgCheck((companionPgSql($db,"SELECT count(*)::int AS n FROM plugins.correspondence_operations WHERE document_id=$1",[$multiDocuments['900002']])[0]['n']??null)==='0','repeated scheduler tick cannot revive the operator-closed companion letter');
 
 companionPgSql($db,"INSERT INTO public.core_npc_master VALUES(900003,'Iona','000A2C8F',1,'Patient and direct.','{\"background_life_enabled\":true,\"background_life_letters\":true}','{\"stats\":{\"is_dead\":false}}')");
 $store->bindRequestClock(['bored','902',(string)(30000000+381*416667),'synthetic']);$store->observeManaged($multiPresence);

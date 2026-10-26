@@ -39,6 +39,8 @@ The native observer uses `Utility.GetCurrentGameTime()` in game-minutes. The ser
 
 Each model attempt obeys the existing one-decision-per-game-hour and six-hour per-NPC correspondence cooldowns. One actor's waiting episode gets one attempt, not a repeated mail campaign. The new module shares cooldown information with the existing schedulers. Manual send/retry cannot bypass ownership of a scheduled check-in.
 
+In the web inbox/outbox, companion check-ins keep **Close without resending or refunding**. It closes that letter without claiming delivery, creating a transfer or enabling manual Dispatch/Retry. Pending or unknown outcomes retain their read-only reconciliation path; closure does not erase a genuine later receipt. The existing NPC-to-NPC scheduler ownership rules are unchanged.
+
 Core Background Life retains an independent player-letter path. The candidate checks reliable recent BGL letter history before generating and dispatching a check-in. This conservatively suppresses overlap, but there is no atomic duplicate guarantee between independent writers without a shared ownership API.
 
 ## Why this design

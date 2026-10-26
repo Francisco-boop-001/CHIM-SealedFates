@@ -357,3 +357,27 @@ Scope: local source/tests only; no release, version bump, live/test2, game or pr
 ### Review
 
 The new poll-lock case failed on unchanged dev.25 (`storage_failed` at the default-off poll) and passes after the change. It also proves the lock is effective: a due poll still waits for the writer, then issues once. All companion PostgreSQL modes that run without a copied core or model pass: main, poll-lock, cooldown and three recovery cases. Idle and real-model modes were not run. The new pure ownership test failed on the missing message and managed-list merge and now passes. Pure suites match the dev.25 baseline except the access-help literal, updated to the new runtime entry; its refusal-before-runtime rule is unchanged. Package, companion package and build checks pass in a copy with `dist/`. Integration fixtures ran with a scratch-only system-ID guard change for this cluster. No gameplay, Windows or test2 check was performed.
+# PR #5 safe companion closure repair — 2026-10-26
+
+- [x] Reproduce loss of companion Close control and distinguish companion from NPC-to-NPC scheduler ownership in tests.
+- [x] Preserve companion Dispatch/Retry refusal while restoring safe Close in the UI and POST guard; retain existing autonomy policy.
+- [x] Extend the existing PostgreSQL closure case without weakening its environment guards; run local regressions and audit preserved runtime/security boundaries.
+
+Scope: local repair of PR #5 only. Live and test2 remain untouched; no providers, game/MO2 edits, Department contact, merge or publication. PostgreSQL execution remains pending until test2 is released.
+
+## Safe companion closure repair review
+
+Fixed the PR #5 regression by retaining separate autonomy and companion ownership lists through rendering and POST validation. Companion Dispatch/Retry remain scheduler-only; companion Close uses the existing anchored service operation. NPC-to-NPC autonomy policy remains unchanged, including ambiguous overlapping ownership refusal and malformed-list fail-closed behavior. Queued, failed, dispatched and unknown UI states are covered; closure creates no send operation or native command and preserves reconciliation. Existing backend tests retain idempotent closure, late genuine receipts, no resend/refund and restore safeguards.
+
+The ownership regression failed before the fix, then passed. Local checks pass 23 of 24 PHP suites, all 66 package/preflight tests and eight syntax checks. The sole failure is the unchanged Windows offscreen-host path assertion. Security/CSRF functions, scheduler/runtime/store code, restore/freshness/cooldown logic and native scripts match PR #5 unchanged. Only index.php and lib/view.php differ in the server payload. The existing PostgreSQL fixture now passes the Close request through the production guard and checks a repeated scheduler tick creates no operation; its strict environment guards remain unchanged, and it was not run. No live/test2, game, provider or Department access; no merge, push or publication. Evidence: artifacts/chim-sealed-fates-pr5-close-fix-20261026.
+
+- [ ] When the user releases test2, run the PostgreSQL poll-lock and safe-close/repeated-tick recovery cases in an isolated owned fixture before merging/releasing.
+
+
+## Dev.26 publication — 2026-10-26
+
+- [ ] Commit the reviewed PR #5 safe-close repair and prepare the next immutable version with clear local-only verification limits.
+- [ ] Rerun local regressions; freeze reviewed assets; commit/tag, rebuild and retest the clean tag.
+- [ ] Push the repair to PR #5, verify draft/public downloads, publish PRE-ALPHA and advance main without force.
+
+Scope: explicit user authorization for commit, push and publication. Live/test2, installed game/MO2 and providers remain untouched. No Department contact; no old release/tag replacement. PostgreSQL poll-lock and recovery checks remain pending because test2 is reserved.

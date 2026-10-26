@@ -11,9 +11,9 @@ if(session_status()!==PHP_SESSION_ACTIVE&&!session_start(['cookie_httponly'=>tru
 if(!is_string($_SESSION['correspondence_csrf']??null))$_SESSION['correspondence_csrf']=bin2hex(random_bytes(32));
 $csrf=$_SESSION['correspondence_csrf'];$message='';$opened=null;
 try{
-    $runtime=correspondenceCompanionProduction();$service=$runtime['service'];$autonomy=$runtime['autonomy'];$choices=$runtime['store']->itemChoices();$managedChildren=array_values(array_unique(array_merge($autonomy->managedChildren(),$runtime['companion']->ownedDocuments())));
+    $runtime=correspondenceCompanionProduction();$service=$runtime['service'];$autonomy=$runtime['autonomy'];$choices=$runtime['store']->itemChoices();$managedChildren=$autonomy->managedChildren();$companionDocuments=$runtime['companion']->ownedDocuments();
     if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'){
-        $request=correspondenceAutonomyGuardManualDispatch(correspondencePost($_POST,$csrf,$choices),$managedChildren);
+        $request=correspondenceAutonomyGuardManualDispatch(correspondencePost($_POST,$csrf,$choices),$managedChildren,$companionDocuments);
         if($request['action']==='autonomy'){
             $autonomy->setEnabled($request['enabled']);
             $serviceState=$request['enabled']?correspondenceOffscreenServiceStart():correspondenceOffscreenServiceStop();
@@ -35,7 +35,7 @@ try{
     $autonomySettings=$autonomy->settings();$autonomyRows=$autonomy->status();$offscreenStatus=[];
     try{$offscreenStatus=correspondenceOffscreenProduction()['offscreen']->status();}catch(Throwable){$offscreenStatus=[];}
     $panel=correspondenceOffscreenPanelHtml(($autonomySettings['enabled']??false)===true,correspondenceOffscreenServiceStatus(),$offscreenStatus);
-    $html=correspondencePage($service->actors(),$choices,$letters,$csrf,$message,$opened,$autonomySettings,$autonomyRows,$managedChildren);
+    $html=correspondencePage($service->actors(),$choices,$letters,$csrf,$message,$opened,$autonomySettings,$autonomyRows,$managedChildren,$companionDocuments);
     header('Content-Type: text/html; charset=UTF-8');echo str_replace('</main>',$panel.'</main>',$html);
 }catch(DomainException|InvalidArgumentException $e){
     correspondenceDiagnostic('ui_rejected');http_response_code(400);header('Content-Type: text/html; charset=UTF-8');
