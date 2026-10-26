@@ -332,11 +332,15 @@ All three focused PHP suites (access help, origin, UI) and four syntax checks pa
 ## Dev.25 publication — 2026-10-26
 
 - [x] Advance release identity and user instructions, preserving historical evidence and explicit web-only compatibility.
-- [ ] Rerun local regressions, verify unchanged security/native boundaries, build reviewed assets and commit/tag the release.
-- [ ] Rebuild and retest the clean tag, compare draft downloads, publish PRE-ALPHA, verify public downloads and advance main without force.
+- [x] Rerun local regressions, verify unchanged security/native boundaries, build reviewed assets and commit/tag the release.
+- [x] Rebuild and retest the clean tag, compare draft downloads, publish PRE-ALPHA, verify public downloads and advance main without force.
 
 Scope: authorized GitHub publication only. Live, test2, installed game/MO2 and providers remain untouched. No Department contact; no old tag or asset replacement. Existing pending test2 checks remain pending.
 
 ### Dev.25 pre-publication review
 
 Local verification passes 21 of 22 PHP suites, all 66 package/preflight tests and seven syntax checks. The sole Windows offscreen-host failure matches the prior unchanged baseline; its Linux rerun remains pending. Exact byte comparisons preserve authorization, origin, CSRF, remaining index routing and both native scripts. Only manifest/index/view differ among 30 server files. Fresh GET/POST refusal probes remain 403 before session/runtime work. Four reviewed release assets are frozen for clean-tag comparison. Failed version-bump fixtures were retained separately and corrected before this freeze. No live/test2, installed-game, provider or Department action.
+
+### Dev.25 publication review
+
+Published immutable tag correspondence-v0.1.0-dev.25 at a28cb8333582c59a92c25f67f72073899cd0e63c after reviewed-source and clean-tag builds matched all four assets. Clean-tag local checks match the reviewed result; draft and anonymous public downloads pass all identity/integrity checks. Main advances only after verified publication, without force. The existing native and security boundaries remain unchanged. Historical releases are preserved. See docs/DEV25-PUBLICATION.md for the exact scope and pending Windows/test2/gameplay/Department limits. No live/test2, game, provider or Department action.
