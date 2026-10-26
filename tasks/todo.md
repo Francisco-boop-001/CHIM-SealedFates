@@ -377,11 +377,15 @@ The ownership regression failed before the fix, then passed. Local checks pass 2
 ## Dev.26 publication — 2026-10-26
 
 - [x] Commit the reviewed PR #5 safe-close repair and prepare the next immutable version with clear local-only verification limits.
-- [ ] Rerun local regressions; freeze reviewed assets; commit/tag, rebuild and retest the clean tag.
-- [ ] Push the repair to PR #5, verify draft/public downloads, publish PRE-ALPHA and advance main without force.
+- [x] Rerun local regressions; freeze reviewed assets; commit/tag, rebuild and retest the clean tag.
+- [x] Push the repair to PR #5, verify draft/public downloads, publish PRE-ALPHA and advance main without force.
 
 Scope: explicit user authorization for commit, push and publication. Live/test2, installed game/MO2 and providers remain untouched. No Department contact; no old release/tag replacement. PostgreSQL poll-lock and recovery checks remain pending because test2 is reserved.
 
 ### Dev.26 pre-publication review
 
 Fresh local verification passes 23/24 PHP suites, all 67 package/preflight tests and ten syntax checks. The sole failure is the known Windows offscreen-host path assertion. Four deterministic release assets are frozen; both native scripts match dev.25. Access/origin/CSRF and strict PostgreSQL fixture identity guards are unchanged. PR #5 polling and ownership changes plus the safe-close repair are included. PostgreSQL poll-lock, concurrent recovery and final safe-close/repeated-tick tests remain unrun while test2 is reserved; source/package checks and the original PR author report are not promoted to final server/gameplay proof. No live/test2, game, provider or Department action.
+
+### Dev.26 publication review
+
+Published immutable tag correspondence-v0.1.0-dev.26 at 7fd78802348d5ee7dabee9506ff6ede1c25c0657 after reviewed-source and clean-tag builds matched all four assets. Local and clean-tag results match: 23/24 PHP suites, all 67 package/preflight tests and ten syntax checks pass; the sole Windows path failure remains unchanged. Repair 5994b1166c8c42633f00e3bacc869e87a5036bd9 is pushed to PR #5. Draft and anonymous public downloads pass all identity/integrity checks. Main advances only after verified publication, without force. Both native scripts and access/origin/CSRF protections match dev.25; old releases remain immutable. See docs/DEV26-PUBLICATION.md for unperformed PostgreSQL, gameplay and Department gates. No live/test2, installed game, provider or Department action.
