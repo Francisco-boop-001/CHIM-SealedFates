@@ -1,4 +1,34 @@
-# Sealed Fates dev.24 — PRE-ALPHA: the courier discovers a calendar
+# Sealed Fates dev.25 — PRE-ALPHA: the courier asks for directions
+
+The web page used to say "Operator access required" and leave you to negotiate with a WSL address. The courier has now been issued directions. Management considers this an extravagant employee benefit.
+
+## Install one file
+
+Download **[CHIM-Sealed-Fates-0.1.0-dev.25.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.25/CHIM-Sealed-Fates-0.1.0-dev.25.zip)**. After ending your current game session, replace the previous Sealed Fates MO2 mod and keep exactly one version enabled. This one ZIP contains both unchanged Papyrus scripts and `CHIM/server-plugins/correspondence/0.1.0-dev.25.dwpkg`. No second archive or manual checksum calculation is required. Confirm **0.1.0-dev.25** in CHIM's Plugin Manager after the next normal synchronization; downloading it does not install it.
+
+## Open the web interface
+
+On the computer running CHIM, open **CHIM itself through localhost**, using your configured port and installation path. Go to **Plugins**, then press **Sealed Fates → Plugin Page**. Bookmark that local CHIM address: its Plugin Page button inherits the address you used to open CHIM.
+
+For example, `http://172.17.226.57:8081/HerikaServer/` becomes `http://localhost:8081/HerikaServer/ui/server_plugins.php` for local browser access. That is an example, not a universal port or installation path.
+
+If access is refused, the page now explains this route and offers a clickable localhost CHIM Plugins link for recognized direct HTTP private/loopback addresses and installation paths. Public, forwarded, HTTPS or unrecognized routes get instructions without a guessed link. From another computer, use web-server-authenticated operator access: localhost points to the computer running the browser. The link does not redirect automatically or resend a letter. A wrong or unavailable local route remains an administrator routing/authentication issue.
+
+## Security and compatibility
+
+The existing authorization, origin and CSRF checks are unchanged. Private addresses do not grant access. The denied route still returns **403** and exits before starting a session or correspondence runtime. There are no database migrations, provider changes, native-script changes or new correspondence behaviors in this fix. The dev.24 cooldown repair remains included.
+
+**The Skyrim interface is optional. Use the existing CHIM web plugin page for dev.25.** No new Department/PRISMA pairing is claimed; Department prealpha.13 remains an exact-source pairing for unchanged dev.23. Its refusal checks were not bypassed or updated.
+
+## Verification and remaining limits
+
+The refusal regression failed before implementation and passes after it. Fresh local GET/POST probes execute the actual denied route and confirm 403, no session and no resend form. Local checks cover safe port/path retention, malformed and forwarded requests, remote fallback, origin/CSRF protections, the static refusal fixture, package/preflight behavior and PHP syntax. Clean-tag packages and downloaded release bytes are verified separately during publication.
+
+The existing Windows offscreen-host path assertion also fails on the unchanged baseline; its Linux rerun remains pending. **Test2 remains reserved and was not accessed.** The dev.24 PostgreSQL cooldown reproduction and freshness/restore/replay reruns remain pending. No new real-model, installed-server, browser-rendering or Skyrim gameplay verification is claimed. Companion detection, physical letters/items/gold, follower frameworks and save/co-save behavior still require their stated gameplay proof. This remains PRE-ALPHA.
+
+Neither live nor test2, the installed game, providers or production configuration was accessed or changed for this release. Read [installation](INSTALL.md), [verification limits](VERIFICATION.md) and [interface compatibility](PRISMA-COMPATIBILITY.md).
+
+## Historical dev.24 — PRE-ALPHA: the courier discovers a calendar
 
 One courier. Several strongly worded letters. A scheduling bug that looked at a newer claim, forgot an older cooldown, and apparently decided working conditions were a suggestion. Fixed locally; now available for an explicitly limited personal playtest.
 

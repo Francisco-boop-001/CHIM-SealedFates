@@ -4,7 +4,7 @@ require_once __DIR__.'/lib/view.php';
 require_once __DIR__.'/lib/bootstrap.php';
 require_once __DIR__.'/lib/consumers.php';
 header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');header('Referrer-Policy: no-referrer');header("Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; form-action 'self'; frame-ancestors 'self'");
-if(!correspondenceAccess($_SERVER)){http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo 'Operator access required.';exit;}
+if(!correspondenceAccess($_SERVER)){http_response_code(403);header('Content-Type: text/html; charset=UTF-8');echo correspondenceAccessDeniedPage($_SERVER);exit;}
 if(!in_array($_SERVER['REQUEST_METHOD']??'GET',['GET','POST'],true)){http_response_code(405);exit;}
 if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'&&!correspondencePostOriginAllowed($_SERVER)){http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo 'Operator origin required.';exit;}
 if(session_status()!==PHP_SESSION_ACTIVE&&!session_start(['cookie_httponly'=>true,'cookie_samesite'=>'Strict','use_strict_mode'=>true])){http_response_code(503);header('Content-Type: text/html; charset=UTF-8');echo correspondenceErrorPage('Sealed Fates is unavailable.');exit;}

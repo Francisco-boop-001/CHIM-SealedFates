@@ -5,12 +5,17 @@ require_once dirname(__DIR__).'/server/lib/offscreen_host.php';
 
 $isCli=PHP_SAPI==='cli';
 $fixture=$isCli?($argv[1]??'populated'):($_GET['fixture']??'populated');
-$fixtures=['populated','empty','opened','error','long-unicode'];
+$fixtures=['populated','empty','opened','error','access-denied','long-unicode'];
 if(!is_string($fixture)||!in_array($fixture,$fixtures,true)){
     if($isCli){fwrite(STDERR,'Unknown UI fixture. Available: '.implode(', ',$fixtures).PHP_EOL);exit(2);}
     http_response_code(400);
     header('Content-Type: text/plain; charset=UTF-8');
     exit('Unknown UI fixture.');
+}
+
+if($fixture==='access-denied'){
+    echo correspondenceAccessDeniedPage(['HTTP_HOST'=>'172.17.226.57:8081','SCRIPT_NAME'=>'/HerikaServer/ext/correspondence/index.php']);
+    exit;
 }
 
 $csrf=str_repeat('a',64);

@@ -314,3 +314,29 @@ Publication is explicitly authorized by the user. Test2 remains unavailable; liv
 ### Dev.24 publication review
 
 Published commit 80821db59d3e1c299bee56b4496cf20a144984fd at immutable tag correspondence-v0.1.0-dev.24. Clean-tag and reviewed-source builds match all four assets; draft and anonymous public downloads match. Both native scripts match dev.23. Main advanced by non-forced fast-forward only after public verification. Current README, install guide, release notes and portable receipt state web-only compatibility and the pending test2/gameplay limits. The old dev.23 tag is unchanged. No server/game/provider access, installation or Department contact. Test2 regressions remain pending as requested. See docs/DEV24-PUBLICATION.md.
+
+## Actionable operator refusal — 2026-10-25
+
+- [x] Reproduce the missing navigation help with a local regression and inspect both access and link-generation boundaries.
+- [x] Add a styled 403 page with conditional localhost CHIM Plugins navigation, safe remote fallback and install guidance; preserve authorization, origin and CSRF checks.
+- [x] Run focused access/UI regressions and route checks, audit the diff and record proof limits.
+
+Scope: local source/tests/docs only. No live or test2 access, installation, provider use, Department contact or publication. No automatic redirect or POST replay; do not hardcode localhost into the shared manifest.
+
+### Operator-refusal review
+
+The new regression failed first because actionable refusal help was missing, then passed with the HTML response. Direct private/loopback HTTP requests with a recognized installation path receive a localhost CHIM Plugins link preserving their browser port and prefix; the page explains Sealed Fates → Plugin Page and local-versus-remote access. Public, forwarded, HTTPS, malformed and unknown-path requests receive instructions without a guessed link or reflected request text. The link leaves an embedded frame, but does not navigate automatically or replay a POST. The manifest remains relative.
+
+All three focused PHP suites (access help, origin, UI) and four syntax checks pass. Fresh child-process GET and POST probes execute the actual index route and return 403 before starting a session or initializing the production runtime. The authorization function, origin function, CSRF parsing and remaining index route match HEAD unchanged. The static renderer includes an access-denied fixture. No browser rendering, real WSL route or gameplay check was performed; neither live nor test2 was accessed. This is an unpublished local source change, not an installed fix.
+
+## Dev.25 publication — 2026-10-26
+
+- [x] Advance release identity and user instructions, preserving historical evidence and explicit web-only compatibility.
+- [ ] Rerun local regressions, verify unchanged security/native boundaries, build reviewed assets and commit/tag the release.
+- [ ] Rebuild and retest the clean tag, compare draft downloads, publish PRE-ALPHA, verify public downloads and advance main without force.
+
+Scope: authorized GitHub publication only. Live, test2, installed game/MO2 and providers remain untouched. No Department contact; no old tag or asset replacement. Existing pending test2 checks remain pending.
+
+### Dev.25 pre-publication review
+
+Local verification passes 21 of 22 PHP suites, all 66 package/preflight tests and seven syntax checks. The sole Windows offscreen-host failure matches the prior unchanged baseline; its Linux rerun remains pending. Exact byte comparisons preserve authorization, origin, CSRF, remaining index routing and both native scripts. Only manifest/index/view differ among 30 server files. Fresh GET/POST refusal probes remain 403 before session/runtime work. Four reviewed release assets are frozen for clean-tag comparison. Failed version-bump fixtures were retained separately and corrected before this freeze. No live/test2, installed-game, provider or Department action.

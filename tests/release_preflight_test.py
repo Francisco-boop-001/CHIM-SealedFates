@@ -27,7 +27,7 @@ class ReleasePreflightTest(unittest.TestCase):
             path = self.root / 'server' / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(b'fixture:' + name.encode('utf-8'))
-        manifest = {'name': 'correspondence', 'version': '0.1.0-dev.24'}
+        manifest = {'name': 'correspondence', 'version': '0.1.0-dev.25'}
         (self.root / 'server' / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
 
     @staticmethod
@@ -62,7 +62,7 @@ class ReleasePreflightTest(unittest.TestCase):
             'ready': True,
             'errorReason': None,
             'owner': {
-                'version': '0.1.0-dev.24',
+                'version': '0.1.0-dev.25',
                 'manifestSha256': owner_files['server/manifest.json']['sha256'],
                 'selectedClosurePins': [
                     {'file': path.removeprefix('server/'),
@@ -108,7 +108,7 @@ class ReleasePreflightTest(unittest.TestCase):
             'failedCases': 0,
             'cases': [{'id': 'case-' + str(index), 'status': 'passed'}
                       for index, _ in enumerate(coverage)],
-            'ownerVersion': '0.1.0-dev.24',
+            'ownerVersion': '0.1.0-dev.25',
             'ownerFiles': copy.deepcopy(owner_files),
             'departmentFiles': copy.deepcopy(department_files),
             'behaviorCoverage': coverage,
@@ -122,7 +122,7 @@ class ReleasePreflightTest(unittest.TestCase):
             'schemaVersion': 1,
             'kind': 'department-owner-pairing',
             'status': 'pass',
-            'owner': {'version': '0.1.0-dev.24', 'files': copy.deepcopy(owner_files)},
+            'owner': {'version': '0.1.0-dev.25', 'files': copy.deepcopy(owner_files)},
             'department': {'files': copy.deepcopy(department_files)},
             'sourceReadiness': {'receipt': 'source-readiness.json'},
             'behavior': {
@@ -168,7 +168,7 @@ class ReleasePreflightTest(unittest.TestCase):
     def test_web_only_is_explicit_and_binds_current_owner_closure(self):
         result = gate.preflight(self.root, 'web-only', None)
         self.assertEqual(result['departmentInterface'], 'web-only')
-        self.assertEqual(result['owner']['version'], '0.1.0-dev.24')
+        self.assertEqual(result['owner']['version'], '0.1.0-dev.25')
         first_hash = result['owner']['sourceClosureSha256']
         self.assertRegex(first_hash, r'^[0-9a-f]{64}$')
 
@@ -186,7 +186,7 @@ class ReleasePreflightTest(unittest.TestCase):
         receipt = self.write_pairing(*fixtures)
         result = gate.preflight(self.root, 'tested-paired', receipt)
         self.assertEqual(result['departmentInterface'], 'tested-paired')
-        self.assertEqual(result['owner']['version'], '0.1.0-dev.24')
+        self.assertEqual(result['owner']['version'], '0.1.0-dev.25')
         self.assertEqual(result['pairing']['departmentFiles'], fixtures[0]['department']['files'])
 
     def test_tested_pair_refuses_source_changed_between_capture_and_receipt_verification(self):
@@ -387,13 +387,13 @@ class ReleasePreflightTest(unittest.TestCase):
 
     def test_unknown_owner_version_fails_closed_in_web_only_mode(self):
         path = self.root / 'server' / 'manifest.json'
-        path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.25'}), encoding='utf-8')
+        path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.26'}), encoding='utf-8')
         with self.assertRaises(ValueError):
             gate.preflight(self.root, 'web-only', None)
 
     def test_unknown_owner_version_fails_closed_in_tested_pair_mode(self):
         path = self.root / 'server' / 'manifest.json'
-        path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.25'}), encoding='utf-8')
+        path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.26'}), encoding='utf-8')
         with self.assertRaises(ValueError):
             gate.preflight(self.root, 'tested-paired', None)
 

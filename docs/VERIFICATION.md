@@ -1,6 +1,11 @@
 # Verification and limits
 
-## Current dev.24 — local verification only
+## Current dev.25 — local web-access verification
+
+The refusal page now gives conditional localhost CHIM Plugins navigation. Local denied-route GET/POST probes confirm 403 before session/runtime initialization; access, origin, CSRF and manifest-relative routing remain intact. Focused UI/security and package/preflight tests pass. The inherited Windows host-path limitation and dev.24 pending test2 regressions remain. No WSL server, browser-rendering, real-model or Skyrim gameplay proof is added. Clean-tag build/public-download identity is recorded separately during publication.
+
+
+## Historical dev.24 — local verification only
 
 The cooldown query repair passes the new 15-check local query-contract regression, 18 PHP suites and all 65 package/preflight tests. The Windows host-path assertion also fails on unchanged dev.23; its Linux rerun is pending. The new PostgreSQL reproduction and companion freshness/restore/replay tests have not run because test2 remains reserved by the user. No new model, installed-server, physical-delivery or save/load proof is claimed. Department prealpha.13 is an exact dev.23 pairing; dev.24 is released with an explicit web-only compatibility decision. Earlier results below retain their original revisions and scope.
 
