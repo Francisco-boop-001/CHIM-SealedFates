@@ -410,11 +410,15 @@ The local regression failed for Host/Origin localhost:8081 with SERVER_PORT=80. 
 ## Dev.27 origin-fix publication — 2026-10-26
 
 - [x] Advance release identity/instructions, rerun local checks and freeze assets with explicit installed/server-test limits.
-- [ ] Commit/tag the reviewed source, rebuild and retest the clean export, and verify draft downloads.
-- [ ] Publish PRE-ALPHA, verify anonymous public downloads and old release preservation, then advance main without force.
+- [x] Commit/tag the reviewed source, rebuild and retest the clean export, and verify draft downloads.
+- [x] Publish PRE-ALPHA, verify anonymous public downloads and old release preservation, then advance main without force.
 
 Scope: explicit user authorization to commit/push/publish only. No live/test2 access of any kind, installation, restart, resend, providers or Department contact. The user is playing; prior read-only diagnosis is not an installed POST retest. Preserve old tags/assets and the pending test2 gates.
 
 ### Dev.27 pre-publication review
 
 Fresh local checks pass 23/24 PHP suites, all 68 package/preflight tests and eleven syntax checks. The sole failure remains the known Windows offscreen-host path assertion. The canonical-port regression fails before repair and passes after it; wrong browser-facing host/port/scheme and cross-site metadata remain refused. Access and CSRF functions, index routing, native scripts and all other server modules match dev.26; only the manifest and view helper change. Four reviewed assets are frozen for clean-tag comparison. No live/test2, game, provider or Department access during publication. The prior read-only diagnosis is separate evidence; successful installed POST, pending PostgreSQL and gameplay checks remain unperformed.
+
+### Dev.27 publication review
+
+Published immutable tag correspondence-v0.1.0-dev.27 at d1eaf714a7661a1f785a4d8c2131c3565a6eddee after reviewed-source and clean-tag builds matched all four assets. Both test runs pass 23/24 PHP suites, all 68 package/preflight tests and eleven syntax checks, with only the known Windows host-path baseline failure. All draft and anonymous public downloads pass identity/integrity verification. Main advances only after verified publication, without force. Access/CSRF/index routing and native scripts retain dev.26 bytes; only manifest and view differ in the server payload. The installed POST retest, pending PostgreSQL and gameplay/Department gates remain unperformed. No live/test2 access, installation/restart/resend, provider or Department action during publication. See docs/DEV27-PUBLICATION.md.
