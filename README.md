@@ -12,6 +12,8 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 ## Pick your interface
 
+**Optional Skyrim interface:** [Department prealpha.24](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.24) now pins exact Sealed Fates dev.28 and includes native **0.1.17.0**, which replaces both crashing gold-count callers. Its offline regressions, native build, emitted DLL call paths, package/source contents and public downloads were checked. This is not an actual Skyrim1.5.97, installed-server send, restore/save-load or physical-transfer acceptance. The web page remains available independently. No compatibility guard was bypassed.
+
 **The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** Keep using CHIM's web page to compose letters, browse your inbox and outbox, check delivery status, and enable or pause autonomous correspondence. You do not need the new Skyrim interface to use those controls. Your browser has not been fired; I lack the qualifications to conduct that meeting.
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.

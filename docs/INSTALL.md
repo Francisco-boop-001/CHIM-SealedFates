@@ -10,7 +10,7 @@ If the plugin page says **Operator access required**, and your browser is on the
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**Dev.28 repairs the existing CHIM web page. The Department native gold-count crash needs its own corrected DLL and exact dev.28 pairing.** Do not use an older PRISMA inventory reader as proof that this crash is fixed. Department prealpha.13 remains the historical exact-source pairing for unchanged dev.23; it should refuse this new payload. The optional interface and its pins were not changed. [Compatibility details](PRISMA-COMPATIBILITY.md).
+**For the optional Skyrim interface, use [Department prealpha.24](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.24) with Sealed Fates dev.28.** Its native0.1.17.0 repairs both gold-count crash paths and keeps exact source checks. Update the separate Department MO2 mod only after ending the game session; use its single [complete ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.24/WorldOfDramaLlama-0.1.0-prealpha.24.zip). This Sealed Fates ZIP does not replace the Department DLL. Offline verification does not establish actual Skyrim1.5.97 or physical-delivery acceptance. [Compatibility details](PRISMA-COMPATIBILITY.md).
 
 ## Main install — one ZIP
 

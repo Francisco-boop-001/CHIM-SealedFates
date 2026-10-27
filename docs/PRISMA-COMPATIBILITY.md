@@ -1,6 +1,6 @@
 # Department / PRISMA compatibility
 
-**Current dev.28:** one web response-policy correction; all origin/access/CSRF helpers and physical scripts retain dev.27 bytes. Department is coordinating its separate native gold-count repair and exact owner pins. No new Skyrim runtime acceptance is claimed; do not use this server package as a native DLL fix. The release gate retains a web-only decision until the required full runtime-pairing evidence exists.
+**Optional Skyrim interface:** [Department prealpha.24](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.24) now pins exact Sealed Fates dev.28 and includes native **0.1.17.0**, which replaces both crashing gold-count callers. Its offline regressions, native build, emitted DLL call paths, package/source contents and public downloads were checked. This is not an actual Skyrim1.5.97, installed-server send, restore/save-load or physical-transfer acceptance. The web page remains available independently. No compatibility guard was bypassed.
 
 
 **Historical dev.27: web interface only; no new Department pairing.** This release repairs web-origin comparison for a different Apache canonical port. Historical pairing evidence does not cover dev.27; exact-source refusals remain intact.

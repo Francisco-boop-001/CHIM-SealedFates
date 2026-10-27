@@ -426,7 +426,7 @@ Published immutable tag correspondence-v0.1.0-dev.27 at d1eaf714a7661a1f785a4d8c
 
 ## Gold-count coordination and web-origin follow-up — 2026-10-27
 
-- [ ] Coordinate Department-owned repair of both native gold-count callers, verify native regression/build/binary evidence and publication limits.
+- [x] Coordinate Department-owned repair of both native gold-count callers, verify native regression/build/binary evidence and publication limits.
 - [x] Inspect installed web version and refusal metadata read-only; reproduce the actual browser form/header path in a standalone local fixture.
 - [x] Apply only the proven web fix, preserve authorization/origin/CSRF checks, rerun focused and package checks, audit changes.
 - [x] Commit, push and publish any verified Sealed Fates correction; coordinate exact new owner pins and disclose remaining Skyrim/runtime gates.
@@ -442,3 +442,7 @@ The standalone browser fixture uses actual production header extraction and pure
 ### Dev.28 publication review
 
 Published immutable tag correspondence-v0.1.0-dev.28 at e2064d34ec8607ac5b833fdfac64635aef28f4ae. Main fast-forwarded after four draft/anonymous public downloads matched clean-tag assets. All15 prior releases/30 tag refs are unchanged. Exact19-file Department binding shared with its owner; only manifest changes within that closure. No live-dependent tests, deployment, installed-game/provider changes or test2 entry. Department native repair and its verified release remain in progress; do not mark that work complete from this server publication. See docs/DEV28-PUBLICATION.md.
+
+### Coordinated repair completion review
+
+Department prealpha.24 published from5b0fa12db93000a866493548b913cf6d6e16a7fd with native0.1.17.0. Both gold callers, fresh funds/revision guards, edge cases and emitted callgraph were reviewed. Independent archive/public-byte checks confirm the exact DLL, strict19-file dev.28 map and new header in source. All requested publication work is complete; known Windows baseline failures and all unperformed server/Skyrim/physical-transfer gates remain explicit. No live tests or live/game/test2 changes.
