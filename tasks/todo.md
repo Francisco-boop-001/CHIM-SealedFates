@@ -429,7 +429,7 @@ Published immutable tag correspondence-v0.1.0-dev.27 at d1eaf714a7661a1f785a4d8c
 - [ ] Coordinate Department-owned repair of both native gold-count callers, verify native regression/build/binary evidence and publication limits.
 - [x] Inspect installed web version and refusal metadata read-only; reproduce the actual browser form/header path in a standalone local fixture.
 - [x] Apply only the proven web fix, preserve authorization/origin/CSRF checks, rerun focused and package checks, audit changes.
-- [ ] Commit, push and publish any verified Sealed Fates correction; coordinate exact new owner pins and disclose remaining Skyrim/runtime gates.
+- [x] Commit, push and publish any verified Sealed Fates correction; coordinate exact new owner pins and disclose remaining Skyrim/runtime gates.
 
 Scope: live inspection only, no live-dependent tests, HTTP probes, sends, installed-game changes, provider calls or test2 entry. Department owns its repository/native code and release; this chat owns Sealed Fates. Existing immutable releases remain unchanged.
 
@@ -438,3 +438,7 @@ Scope: live inspection only, no live-dependent tests, HTTP probes, sends, instal
 The only server runtime change from dev.27 is Referrer-Policy same-origin in index.php, plus the version manifest. The real Chromium fixture fails403 with the old policy and passes200 after repair, rejects wrong CSRF400 and suppresses cross-origin referrers. All access/origin/CSRF helpers, native sources and packaged PEX bytes match dev.27. Local checks pass23/24 PHP suites, all69 package/preflight tests and12 syntax checks; the sole inherited Windows offscreen-host path failure remains. No live-dependent test, live HTTP request, database/provider action, installed-game change or test2 entry occurred. Department owns both native gold-count callers and its separate verified build/publication; actual Skyrim and physical delivery acceptance remain unperformed.
 
 The standalone browser fixture uses actual production header extraction and pure validation, synthetic form fields and an ephemeral loopback listener. It never loads production bootstrap, sends a letter, transfers gold, opens a campaign database, or contacts an external/live endpoint. Cross-origin referrer navigation is intercepted in the browser.
+
+### Dev.28 publication review
+
+Published immutable tag correspondence-v0.1.0-dev.28 at e2064d34ec8607ac5b833fdfac64635aef28f4ae. Main fast-forwarded after four draft/anonymous public downloads matched clean-tag assets. All15 prior releases/30 tag refs are unchanged. Exact19-file Department binding shared with its owner; only manifest changes within that closure. No live-dependent tests, deployment, installed-game/provider changes or test2 entry. Department native repair and its verified release remain in progress; do not mark that work complete from this server publication. See docs/DEV28-PUBLICATION.md.
