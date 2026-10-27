@@ -35,6 +35,7 @@ originCheck(correspondencePostOriginAllowed($http+['HTTP_SEC_FETCH_SITE'=>'same-
 originCheck(!correspondencePostOriginAllowed($http+['HTTP_X_FORWARDED_PROTO'=>'https','HTTP_ORIGIN'=>'https://localhost:8080']),'forwarded proto must not set the trusted request scheme');
 
 $index=file_get_contents(dirname(__DIR__).'/server/index.php');
+originCheck(is_string($index)&&str_contains($index,"header('Referrer-Policy: same-origin')"),'same-origin forms must retain their browser Origin while external referrers remain suppressed');
 originCheck(is_string($index)&&str_contains($index,'correspondencePostOriginAllowed($_SERVER)'),'operator POST route must apply origin validation');
 originCheck(is_string($index)&&str_contains($index,'correspondencePost($_POST,$csrf,$choices)'),'origin validation must retain existing CSRF parsing');
 echo "PASS server origin: loopback Host, authenticated operator, same-origin POST and Fetch Metadata\n";

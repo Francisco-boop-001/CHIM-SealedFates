@@ -1,4 +1,34 @@
-# Sealed Fates dev.27 — PRE-ALPHA: the courier discovers ports
+# Sealed Fates dev.28 — PRE-ALPHA: the courier remembers his return address
+
+The web page was hiding its own return address, then refusing the letter for arriving without one. An impressive administrative achievement. We have reduced the paperwork by one self-inflicted problem.
+
+## Install one file — after your game session
+
+Download **[CHIM-Sealed-Fates-0.1.0-dev.28.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.28/CHIM-Sealed-Fates-0.1.0-dev.28.zip)**. Follow the [Updating instructions](INSTALL.md), replace your previous Sealed Fates MO2 mod and keep one version enabled. The ZIP includes both unchanged Papyrus scripts and `CHIM/server-plugins/correspondence/0.1.0-dev.28.dwpkg`. No second download or manual checksum calculation is required. Confirm **0.1.0-dev.28** in CHIM's server Plugin Manager after normal synchronization. Publishing does not update your running game or server.
+
+## What changed
+
+Dev.27 fixed Apache's canonical-port mismatch, but a real browser could still refuse Send with **Operator origin required**. The page's `Referrer-Policy: no-referrer` caused Chromium to send `Origin: null` on its ordinary form POST. Our origin guard correctly rejected that opaque value.
+
+The page now sends `Referrer-Policy: same-origin`. A normal same-origin form retains its real browser Origin; cross-origin navigation still suppresses its referrer. The access, origin and session CSRF checks are unchanged. Null, malformed and foreign origins remain refused, as do cross-site requests, wrong browser-facing ports/schemes, and unauthenticated remote access. There is no automatic resend, permission bypass, database migration or delivery-script change.
+
+## How to use it
+
+On the computer running CHIM, open CHIM through **localhost**, retaining your configured port and path. Choose **Plugins → Sealed Fates → Plugin Page**. Confirm the server has dev.28, then compose normally. A page-level origin refusal happens before composition; other pending or unknown outcomes still need their original read-only status check, not another copy of the letter.
+
+**The Skyrim interface is optional; the existing CHIM web page remains available.** The native PRISMA crash is a separate Department bug in its gold-count helper, used both by the inventory snapshot and the funds recheck before compose. This Sealed Fates ZIP does not replace `WorldOfDramaLlama.dll` or fix that native crash. Department owns its tested repair and exact dev.28 pairing; use only its explicitly verified release. No compatibility pin has been bypassed here.
+
+## Verification and remaining limits
+
+A standalone loopback PHP fixture loads the production pure view helpers and extracts the real response policy from `index.php`; it never loads CHIM bootstrap or connects to a campaign database. Headless Edge/Chromium reproduces the old policy's natural form POST as HTTP403 with `Origin: null`, then passes the repaired request as HTTP200. A wrong CSRF token remains HTTP400, and an intercepted cross-origin navigation carries no referrer. Existing origin/access/UI/ownership/closure and package/preflight checks are run separately, with clean-source asset reproduction and download verification recorded at publication.
+
+The installed live dev.27 files and bounded refusal metadata were inspected read-only with explicit permission. **No test depends on live. No live HTTP request, send, database change, deployment or restart was performed.** Exact live request headers were not instrumented; the policy failure is independently reproduced locally. Test2, installed game/MO2 files and provider settings remain untouched.
+
+The inherited Windows offscreen-host path assertion remains a known baseline failure. PostgreSQL poll-lock/concurrent-event recovery and installed-server end-to-end sending were not rerun. There is no new real-model, native delivery, item/gold transfer, companion/save/co-save or Skyrim gameplay acceptance. Department's native build and host tests must not be presented as an actual Skyrim1.5.97 crash reproduction. This remains **PRE-ALPHA**.
+
+Read [installation](INSTALL.md), [verification limits](VERIFICATION.md) and [interface compatibility](PRISMA-COMPATIBILITY.md).
+
+## Historical dev.27 — PRE-ALPHA: the courier discovers ports
 
 The letter was addressed correctly. Unfortunately, the web form and Apache disagreed about which door it had come through. The courier has been reassigned from network administration. This is probably for the best.
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-dev.28
+
+- Repair real browser form Origin suppression by using same-origin referrer policy; keep access, origin and CSRF guards intact.
+- Add standalone browser regression and cross-origin privacy/wrong-CSRF controls. Native PRISMA gold-count repair is Department-owned; no live/game deployment or Skyrim acceptance claimed.
+
 ## 0.1.0-dev.23 — PRE-ALPHA
 
 - Add optional evidence-based waiting-companion letters to the player, carried by CHIM's idle heartbeat and built-in Narrator.

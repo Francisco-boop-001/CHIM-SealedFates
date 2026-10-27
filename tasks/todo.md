@@ -422,3 +422,19 @@ Fresh local checks pass 23/24 PHP suites, all 68 package/preflight tests and ele
 ### Dev.27 publication review
 
 Published immutable tag correspondence-v0.1.0-dev.27 at d1eaf714a7661a1f785a4d8c2131c3565a6eddee after reviewed-source and clean-tag builds matched all four assets. Both test runs pass 23/24 PHP suites, all 68 package/preflight tests and eleven syntax checks, with only the known Windows host-path baseline failure. All draft and anonymous public downloads pass identity/integrity verification. Main advances only after verified publication, without force. Access/CSRF/index routing and native scripts retain dev.26 bytes; only manifest and view differ in the server payload. The installed POST retest, pending PostgreSQL and gameplay/Department gates remain unperformed. No live/test2 access, installation/restart/resend, provider or Department action during publication. See docs/DEV27-PUBLICATION.md.
+
+
+## Gold-count coordination and web-origin follow-up — 2026-10-27
+
+- [ ] Coordinate Department-owned repair of both native gold-count callers, verify native regression/build/binary evidence and publication limits.
+- [x] Inspect installed web version and refusal metadata read-only; reproduce the actual browser form/header path in a standalone local fixture.
+- [x] Apply only the proven web fix, preserve authorization/origin/CSRF checks, rerun focused and package checks, audit changes.
+- [ ] Commit, push and publish any verified Sealed Fates correction; coordinate exact new owner pins and disclose remaining Skyrim/runtime gates.
+
+Scope: live inspection only, no live-dependent tests, HTTP probes, sends, installed-game changes, provider calls or test2 entry. Department owns its repository/native code and release; this chat owns Sealed Fates. Existing immutable releases remain unchanged.
+
+### Dev.28 pre-publication review
+
+The only server runtime change from dev.27 is Referrer-Policy same-origin in index.php, plus the version manifest. The real Chromium fixture fails403 with the old policy and passes200 after repair, rejects wrong CSRF400 and suppresses cross-origin referrers. All access/origin/CSRF helpers, native sources and packaged PEX bytes match dev.27. Local checks pass23/24 PHP suites, all69 package/preflight tests and12 syntax checks; the sole inherited Windows offscreen-host path failure remains. No live-dependent test, live HTTP request, database/provider action, installed-game change or test2 entry occurred. Department owns both native gold-count callers and its separate verified build/publication; actual Skyrim and physical delivery acceptance remain unperformed.
+
+The standalone browser fixture uses actual production header extraction and pure validation, synthetic form fields and an ephemeral loopback listener. It never loads production bootstrap, sends a letter, transfers gold, opens a campaign database, or contacts an external/live endpoint. Cross-origin referrer navigation is intercepted in the browser.

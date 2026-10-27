@@ -1,4 +1,4 @@
-**0.1.0-dev.27 — PRE-ALPHA.** Fixes same-origin form refusal when Apache reports a different canonical port; installed retest and test2/gameplay checks remain pending. [Download](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.27) · [Release notes and verification limits](docs/RELEASE.md).
+**0.1.0-dev.28 — PRE-ALPHA.** Repairs browser form submission after the page suppressed its own Origin; local browser/security checks, with installed-server and Skyrim acceptance still pending. [Download](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.28) · [Release notes and verification limits](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -16,13 +16,13 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**Dev.27 uses the existing CHIM web plugin page. Department/PRISMA compatibility is not claimed.** Department prealpha.13 remains the historical exact-source pairing for unchanged dev.23; it should refuse this new payload. The optional interface and its pins were not changed. [Exact compatibility and limits](docs/PRISMA-COMPATIBILITY.md).
+**Dev.28 uses the existing CHIM web plugin page. Department/PRISMA compatibility is not claimed.** Department prealpha.13 remains the historical exact-source pairing for unchanged dev.23; it should refuse this new payload. The optional interface and its pins were not changed. [Exact compatibility and limits](docs/PRISMA-COMPATIBILITY.md).
 
 ## Download
 
-Install **[CHIM-Sealed-Fates-0.1.0-dev.27.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.27/CHIM-Sealed-Fates-0.1.0-dev.27.zip)** as your single Sealed Fates MO2 mod. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
+Install **[CHIM-Sealed-Fates-0.1.0-dev.28.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.28/CHIM-Sealed-Fates-0.1.0-dev.28.zip)** as your single Sealed Fates MO2 mod. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
 
-The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.27.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
+The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.28.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
 
 ## The web page
 

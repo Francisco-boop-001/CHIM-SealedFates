@@ -1,6 +1,11 @@
 # Verification and limits
 
-## Current dev.27 — local browser-facing origin-port verification
+## Current dev.28 — real browser form policy regression
+
+A standalone local PHP/Chromium fixture reproduces dev.27 no-referrer -> Origin:null -> HTTP403. The same real form with the production same-origin response policy reaches HTTP200; wrong CSRF remains400 and cross-origin navigation suppresses its referrer. Existing origin/access/CSRF validation is unchanged. The fixture never boots CHIM or connects to live/test2. Read-only live file/log inspection established installed dev.27 and403 metadata; it is not a live request-header capture or successful send test. Native crash repair remains Department-owned. PostgreSQL recovery, installed send, model, physical delivery and Skyrim acceptance remain unperformed.
+
+
+## Historical dev.27 — local browser-facing origin-port verification
 
 A localhost:8081 POST with canonical SERVER_PORT=80 fails on the old helper and passes after the repair. Wrong browser-facing host/port/scheme and cross-site metadata remain refused; access, CSRF and server-port sanity checks remain. Local UI, ownership, closure and package/preflight regressions pass apart from the inherited Windows host-path failure. This publication accesses neither live nor test2. The prior authorized read-only observation is separate from a successful installed POST test, which remains unperformed. Pending PostgreSQL, model, browser/gameplay and Department gates from dev.26 remain pending.
 

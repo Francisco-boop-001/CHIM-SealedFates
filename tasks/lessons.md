@@ -10,3 +10,9 @@
 
 - Identify the active MO2 profile, enabled mod, installed package and sync-log result before asking the user which download they installed. A download or metadata label alone does not establish the running server version.
 - While the user is playing, read-only inspection does not authorize renaming a package, triggering sync, restarting anything or using the reserved test server.
+
+## Browser policy and POST validation must be tested together
+
+- Mistake: testing a synthesized valid Origin missed that the page's no-referrer policy causes Chromium form POSTs to carry Origin: null. The canonical-port repair alone could not establish browser send readiness.
+- Rule: reproduce security-header interactions with a real browser and the actual emitted response policy before claiming a web submission fix. Preserve null/cross-origin refusal and CSRF; repair the header that creates the invalid request.
+- Prevention: run the standalone browser fixture with production header extraction plus same-origin and wrong-CSRF controls, and distinguish it from an installed-game/server send.

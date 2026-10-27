@@ -1,6 +1,9 @@
 # Department / PRISMA compatibility
 
-**Current dev.27: web interface only; no new Department pairing.** This release repairs web-origin comparison for a different Apache canonical port. Historical pairing evidence does not cover dev.27; exact-source refusals remain intact.
+**Current dev.28:** one web response-policy correction; all origin/access/CSRF helpers and physical scripts retain dev.27 bytes. Department is coordinating its separate native gold-count repair and exact owner pins. No new Skyrim runtime acceptance is claimed; do not use this server package as a native DLL fix. The release gate retains a web-only decision until the required full runtime-pairing evidence exists.
+
+
+**Historical dev.27: web interface only; no new Department pairing.** This release repairs web-origin comparison for a different Apache canonical port. Historical pairing evidence does not cover dev.27; exact-source refusals remain intact.
 
 
 **Historical dev.26: web interface only; no new Department pairing.** Companion polling and web ownership/closure change in this release. Historical exact-source pairing evidence does not cover dev.26; pins and refusals remain unchanged.
