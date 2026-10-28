@@ -9,7 +9,7 @@ from pathlib import Path, PurePosixPath
 from typing import Optional
 
 ROOT = Path(__file__).resolve().parents[1]
-OWNER_VERSION = '0.1.0-dev.28'
+OWNER_VERSION = '0.1.0-dev.29'
 FREEZE_SCHEMA = 'department.dev20.runtime-source-bindings.v1'
 REQUIRED_COVERAGE = {
     'bootstrap', 'catalog', 'mailbox', 'detail', 'compose', 'reconcile',

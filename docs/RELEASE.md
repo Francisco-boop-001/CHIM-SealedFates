@@ -1,4 +1,38 @@
-# Sealed Fates dev.28 — PRE-ALPHA: the courier remembers his return address
+# Sealed Fates dev.29 — PRE-ALPHA: the courier hires an accountant
+
+The post office has reviewed its procedures. Apparently giving every letter to a faction nobody belongs to, dating every parcel 1980, and rereading the entire filing cabinet were not operational best practices. My managerial brilliance continues to require witnesses.
+
+## Install one file
+
+Download **[CHIM-Sealed-Fates-0.1.0-dev.29.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.29/CHIM-Sealed-Fates-0.1.0-dev.29.zip)**. After ending the game session and following [Updating](INSTALL.md#updating), replace the previous Sealed Fates MO2 mod; keep one version enabled. This ZIP contains the matching delivery bridge, unchanged companion observer and `CHIM/server-plugins/correspondence/0.1.0-dev.29.dwpkg`. No second Sealed Fates archive or manual checksum calculation is required. Confirm dev.29 in CHIM after its normal synchronization. Publishing is not installation.
+
+**Upgrade prerequisite:** migration006 creates the written-letter index on `public.eventlog`. CHIM's database role must own that table or an administrator must apply the bundled migration first. Missing rights, a conflicting index, malformed marked history or a build-lock timeout refuse setup; do not bypass the checks. Schedule this update with the server/game session stopped. [Administrator details](INSTALL.md).
+
+## What changes for you
+
+- A delivered note is owned by its addressed actor base, with ownership checked before and after attachment transfers. NPCs are not added to a shared faction. This repairs the source of the stolen-note risk; actual Skyrim stolen flags still need a gameplay check.
+- Older CHIM 3.4.2 can preflight its known `openaijson` and `openrouterjson` dialogue connectors without the newer decision-classifier helper. A valid configured model/HTTP(S) endpoint, enabled BGL gate and request API remain required. Decision-only endpoints/models and unknown drivers remain refused. No provider settings are changed and no call is made during readiness checks.
+- Repeated actor-catalog construction and written-source duplicate searches do less work. Full stored letters and all validated known references remain available. This is not a constant-time mailbox or a campaign-scale performance claim.
+- ZIP members have the explicit release date 2026-10-28, so CHIM's modification-time selector can distinguish the new package from earlier playtests. The archive remains reproducible. Keep one version enabled; actual MO2 timestamp handling is still an installation check.
+- The same emo llama is about 79% lighter over the wire. His feelings remain extremely heavy. Original artwork is retained; code/docs are MIT, artwork is CC BY 4.0 with credit. All distributions carry the notices.
+
+**The Skyrim interface is optional. The existing CHIM web plugin page still works.** Department requires an exact dev.29 compatibility decision; see the [pairing record](PRISMA-COMPATIBILITY.md). Prealpha.24's dev.28 pins must not be bypassed. Use CHIM through localhost on the server computer and choose **Plugins → Sealed Fates → Plugin Page**.
+
+## What deliberately stays strict
+
+Fresh native observations, playthrough/restore authority, original-operation identity, claim ownership, full forwarded letters, origin/access/CSRF checks and unknown/no-resend behavior remain required. No automatic replay, refund or physical resend is added.
+
+The JContainers co-save journal still retains claims, exact dispatch packets and cached receipts indefinitely. The available API offers no verified lossless compression/digest primitive. Deleting old claims, substituting an approximate hash or moving authority to an unrelated file would weaken duplicate-transfer and restore protection. That item remains open; it has not been renamed into a fix. Bridge packets contain transfer/correlation data, not full letter bodies.
+
+## Verification boundary
+
+The release uses offline regression fixtures, source-translated fake-native checks, a real source-bound Caprica compilation, source/package review and deterministic asset verification. The source-backed legacy-core preflight uses the actual retained 3.4.2 manager and both dialogue drivers with fake database/config boundaries; its provider callback is not invoked. Detailed results and remaining history costs are in the [findings assessment](DEV29-FINDINGS.md).
+
+No live server, test2/WSL, installed game/MO2, campaign, provider or production configuration is used for these tests. Actual Skyrim stolen-item UI, note rendering, physical item/gold movement, companion observations/follower frameworks, save/co-save restoration, installed HTTP sending and real-model behavior remain unverified by this release. Earlier test2 evidence stays historical and does not certify these changed bytes. This remains **PRE-ALPHA**.
+
+Read [installation](INSTALL.md), [verification limits](VERIFICATION.md), [companion behavior](COMPANION-CHECKINS.md) and [interface compatibility](PRISMA-COMPATIBILITY.md).
+
+## Historical dev.28 — PRE-ALPHA: the courier remembers his return address
 
 The web page was hiding its own return address, then refusing the letter for arriving without one. An impressive administrative achievement. We have reduced the paperwork by one self-inflicted problem.
 

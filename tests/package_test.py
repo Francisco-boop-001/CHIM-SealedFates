@@ -36,6 +36,8 @@ class PackageTest(unittest.TestCase):
             path = self.root / 'server' / name
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text('{}' if name.endswith('.json') else 'fixture', encoding='utf-8')
+        for name in pkg.DISTRIBUTION_FILES:
+            shutil.copyfile(ROOT / name, self.root / name)
         (self.root / 'server/manifest.json').write_text(json.dumps({'name':'correspondence','version':'0.1.0-dev.1'}))
         source = ROOT / 'game' / 'Source' / 'Scripts' / 'CHIMCorrespondenceBridge.psc'
         source_copy = self.root / 'game' / 'Source' / 'Scripts' / source.name
@@ -62,6 +64,43 @@ class PackageTest(unittest.TestCase):
         manifest_path = self.root / 'game' / 'bridge-manifest.json'
         manifest_path.parent.mkdir(parents=True, exist_ok=True)
         manifest_path.write_text(json.dumps(self.bridge_manifest, indent=2) + '\n', encoding='utf-8')
+
+    def test_dev29_legal_notices_and_newest_file_timestamp(self):
+        for name in ('LICENSE', 'ARTWORK-LICENSE.txt', 'NOTICE.md'):
+            shutil.copyfile(ROOT / name, self.root / name)
+        manifest = self.root / 'server/manifest.json'
+        manifest.write_text(json.dumps({'name':'correspondence','version':'0.1.0-dev.29'}))
+        first = pkg.build(self.root, self.pex, self.root / 'out')
+        again = pkg.build(self.root, self.pex, self.root / 'out')
+        self.assertEqual(first, again)
+        with ZipFile(first['server']) as archive:
+            self.assertEqual({x.date_time for x in archive.infolist()}, {(2026,10,28,0,0,0)})
+            sums = archive.read('checksums.sha256').decode('ascii')
+            for name in ('LICENSE', 'ARTWORK-LICENSE.txt', 'NOTICE.md'):
+                data = (ROOT / name).read_bytes()
+                self.assertEqual(archive.read('server/' + name), data)
+                self.assertIn(hashlib.sha256(data).hexdigest() + '  server/' + name, sums)
+        with ZipFile(first['bundle']) as archive:
+            self.assertEqual({x.date_time for x in archive.infolist()}, {(2026,10,28,0,0,0)})
+            for name in ('LICENSE', 'ARTWORK-LICENSE.txt', 'NOTICE.md'):
+                self.assertEqual(archive.read(name), (ROOT / name).read_bytes())
+        original_root = release.ROOT
+        release.ROOT = self.root
+        try:
+            release.build_current_release('0.1.0-dev.29')
+        finally:
+            release.ROOT = original_root
+        with tarfile.open(self.root / 'dist/correspondence.tar.gz') as archive:
+            for name in ('LICENSE', 'ARTWORK-LICENSE.txt', 'NOTICE.md'):
+                self.assertEqual(archive.extractfile('correspondence/' + name).read(), (ROOT / name).read_bytes())
+
+    def test_new_release_requires_explicit_archive_timestamp(self):
+        (self.root / 'server/manifest.json').write_text(json.dumps({'name':'correspondence','version':'0.1.0-dev.30'}))
+        with self.assertRaisesRegex(ValueError, 'release timestamp'):
+            pkg.build(self.root, self.pex, self.root / 'out')
+
+    def test_history_duplicate_index_ships_with_store(self):
+        self.assertIn('migrations/006_history_indexes.sql', pkg.SERVER_FILES)
 
     def test_restore_epoch_migration_ships_with_store(self):
         self.assertIn('migrations/004_restore_state.sql', pkg.SERVER_FILES)
@@ -162,6 +201,7 @@ class PackageTest(unittest.TestCase):
         manifest = json.loads((ROOT / 'game' / 'bridge-manifest.json').read_text(encoding='utf-8'))
         self.assertEqual(manifest['build_evidence_root'], '.')
         files = [
+            *pkg.DISTRIBUTION_FILES,
             *(('server/' + name) for name in pkg.SERVER_FILES),
             'scripts/build-package.py',
             'game/Source/Scripts/CHIMCorrespondenceBridge.psc',
@@ -434,13 +474,16 @@ class PackageTest(unittest.TestCase):
     def test_dev27_release_has_only_current_four_assets_deterministically(self):
         self.assert_current_release('0.1.0-dev.27')
 
+    def test_dev29_release(self):
+        self.assert_current_release('0.1.0-dev.29')
+
     def test_dev28_release_has_only_current_four_assets_deterministically(self):
         self.assert_current_release('0.1.0-dev.28')
 
     def test_release_refuses_source_changed_after_gate_before_snapshot(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.28'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.29'}), encoding='utf-8')
         target = self.root / 'server/lib/store.php'
         original_root = release.ROOT
         release.ROOT = self.root
@@ -463,7 +506,7 @@ class PackageTest(unittest.TestCase):
     def test_release_refuses_package_changed_after_snapshot_before_real_reads(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.28'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.29'}), encoding='utf-8')
         target = self.root / 'server/lib/store.php'
         original_root = release.ROOT
         release.ROOT = self.root
@@ -485,7 +528,7 @@ class PackageTest(unittest.TestCase):
     def test_release_assets_use_one_snapshot_when_source_changes_after_package_build(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.28'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.29'}), encoding='utf-8')
         expected_files = {
             name: (self.root / 'server' / name).read_bytes()
             for name in pkg.SERVER_FILES
@@ -508,13 +551,13 @@ class PackageTest(unittest.TestCase):
             release.ROOT = original_root
 
         out = self.root / 'dist'
-        server_name = 'correspondence-0.1.0-dev.28.dwpkg'
+        server_name = 'correspondence-0.1.0-dev.29.dwpkg'
         with ZipFile(out / server_name) as server_archive:
             for name, data in expected_files.items():
                 self.assertEqual(server_archive.read('server/' + name), data)
             server_bytes = (out / server_name).read_bytes()
-        with ZipFile(out / 'CHIM-Sealed-Fates-0.1.0-dev.28.zip') as bundle:
-            nested = bundle.read('CHIM/server-plugins/correspondence/0.1.0-dev.28.dwpkg')
+        with ZipFile(out / 'CHIM-Sealed-Fates-0.1.0-dev.29.zip') as bundle:
+            nested = bundle.read('CHIM/server-plugins/correspondence/0.1.0-dev.29.dwpkg')
         self.assertEqual(nested, server_bytes)
         with tarfile.open(out / 'correspondence.tar.gz', 'r:gz') as archive:
             for name, data in expected_files.items():
@@ -586,7 +629,7 @@ class PackageTest(unittest.TestCase):
     def test_release_rejects_unsupported_version(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        manifest['version'] = '0.1.0-dev.29'
+        manifest['version'] = '0.1.0-dev.30'
         manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
         original_root = release.ROOT
         release.ROOT = self.root
@@ -605,6 +648,8 @@ class PackageTest(unittest.TestCase):
         self.assertEqual(Path(a['server']).name, 'correspondence-0.1.0-dev.1.dwpkg')
         self.assertEqual(Path(a['bundle']).name, 'CHIM-Sealed-Fates-0.1.0-dev.1.zip')
         with ZipFile(a['server']) as z:
+            self.assertEqual({x.date_time for x in z.infolist()}, {(1980,1,1,0,0,0)})
+            self.assertNotIn('server/LICENSE', z.namelist())
             self.assertEqual(json.loads(z.read('manifest.json'))['name'], 'correspondence')
         with ZipFile(a['bundle']) as z:
             self.assertEqual(set(z.namelist()), {'Scripts/CHIMCorrespondenceBridge.pex', 'CHIM/server-plugins/correspondence/0.1.0-dev.1.dwpkg'})

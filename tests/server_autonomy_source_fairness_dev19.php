@@ -57,6 +57,7 @@ final class AutonomySourceFairnessDev19ServiceStore implements CorrespondenceSto
     public function readTransaction(callable $work): mixed { return $work(); }
     public function scope(): array { return ['playthrough_id'=>'unprofiled','ts'=>100000,'gamets'=>100000]; }
     public function actors(): array { return []; }
+    public function transactionMemo(string $key, callable $build): mixed { return $build(); }
     public function player(): string { return 'Dragonborn'; }
     public function lockActorRows(array $npcIds, bool $includePlayer = false): array { return []; }
     public function findRequest(string $scope, string $request): ?array { return null; }

@@ -1,9 +1,36 @@
 # Changelog
 
+## 0.1.0-dev.29 — PRE-ALPHA
+
+- Assign delivered notes to the recipient actor base and verify ownership through transfer completion; rebuild the source-bound anonymous bridge.
+- Support the verified legacy CHIM 3.4.2 `openaijson` and `openrouterjson` dialogue contracts when its newer classifier is absent; unknown/decision-only configurations remain refused.
+- Reduce repeated history-body/identity processing and replace repeated event-history duplicate scans, preserving restore and exact source validation.
+- Use an explicit deterministic release timestamp for new archives so CHIM can select the current package; keep one version active.
+- Compress the unchanged dashboard illustration; add MIT code and CC BY 4.0 artwork notices to every distribution.
+- Correct current/historical documentation and describe the separate companion observer. Journal replay history remains retained and unbounded; it is not safe to expire claims.
+- Verification is offline. No live/test2 access, installed-game changes, provider calls or new Skyrim acceptance.
+
 ## 0.1.0-dev.28
 
 - Repair real browser form Origin suppression by using same-origin referrer policy; keep access, origin and CSRF guards intact.
 - Add standalone browser regression and cross-origin privacy/wrong-CSRF controls. Native PRISMA gold-count repair is Department-owned; no live/game deployment or Skyrim acceptance claimed.
+
+## 0.1.0-dev.27
+
+- Compare the submitted Origin with the validated browser-facing Host authority when Apache reports a different canonical port; preserve authorization and CSRF checks.
+
+## 0.1.0-dev.26
+
+- Skip disabled/cooled companion polls before the eventlog writer lock and repeat due-state checks inside the writer.
+- Hide forbidden manual companion Dispatch/Retry while retaining safe Close and original-operation reconciliation.
+
+## 0.1.0-dev.25
+
+- Explain operator refusal with CHIM Plugin Page navigation and a validated localhost link where applicable, retaining the access guard.
+
+## 0.1.0-dev.24
+
+- Select the latest eligible shared cooldown claim without allowing a newer future claim to hide an older active cooldown. Local regressions pass; PostgreSQL/gameplay reruns remained pending.
 
 ## 0.1.0-dev.23 — PRE-ALPHA
 
@@ -12,6 +39,12 @@
 - Repair blocked due mail, per-NPC BGL/cooldown deferrals and reclaimed-request ownership. Fix queue framing and interaction-generation stamping.
 - Include the source-bound read-only observer alongside the unchanged physical bridge in one MO2 ZIP.
 - Verify isolated test2 recovery and real core queue behavior; actual Skyrim execution, co-save and physical delivery remain unverified. No dev.23 Department pairing is claimed.
+
+## 0.1.0-dev.22
+
+- Defer temporarily unreadable recipient/player identity, keep scheduler-owned retry controls consistent, and roll back web composition when rendering fails.
+- Retire restore-interrupted claims safely, preserve proof of callbacks that never started and repair the status/start lock race.
+- Publish packaging fix1 separately: use the version-only embedded DWPkg filename without changing dev.22 server/bridge bytes or replacing historical assets.
 
 ## 0.1.0-dev.21 — PRE-ALPHA
 

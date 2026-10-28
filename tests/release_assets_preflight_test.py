@@ -41,7 +41,7 @@ class ReleasePreflightEntryTest(unittest.TestCase):
             'status': 'pass',
             'departmentInterface': 'web-only',
             'owner': {
-                'version': '0.1.0-dev.28',
+                'version': '0.1.0-dev.29',
                 'sourceClosureSha256': 'a' * 64,
             },
             'pairing': {'status': 'not-claimed'},
@@ -51,7 +51,7 @@ class ReleasePreflightEntryTest(unittest.TestCase):
             return decision
         def build_current(version, source_closure):
             order.append('build-current')
-            self.assertEqual(version, '0.1.0-dev.28')
+            self.assertEqual(version, '0.1.0-dev.29')
             self.assertEqual(source_closure, 'a' * 64)
             return {'fixture.zip': {'sha256': 'example'}}
         output = io.StringIO()
@@ -63,7 +63,7 @@ class ReleasePreflightEntryTest(unittest.TestCase):
             release.main(['--department-interface', 'web-only'])
         preflight.assert_called_once_with(ROOT, 'web-only', None)
         build.assert_not_called()
-        build_current_mock.assert_called_once_with('0.1.0-dev.28', 'a' * 64)
+        build_current_mock.assert_called_once_with('0.1.0-dev.29', 'a' * 64)
         self.assertEqual(order, ['check', 'build-current'])
         self.assertIn('"compatibility"', output.getvalue())
         self.assertIn('"web-only"', output.getvalue())

@@ -2,7 +2,7 @@
   "schema_version": 1,
   "build_evidence_root": ".",
   "product": "CHIM Correspondence bridge",
-  "candidate": "unpublished-0.1.0-dev.17",
+  "candidate": "0.1.0-dev.29",
   "script": "CHIMCorrespondenceBridge",
   "actions": [
     "ExtCmdCHIMCorrespondenceBridge_Deliver",
@@ -15,7 +15,6 @@
       "name": "CHIM client / AIAgent.esp",
       "version": "pinned client revision above; installed runtime unverified",
       "forms": {
-        "owner_faction_local_id": "00021D0B",
         "note_template_local_id": "00022D30"
       },
       "native_declaration": "Int Function AIAgentFunctions.logMessage(String a_msg, String type) global native"
@@ -27,7 +26,10 @@
         "Game.GetFormFromFile",
         "ObjectReference.SetDisplayName",
         "Form.IsPlayable",
-        "StringUtil"
+        "StringUtil",
+        "Actor.GetActorBase",
+        "ObjectReference.GetActorOwner",
+        "ObjectReference.SetActorOwner"
       ]
     },
     {
@@ -57,18 +59,18 @@
     "sha256": "c8013baf3350bf9b313a633f74997ce6a9a47c343e489f886bcde359369126f0"
   },
   "pex": {
-    "path": "bridge/20261021T003347791Z/Data/Scripts/CHIMCorrespondenceBridge.pex",
-    "sha256": "ee23f155d9417d6c68007613abade09cd218f5e6f11ea700413b3bb1ac4539c0",
-    "bytes": 19809
+    "path": "bridge/20261028T205358195Z/Data/Scripts/CHIMCorrespondenceBridge.pex",
+    "sha256": "41ff0f569402e2567bb57732e648fd52732f40d3890fcfbb914e32c010067c5b",
+    "bytes": 19802
   },
-  "build_receipt": "bridge/20261021T003347791Z/build-receipt.json",
+  "build_receipt": "bridge/20261028T205358195Z/build-receipt.json",
   "evidence": {
     "host_parser_checks": 60,
     "native_concurrency": "NOT RUN",
     "native_gameplay": "NOT RUN",
     "co_save_restore": "NOT RUN",
-    "static_checks": 26,
-    "host_state_checks": 41,
+    "static_checks": "NOT RUN",
+    "host_state_checks": 45,
     "actual_server_wire_checks": 8
   },
   "package_allowlist": [
@@ -81,15 +83,16 @@
   "limits": [
     "Base-form quantity attachments; exact enchanted/renamed inventory-instance selection unsupported.",
     "Dynamic FF reference identities rejected.",
-    "Note proof uses +1 aggregate template count with unique reference/title/faction; concurrent identical note acquisition is not independently excluded.",
-    "Renderer readiness checks template/faction/image file presence; PNG decoding and actual native display await isolated gameplay.",
+    "Note proof uses +1 aggregate template count with unique reference/title/recipient actor owner; concurrent identical note acquisition is not independently excluded.",
+    "Renderer readiness checks template/image file presence; PNG decoding and actual native display await isolated gameplay.",
     "SKSE source warns case-insensitive string interning may affect GetNthChar/AsOrd; UUID/nonce validation now accepts ASCII hex case; native interning, journal aliases and receipt display remain to verify.",
     "JContainers co-save journal and atomic claim are source/compile contracts, not native save atomicity evidence.",
+    "The retained JContainers imports provide no lossless compression or cryptographic digest API for exact wire identity; raw payloads and claims remain indefinitely in the matching co-save to preserve conflict and unknown recovery, so journal storage grows with deliveries.",
     "Reconcile replays cached receipt or unknown; it never moves inventory. Exact original JSON wire is required."
   ],
   "source": {
     "path": "game/Source/Scripts/CHIMCorrespondenceBridge.psc",
-    "sha256": "2e8366eded1458c23f5bc3d0fa1368455e4a20461b173737ea4275facc030061"
+    "sha256": "7bda80f69474c1fdc2633d064f0fd569a078090821ca6fcb7df87aa98d82f286"
   },
-  "build_receipt_sha256": "f8040b5ee7ee8e6f6e3a41ebe6f060dc3a393478c1a4416ffdad39b455db4848"
+  "build_receipt_sha256": "8b5c2347817f4beb4e7451ef9042e1fe448055e052fdcd20a8021ba23f591569"
 }

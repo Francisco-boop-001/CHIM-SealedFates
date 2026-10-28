@@ -12,6 +12,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
     private bool $restoreProbe=false;
     private bool $sessionSharedLock=false;
     private bool $connectionClosed=false;
+    private array $transactionMemo=[];
     private ?array $actorCatalog=null;
     private ?array $offscreenActorRows=null;
     private ?string $playerName=null;
@@ -20,7 +21,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
     private ?string $requestNativeTs=null;
     /** The connection must be dedicated to this store; failed advisory cleanup closes it. */
     public function __construct(private mixed $connection, private Closure $executorResolver, private Closure $notePreparer, private ?string $restoreSentinelPath=null) {}
-    private function clearTransactionCache():void{$this->actorCatalog=null;$this->offscreenActorRows=null;$this->playerName=null;}
+    private function clearTransactionCache():void{$this->transactionMemo=[];$this->actorCatalog=null;$this->offscreenActorRows=null;$this->playerName=null;}
     public function bindRequestClock(array $request):void
     {
         if($this->active)throw new LogicException('clock_rebind_during_transaction');
@@ -167,7 +168,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
         $this->assertConnectionIdle();
         $this->schemaSetup=true;$schemaComplete=false;
         try{
-            $ready=$this->queryRaw("SELECT to_regclass('plugins.correspondence_documents') IS NOT NULL AS documents,to_regclass('plugins.correspondence_operations') IS NOT NULL AS operations,to_regclass('plugins.correspondence_presence') IS NOT NULL AS presence,to_regclass('plugins.correspondence_restore_state') IS NOT NULL AS restore_state,EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='plugins' AND table_name='correspondence_restore_state' AND column_name='native_ts_floor') AS restore_floor")[0]??[];
+            $ready=$this->queryRaw("SELECT to_regclass('plugins.correspondence_documents') IS NOT NULL AS documents,to_regclass('plugins.correspondence_operations') IS NOT NULL AS operations,to_regclass('plugins.correspondence_presence') IS NOT NULL AS presence,to_regclass('plugins.correspondence_restore_state') IS NOT NULL AS restore_state,to_regclass('public.correspondence_written_evidence_document_id_idx') IS NOT NULL AS written_source_index,EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='plugins' AND table_name='correspondence_restore_state' AND column_name='native_ts_floor') AS restore_floor")[0]??[];
             if(($ready['documents']??null)!=='t'||($ready['operations']??null)!=='t'||($ready['presence']??null)!=='t'){
                 $migration=@file_get_contents(dirname(__DIR__).'/migrations/001_initial.sql');
                 if(!is_string($migration)||$migration==='')throw new DomainException('schema_migration_unavailable');
@@ -178,6 +179,23 @@ final class CorrespondencePgStore implements CorrespondenceStore
                 if(!is_string($migration)||$migration==='')throw new DomainException('schema_migration_unavailable');
                 $this->transaction(function()use($migration){foreach(explode(';',$migration)as$statement)if(trim($statement)!=='')$this->queryRaw($statement);});
             }
+            if(($ready['written_source_index']??null)!=='t'){
+                $migration=@file_get_contents(dirname(__DIR__).'/migrations/006_history_indexes.sql');
+                if(!is_string($migration)||$migration==='')throw new DomainException('schema_migration_unavailable');
+                try{$this->transaction(function()use($migration){foreach(explode(';',$migration)as$statement)if(trim($statement)!=='')$this->queryRaw($statement);});}
+                catch(Throwable $error){throw new DomainException('written_source_index_unavailable',0,$error);}
+            }
+            $index=$this->queryRaw("SELECT c.relkind,a.amname AS access_method,i.indisvalid,i.indisready,i.indisunique,i.indisprimary,i.indnatts,i.indnkeyatts,(i.indrelid=to_regclass('public.eventlog')) AS on_eventlog,pg_get_expr(i.indexprs,i.indrelid) AS expression,pg_get_expr(i.indpred,i.indrelid) AS predicate FROM pg_class c LEFT JOIN pg_index i ON i.indexrelid=c.oid LEFT JOIN pg_am a ON a.oid=c.relam WHERE c.oid=to_regclass('public.correspondence_written_evidence_document_id_idx')")[0]??[];
+            $normalizeIndexSql=static function(string $sql):string{
+                return preg_replace_callback("/'(?:[^']|'')*'|[^']+/",static function(array $part):string{
+                    if(str_starts_with($part[0],"'"))return $part[0];
+                    $sql=strtolower($part[0]);$sql=preg_replace('/::(?:text|character varying|varchar)\\b/','',$sql)??$sql;
+                    return str_replace(['(',')'], '',preg_replace('/\\s+/','',$sql)??$sql);
+                },$sql)??'';
+            };
+            $expression=$normalizeIndexSql((string)($index['expression']??''));$predicate=$normalizeIndexSql((string)($index['predicate']??''));
+            if(($index['relkind']??null)!=='i'||($index['access_method']??null)!=='btree'||($index['indisvalid']??null)!=='t'||($index['indisready']??null)!=='t'||($index['indisunique']??null)!=='f'||($index['indisprimary']??null)!=='f'||($index['indnatts']??null)!=='1'||($index['indnkeyatts']??null)!=='1'||($index['on_eventlog']??null)!=='t'
+                ||$expression!=="casewhentype='info'andsess='written_evidence_v1'thendata::jsonb->>'document_id'elsenullend"||$predicate!=="type='info'andsess='written_evidence_v1'")throw new DomainException('written_source_index_unavailable');
             $columns=$this->queryRaw("SELECT table_name,column_name FROM information_schema.columns WHERE table_schema='plugins' AND table_name IN ('correspondence_documents','correspondence_operations','correspondence_presence','correspondence_restore_state')");
             $expected=['correspondence_documents'=>['document_id','playthrough_id','request_id','payload','created_at'],'correspondence_operations'=>['operation_id','document_id','payload','created_at'],'correspondence_presence'=>['playthrough_id','payload'],'correspondence_restore_state'=>['singleton','epoch','pending','native_ts_floor']];
             foreach($expected as$table=>$names)foreach($names as$name)if(!array_filter($columns,fn($row)=>$row['table_name']===$table&&$row['column_name']===$name))throw new DomainException('schema_migration_incomplete');
@@ -428,6 +446,12 @@ final class CorrespondencePgStore implements CorrespondenceStore
         if($this->active)$this->actorCatalog=$rows;
         return $rows;
     }
+    public function transactionMemo(string $key,callable $build):mixed
+    {
+        if(!$this->active)return $build();
+        if(!array_key_exists($key,$this->transactionMemo))$this->transactionMemo[$key]=$build();
+        return $this->transactionMemo[$key];
+    }
     public function offscreenActors():array
     {
         if($this->active&&$this->offscreenActorRows!==null)return $this->offscreenActorRows;
@@ -498,7 +522,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
         if(in_array($type,['written_evidence','correspondence_receipt_confirmed','correspondence_presence','correspondence_companion_observation'],true)&&$this->requestClock===null)throw new DomainException('request_clock_unavailable');
         if($type==='written_evidence'){
             $source=json_decode($data,true,512,JSON_THROW_ON_ERROR);
-            $existing=$this->query("WITH marked AS MATERIALIZED (SELECT rowid,data FROM public.eventlog WHERE type='info' AND sess='written_evidence_v1') SELECT rowid FROM marked WHERE data::jsonb->>'document_id'=$1 LIMIT 1",[$source['document_id']]);
+            $existing=$this->query("SELECT rowid FROM public.eventlog WHERE type='info' AND sess='written_evidence_v1' AND CASE WHEN type='info' AND sess='written_evidence_v1' THEN data::jsonb->>'document_id' END=$1 LIMIT 1",[$source['document_id']]);
             if($existing!==[])throw new DomainException('duplicate_written_source');
         }
         $clock=$this->scope();

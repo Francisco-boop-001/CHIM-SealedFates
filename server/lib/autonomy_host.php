@@ -59,6 +59,27 @@ function correspondenceAutonomyCoreSupportsDialogue(?callable $decisionClassifie
     }
 }
 
+// The legacy core lacks a classifier, so only source-verified dialogue drivers are allowed.
+function correspondenceAutonomyCoreSupportsLegacyDialogueDrivers(array $connectorData): bool
+{
+    if (!in_array($connectorData['driver'] ?? null, ['openaijson', 'openrouterjson'], true)) return false;
+    $model = $connectorData['model'] ?? null;
+    $url = $connectorData['url'] ?? null;
+    if (!is_string($model) || trim($model) === '' || preg_match('/[\s\x00-\x1F\x7F]/', $model) === 1
+        || !is_string($url) || trim($url) === '') return false;
+
+    $url = trim($url);
+    if (filter_var($url, FILTER_VALIDATE_URL) === false) return false;
+    $parts = parse_url($url);
+    if (!is_array($parts) || !in_array(strtolower((string)($parts['scheme'] ?? '')), ['http', 'https'], true)
+        || !is_string($parts['host'] ?? null) || trim($parts['host']) === '') return false;
+
+    $normalizedModel = strtolower(trim($model));
+    $path = (string)($parts['path'] ?? '');
+    return preg_match('#^~?typesafe/jev(-|$)#', $normalizedModel) !== 1
+        && preg_match('#/decisions/?$#i', $path) !== 1;
+}
+
 /**
  * Run one bounded scheduler tick only from a native, ordinary dialogue hook.
  * Factories are injectable for static tests; browser code must never call this.
@@ -138,7 +159,11 @@ function correspondenceAutonomyCoreModelFactory(): ?callable
             : null;
         $manager = new LLMConnector();
         $data = $manager->getById($connectorId);
-        if (!is_array($data) || !correspondenceAutonomyCoreSupportsDialogue($decisionClassifier, $data)
+        if (!is_array($data)) return null;
+        $supportsDialogue = $decisionClassifier !== null
+            ? correspondenceAutonomyCoreSupportsDialogue($decisionClassifier, $data)
+            : correspondenceAutonomyCoreSupportsLegacyDialogueDrivers($data);
+        if (!$supportsDialogue
             || !is_string($data['driver'] ?? null)
             || preg_match('/\A[A-Za-z][A-Za-z0-9_]{0,63}\z/D', $data['driver']) !== 1) return null;
         $driverFile = $root.'/connector/'.$data['driver'].'.php';

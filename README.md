@@ -1,4 +1,4 @@
-**0.1.0-dev.28 — PRE-ALPHA.** Repairs browser form submission after the page suppressed its own Origin; local browser/security checks, with installed-server and Skyrim acceptance still pending. [Download](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.28) · [Release notes and verification limits](docs/RELEASE.md).
+**0.1.0-dev.29 — PRE-ALPHA.** Repairs note ownership and legacy dialogue-connector readiness, reduces repeated history work, and fixes package selection dates. Offline verification; installed-server and Skyrim acceptance remain pending. [Download](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.29) · [Release notes and limits](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -8,23 +8,21 @@ Part of the World of Drama-Llama.
 
 Skyrim has one courier, and he is VERY good at his job. Let's reward him with love letters, forged apologies, and forwarded insults. I call it 'emergent storytelling' because 'I have made this man's working conditions worse' looks dreadful on a feature list.
 
-Sealed Fates adds physical letters and optional item or gold transfers to CHIM, private written context, and bounded NPC correspondence. Dev.21 stops unusual NPC profile metadata from stalling background letters; dev.20 repaired closed-letter recovery and marker-failure quarantine. Strict claim and transfer checks are unchanged. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
+Sealed Fates adds physical letters and optional item or gold transfers to CHIM, private written context, and bounded NPC correspondence. Optional waiting-companion check-ins use observed game circumstances; unknown state and silence remain valid. Dev.29 repairs recipient note ownership and supports the validated legacy `openaijson` and `openrouterjson` dialogue connectors. Strict claim and transfer checks are unchanged. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
 
 ## Pick your interface
 
-**Optional Skyrim interface:** [Department prealpha.24](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.24) now pins exact Sealed Fates dev.28 and includes native **0.1.17.0**, which replaces both crashing gold-count callers. Its offline regressions, native build, emitted DLL call paths, package/source contents and public downloads were checked. This is not an actual Skyrim1.5.97, installed-server send, restore/save-load or physical-transfer acceptance. The web page remains available independently. No compatibility guard was bypassed.
+**Optional Skyrim interface:** Department uses exact source pins. Dev.29 needs its own reviewed pairing; prealpha.24 pins dev.28 and should refuse changed source. The [compatibility record](docs/PRISMA-COMPATIBILITY.md) states the verified boundary. The web page works independently.
 
 **The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** Keep using CHIM's web page to compose letters, browse your inbox and outbox, check delivery status, and enable or pause autonomous correspondence. You do not need the new Skyrim interface to use those controls. Your browser has not been fired; I lack the qualifications to conduct that meeting.
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**Dev.28 uses the existing CHIM web plugin page. Department/PRISMA compatibility is not claimed.** Department prealpha.13 remains the historical exact-source pairing for unchanged dev.23; it should refuse this new payload. The optional interface and its pins were not changed. [Exact compatibility and limits](docs/PRISMA-COMPATIBILITY.md).
-
 ## Download
 
-Install **[CHIM-Sealed-Fates-0.1.0-dev.28.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.28/CHIM-Sealed-Fates-0.1.0-dev.28.zip)** as your single Sealed Fates MO2 mod. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
+Install **[CHIM-Sealed-Fates-0.1.0-dev.29.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.29/CHIM-Sealed-Fates-0.1.0-dev.29.zip)** as your single Sealed Fates MO2 mod. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
 
-The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.28.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
+The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.29.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
 
 ## The web page
 
@@ -44,15 +42,15 @@ When the connector is missing, disabled or invalid, due queued letters can still
 
 Offscreen NPC mail is a separate text-only service. After opt-in, a fresh native bored or location observation can start or resume its bounded worker, so an NPC may process mail while the player is elsewhere. It waits for fresh native clock observations, pauses when those stop or scope checks fail, and its supervisor has a 30-minute lifetime cap; each child makes at most one bounded decision tick. It does not deliver physical notes or items.
 
-Recipient context contains up to the three newest valid exposed letters found in the latest 32 inbox entries. A sender must still be alive and have Background Life and Letters enabled for that mail to appear in current NPC prompts. Death or an explicit opt-out suppresses prompt exposure; the complete stored letter and its audit evidence remain. Restoring eligibility lets the same valid letter appear again. Failed, expired, or invalid work stays inert or is retired under its proof checks. Newly recorded, proven transient offscreen reaction failures may be reconsidered once with a fresh claim; historical ambiguous failures remain terminal. Recovery preserves the full original body and never resends physical transfers.
+Recipient context remains bounded to three letters. The complete known exposed-source reference set is retained for sibling-plugin backlog processing; its ID checks still grow with history. A sender must still be alive and have Background Life and Letters enabled for that mail to appear in current NPC prompts. Death or an explicit opt-out suppresses prompt exposure; the complete stored letter and its audit evidence remain. Restoring eligibility lets the same valid letter appear again. Failed, expired, or invalid work stays inert or is retired under its proof checks. Newly recorded, proven transient offscreen reaction failures may be reconsidered once with a fresh claim; historical ambiguous failures remain terminal. Recovery preserves the full original body and never resends physical transfers.
 
 ## Compatibility and limits
 
 The server and bridge manifests list source-level compatibility references. They describe APIs and versions targeted by this build; they do not verify an installed CHIM, Skyrim, or mod setup. The bridge supports base-form item quantities, not selection of exact enchanted or renamed instances.
 
-Existing transaction and identity safeguards remain. Dev.18 replaces global `MAX(eventlog.ts)` freshness checks with restore epochs and native timestamp floors; ordinary concurrent events no longer invalidate valid completion. Empty, queued and already-exposed prompt paths remain read-only, while first exposure revalidates the complete body and references. Effect writes remain serialized. Historical dev.16–17 scan timings do not describe dev.18 freshness, and no campaign-scale performance claim or core-table index is shipped. SQL savepoints protect database staging only; they do not roll back rendered files, co-save state, or Skyrim inventory. Removing the code does not automatically remove retained database rows, eventlog evidence, books, PNGs, co-save data, notes, or items. See [installation and removal](docs/INSTALL.md) and [verification limits](docs/VERIFICATION.md).
+Existing transaction and identity safeguards remain. Dev.18 replaces global `MAX(eventlog.ts)` freshness checks with restore epochs and native timestamp floors; ordinary concurrent events no longer invalidate valid completion. Empty, queued and already-exposed prompt paths remain read-only, while first exposure revalidates the complete body and references. Effect writes remain serialized. Historical dev.16–17 scan timings do not describe current freshness. Dev.29 adds only the written-source lookup index on eventlog; no campaign-scale performance claim is made. SQL savepoints protect database staging only; they do not roll back rendered files, co-save state, or Skyrim inventory. Removing the code does not automatically remove retained database rows, eventlog evidence, books, PNGs, co-save data, notes, or items. See [installation and removal](docs/INSTALL.md) and [verification limits](docs/VERIFICATION.md).
 
-This release does not add romance or debt collection mechanics, authenticate signatures, or establish that a model can reliably detect forgery. It makes no new provider-evaluation or Skyrim-gameplay claim. The dev.14 recovery kit remains historical evidence for its exact older pairing only, not dev.18 integration proof.
+This release does not add romance or debt collection mechanics, authenticate signatures, or establish that a model can reliably detect forgery. It makes no new provider-evaluation or Skyrim-gameplay claim. The dev.14 recovery kit remains historical evidence for its exact older pairing only, not dev.29 integration proof.
 
 ## Project documents
 
@@ -60,4 +58,4 @@ This release does not add romance or debt collection mechanics, authenticate sig
 - [Installation and removal](docs/INSTALL.md)
 - [Verification and limits](docs/VERIFICATION.md)
 - [Build and package commands](docs/BUILD.md)
-- [Credits and licensing status](NOTICE.md)
+- [Credits](NOTICE.md) · [MIT code license](LICENSE) · [Artwork: CC BY 4.0, credit required](ARTWORK-LICENSE.txt)

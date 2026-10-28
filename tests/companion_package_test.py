@@ -39,8 +39,10 @@ class CompanionPackageTest(unittest.TestCase):
         with tempfile.TemporaryDirectory(dir=ROOT / 'dist') as temporary:
             result = pkg.build(ROOT, None, Path(temporary))
             with ZipFile(result['bundle']) as archive:
-                self.assertEqual(set(archive.namelist()), {'Scripts/CHIMCorrespondenceBridge.pex', 'Scripts/CHIMCorrespondenceCompanion.pex', 'CHIM/server-plugins/correspondence/' + manifest['version'] + '.dwpkg'})
+                self.assertEqual(set(archive.namelist()), {'Scripts/CHIMCorrespondenceBridge.pex', 'Scripts/CHIMCorrespondenceCompanion.pex', 'CHIM/server-plugins/correspondence/' + manifest['version'] + '.dwpkg', *pkg.DISTRIBUTION_FILES})
                 self.assertEqual(archive.read('Scripts/CHIMCorrespondenceCompanion.pex'), pkg.verify_companion(ROOT))
+                for name in pkg.DISTRIBUTION_FILES:
+                    self.assertEqual(archive.read(name), (ROOT / name).read_bytes())
 
 
 if __name__ == '__main__':

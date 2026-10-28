@@ -24,7 +24,8 @@ if(!function_exists('pg_query_params')){
             if($GLOBALS['restoreLockMode']==='query_failure')return false;
             return new RestoreLockFakePgResult([['released'=>$GLOBALS['restoreLockMode']==='false'?'f':'t']]);
         }
-        if(str_contains($sql,"to_regclass('plugins.correspondence_documents')"))return new RestoreLockFakePgResult([['documents'=>'t','operations'=>'t','presence'=>'t','restore_state'=>'t','restore_floor'=>'t']]);
+        if(str_contains($sql,"to_regclass('plugins.correspondence_documents')"))return new RestoreLockFakePgResult([['documents'=>'t','operations'=>'t','presence'=>'t','restore_state'=>'t','written_source_index'=>'t','restore_floor'=>'t']]);
+        if(str_contains($sql,"WHERE c.oid=to_regclass('public.correspondence_written_evidence_document_id_idx')"))return new RestoreLockFakePgResult([['relkind'=>'i','access_method'=>'btree','indisvalid'=>'t','indisready'=>'t','indisunique'=>'f','indisprimary'=>'f','indnatts'=>'1','indnkeyatts'=>'1','on_eventlog'=>'t','expression'=>"CASE WHEN type='info' AND sess='written_evidence_v1' THEN data::jsonb->>'document_id' ELSE NULL::text END",'predicate'=>"type='info' AND sess='written_evidence_v1'"]]);
         if(str_contains($sql,'FROM information_schema.columns')){
             $rows=[];
             foreach([

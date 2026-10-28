@@ -54,7 +54,7 @@ def build_current_release(release_version, expected_source_closure=None):
     source_closure = sha(payload['checksums.sha256'])
     if expected_source_closure is not None and source_closure != expected_source_closure:
         raise ValueError('Owner source changed after compatibility preflight')
-    expected_server = pkg.packed(payload)
+    expected_server = pkg.packed(payload, pkg.release_timestamp(manifest['version']))
     release_label = 'dev' + release_version.rsplit('.', 1)[-1]
     names = {
         'correspondence-' + manifest['version'] + '.dwpkg',
@@ -73,9 +73,10 @@ def build_current_release(release_version, expected_source_closure=None):
             embedded = 'CHIM/server-plugins/correspondence/' + manifest['version'] + '.dwpkg'
             if archive.testzip() is not None or archive.read(embedded) != expected_server:
                 raise ValueError('Embedded server package differs from the validated source snapshot')
+        server_names = sorted(name.removeprefix('server/') for name in payload if name.startswith('server/'))
         stream = io.BytesIO()
         with tarfile.open(fileobj=stream, mode='w', format=tarfile.USTAR_FORMAT) as archive:
-            for name in sorted(pkg.SERVER_FILES):
+            for name in server_names:
                 data = payload['server/' + name]
                 entry = tarfile.TarInfo('correspondence/' + name)
                 entry.size = len(data)
@@ -87,7 +88,7 @@ def build_current_release(release_version, expected_source_closure=None):
             archive.write(stream.getvalue())
         save(staging / 'correspondence.tar.gz', compressed.getvalue())
         with tarfile.open(staging / 'correspondence.tar.gz', 'r:gz') as archive:
-            if archive.getnames() != ['correspondence/' + n for n in sorted(pkg.SERVER_FILES)]:
+            if archive.getnames() != ['correspondence/' + n for n in server_names]:
                 raise ValueError('Catalog root layout differs')
             for member in archive.getmembers():
                 if not member.isfile() or archive.extractfile(member).read() != payload['server/' + member.name.removeprefix('correspondence/')]:
@@ -116,7 +117,7 @@ def build_current_release(release_version, expected_source_closure=None):
 
 def build():
     version = json.loads((ROOT / 'server/manifest.json').read_text(encoding='utf-8')).get('version')
-    if version in {'0.1.0-dev.15', '0.1.0-dev.16', '0.1.0-dev.17', '0.1.0-dev.18', '0.1.0-dev.19', '0.1.0-dev.20', '0.1.0-dev.21', '0.1.0-dev.22', '0.1.0-dev.23', '0.1.0-dev.24', '0.1.0-dev.25', '0.1.0-dev.26', '0.1.0-dev.27', '0.1.0-dev.28'}:
+    if version in {'0.1.0-dev.15', '0.1.0-dev.16', '0.1.0-dev.17', '0.1.0-dev.18', '0.1.0-dev.19', '0.1.0-dev.20', '0.1.0-dev.21', '0.1.0-dev.22', '0.1.0-dev.23', '0.1.0-dev.24', '0.1.0-dev.25', '0.1.0-dev.26', '0.1.0-dev.27', '0.1.0-dev.28', '0.1.0-dev.29'}:
         return build_current_release(version)
     if version != '0.1.0-dev.14':
         raise ValueError('Unsupported release identity')

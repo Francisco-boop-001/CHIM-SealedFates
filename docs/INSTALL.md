@@ -1,6 +1,6 @@
 # Installation and removal
 
-**Dev.28 PRE-ALPHA:** install the single matching MO2 ZIP in a disposable game profile with a disposable server for the first playtest. It contains the unchanged physical delivery bridge, new companion observer and server package together. Native gameplay acceptance is still pending; see [release notes](RELEASE.md) and [companion requirements](COMPANION-CHECKINS.md).
+**Dev.29 PRE-ALPHA:** install the single matching MO2 ZIP in a disposable game profile with a disposable server for the first playtest. It contains the updated physical delivery bridge, read-only companion observer and server package together. Native gameplay acceptance is still pending; see [release notes](RELEASE.md) and [companion requirements](COMPANION-CHECKINS.md).
 
 ## Pick your interface
 
@@ -10,19 +10,19 @@ If the plugin page says **Operator access required**, and your browser is on the
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**For the optional Skyrim interface, use [Department prealpha.24](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.24) with Sealed Fates dev.28.** Its native0.1.17.0 repairs both gold-count crash paths and keeps exact source checks. Update the separate Department MO2 mod only after ending the game session; use its single [complete ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.24/WorldOfDramaLlama-0.1.0-prealpha.24.zip). This Sealed Fates ZIP does not replace the Department DLL. Offline verification does not establish actual Skyrim1.5.97 or physical-delivery acceptance. [Compatibility details](PRISMA-COMPATIBILITY.md).
+**The optional Skyrim interface requires an exact dev.29 Department pairing.** Prealpha.24 pins dev.28 and should refuse changed source; do not bypass that guard. Use the [compatibility record](PRISMA-COMPATIBILITY.md) to select an explicitly verified pairing. This Sealed Fates ZIP does not replace the Department DLL. Offline checks do not establish Skyrim1.5.97 or physical delivery acceptance.
 
 ## Main install — one ZIP
 
-Download **[CHIM-Sealed-Fates-0.1.0-dev.28.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.28/CHIM-Sealed-Fates-0.1.0-dev.28.zip)**. This is the complete MO2 download; it includes the matching scripts and server payload.
+Download **[CHIM-Sealed-Fates-0.1.0-dev.29.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.29/CHIM-Sealed-Fates-0.1.0-dev.29.zip)**. This is the complete MO2 download; it includes the matching scripts and server payload.
 
 1. Follow **Updating** below to stop the offscreen service before replacing files. Replace the previous Sealed Fates MO2 mod with this ZIP. Confirm exactly one active version supplies `Scripts/CHIMCorrespondenceBridge.pex`, `Scripts/CHIMCorrespondenceCompanion.pex` and the correspondence DWPkg.
-2. On the next normal full game start/save load, CHIM synchronizes `CHIM/server-plugins/correspondence/0.1.0-dev.28.dwpkg`. Confirm dev.28 in the server Plugin Manager before enabling correspondence. An MO2 checkbox alone does not prove synchronization succeeded.
+2. On the next normal full game start/save load, CHIM synchronizes `CHIM/server-plugins/correspondence/0.1.0-dev.29.dwpkg`. Confirm dev.29 in the server Plugin Manager before enabling correspondence. An MO2 checkbox alone does not prove synchronization succeeded.
 3. In the web page, enable global autonomous correspondence and the selected NPC's Background Life and Send letters settings. Test the [supported wait signals and remaining limits](COMPANION-CHECKINS.md) on that disposable setup.
 
 Mind Poisoning, Sworn & Scorned and the optional Department interface remain separate downloads. This publication does not install anything into an existing live game/server or reset campaign data.
 
-CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Older playtest ZIPs contain 2026 timestamps; current reproducible archives use a fixed 1980 timestamp. With both enabled, the courier may diligently install the older package. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
+CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Dev.29 uses the fixed release date 2026-10-28 for every ZIP member, newer than the earlier playtests. Future releases must declare their own increasing timestamp. Older reproducible archives used 1980, which could let an older playtest win when both were active. Keep only one version enabled. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
 
 ## Server-only maintenance archive
 
@@ -50,7 +50,11 @@ Dev.14 expands the PHP CorrespondenceStore interface. Custom implementations mus
     lockActorRows(array $npcIds, bool $includePlayer = false): array
     documents(string $scope, ?int $recipientId = null): array
 
-An older adapter can fail during class loading, including a read-only adapter. Read-only implementations must keep their snapshot behavior and reject writer identity-lock requests; they must not route effects through a read-only path.
+Dev.29 also requires:
+
+    transactionMemo(string $key, callable $build): mixed
+
+Reuse a built value only in the currently owned transaction/snapshot. Outside it, call the builder without retention. Clear all memoized values at transaction begin/end/rollback; propagate builder exceptions. This does not authorize entering a writer or committing for a read. The service uses it for the validated actor projection and keyed identity lookup. An older adapter can fail during class loading, including a read-only adapter. Read-only implementations must keep their snapshot behavior and reject writer identity-lock requests; they must not route effects through a read-only path.
 
 ## Updating
 
@@ -89,3 +93,9 @@ Pause the feature and stop the server/game through your deployment's normal proc
 Code removal does not automatically remove Correspondence tables or rows, eventlog anchors, written-evidence records, **public.books** rows, rendered PNGs, diagnostics and worker state under **log/correspondence/offscreen-***, JContainers co-save state, or in-game notes and items. Installer removal behavior for those states is not verified. SQL savepoints do not clean files or undo native inventory changes. Do not delete database rows, evidence files, or game items as part of ordinary code removal.
 
 That retained state also includes `plugins.correspondence_restore_state`, `log/playthrough_runtime/correspondence.restore.json` and its stable `.lock` sibling, plus operator-close evidence. Archive them with their matching database/save before any separately planned cleanup. Do not remove one side of restore authority while retaining the other, and do not use uninstall/reinstall as a way to clear an unknown transfer or quarantine.
+
+## Distribution licenses
+
+Project code and documentation are MIT licensed. The dashboard artwork is separately CC BY 4.0: credit Odigo (Francisco-boop-001), link the license and indicate changes. Both notices ship in the MO2 ZIP, server package and maintenance tar. Third-party dependencies retain their own licenses; see [credits](../NOTICE.md).
+
+Dev.29 migration006 adds a plugin-named partial expression index to `public.eventlog` for written-evidence document IDs. The CHIM database role needs eventlog ownership or equivalent administrator rights to create it. Index creation scans existing marked history once and holds a table lock; schedule the normal update while correspondence/server work is stopped. The migration changes no event rows and introduces no separate restore authority. Invalid JSON already stored under the exact `info`/`written_evidence_v1` carrier or insufficient rights can refuse migration; repair that prerequisite through an administrator rather than deleting history or bypassing restore checks.

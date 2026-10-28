@@ -7,6 +7,7 @@ interface CorrespondenceStore
     public function readTransaction(callable $work): mixed;
     public function scope(): array;
     public function actors(): array;
+    public function transactionMemo(string $key, callable $build): mixed;
     public function player(): string;
     public function lockActorRows(array $npcIds, bool $includePlayer = false): array;
     public function findRequest(string $scope, string $request): ?array;
@@ -112,19 +113,26 @@ final class CorrespondenceService
     }
     public function actors(): array
     {
-        $player=$this->store->player();if(!correspondenceActorName($player))throw new DomainException('player_unavailable');
-        $result=[['key'=>'player','kind'=>'player','id'=>null,'name'=>$player]];
-        foreach ($this->store->actors() as $row) {
-            if (!is_int($row['id']??null) && !ctype_digit((string)($row['id']??''))) continue;
-            $id=(int)$row['id']; $name=$row['npc_name']??null;
-            if ($id>0 && correspondenceActorName($name)) $result[]=['key'=>'npc:'.$id,'kind'=>'npc','id'=>$id,'name'=>$name];
-        }
-        return $result;
+        return $this->store->transactionMemo('correspondence.actor_projection',function():array{
+            $player=$this->store->player();if(!correspondenceActorName($player))throw new DomainException('player_unavailable');
+            $result=[['key'=>'player','kind'=>'player','id'=>null,'name'=>$player]];
+            foreach ($this->store->actors() as $row) {
+                if (!is_int($row['id']??null) && !ctype_digit((string)($row['id']??''))) continue;
+                $id=(int)$row['id']; $name=$row['npc_name']??null;
+                if ($id>0 && correspondenceActorName($name)) $result[]=['key'=>'npc:'.$id,'kind'=>'npc','id'=>$id,'name'=>$name];
+            }
+            return $result;
+        });
     }
     private function actor(mixed $key): array
     {
         if (!is_string($key)) throw new InvalidArgumentException('invalid_actor');
-        foreach ($this->actors() as $actor) if ($actor['key']===$key && $actor['name']!=='') { unset($actor['key']); return $actor; }
+        $index=$this->store->transactionMemo('correspondence.actor_lookup',function():array{
+            $actors=[];
+            foreach($this->actors() as $actor){$key=$actor['key'];if(!array_key_exists($key,$actors)&&$actor['name']!==''){unset($actor['key']);$actors[$key]=$actor;}}
+            return $actors;
+        });
+        if(isset($index[$key]))return $index[$key];
         throw new InvalidArgumentException('actor_unavailable');
     }
     private function sameActor(array $actor): bool

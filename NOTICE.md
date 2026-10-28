@@ -4,4 +4,4 @@ CHIM Sealed Fates is an independent extension for CHIM. It targets documented CH
 
 The install packages do not bundle those projects' SDK packages. Obtain and use CHIM and its dependencies under the terms supplied by their maintainers.
 
-No project LICENSE or COPYING file existed in the development snapshot; none was added here. Dependency credits do not assign a project license.
+Code and documentation are licensed under MIT; see [LICENSE](LICENSE). The dashboard artwork has separate CC BY 4.0 terms and attribution in [ARTWORK-LICENSE.txt](ARTWORK-LICENSE.txt). Those terms apply to this project's own material and do not relicense CHIM, its dependencies or other third-party work.

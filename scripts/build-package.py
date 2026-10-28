@@ -17,8 +17,20 @@ SERVER_FILES = (
     'lib/offscreen.php', 'lib/offscreen_policy.php', 'migrations/003_offscreen.sql',
     'dashboard-art.webp', 'assets/style.css',
     'lib/companion.php', 'lib/companion_policy.php', 'lib/companion_host.php',
-    'migrations/005_companion.sql',
+    'migrations/005_companion.sql', 'migrations/006_history_indexes.sql',
 )
+DISTRIBUTION_FILES = ('LICENSE', 'ARTWORK-LICENSE.txt', 'NOTICE.md')
+RELEASE_TIMESTAMPS = {'0.1.0-dev.29': (2026, 10, 28, 0, 0, 0)}
+LEGACY_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
+
+def release_timestamp(version):
+    if version in RELEASE_TIMESTAMPS:
+        return RELEASE_TIMESTAMPS[version]
+    legacy = re.fullmatch(r'0\.1\.0-dev\.([0-9]+)', version)
+    if legacy and int(legacy[1]) <= 28:
+        return LEGACY_TIMESTAMP
+    raise ValueError('An explicit release timestamp is required for this version')
+
 PEX_MAGIC = bytes.fromhex('FA57C0DE')
 BRIDGE_SOURCE = 'game/Source/Scripts/CHIMCorrespondenceBridge.psc'
 BRIDGE_SCRIPT = 'CHIMCorrespondenceBridge.psc'
@@ -257,11 +269,11 @@ def verify_bridge(root, pex=None):
         raise ValueError('Compiler receipt header does not match the sanitized PEX')
     return data
 
-def packed(entries):
+def packed(entries, timestamp=LEGACY_TIMESTAMP):
     stream=io.BytesIO()
     with ZipFile(stream,'w',compression=ZIP_STORED) as archive:
         for name,data in sorted(entries.items()):
-            info=ZipInfo(name,date_time=(1980,1,1,0,0,0))
+            info=ZipInfo(name,date_time=timestamp)
             info.create_system=3
             info.external_attr=0o100644<<16
             archive.writestr(info,data)
@@ -281,6 +293,12 @@ def entries(root):
             or not isinstance(manifest.get('version'),str)
             or not re.fullmatch(r'[0-9A-Za-z][0-9A-Za-z._+-]{0,63}',manifest['version'])):
         raise ValueError('Invalid correspondence manifest')
+    if release_timestamp(manifest['version']) != LEGACY_TIMESTAMP:
+        for name in DISTRIBUTION_FILES:
+            path = root / name
+            if not path.is_file() or path.is_symlink() or not path.resolve().is_relative_to(root):
+                raise ValueError('Missing or unsafe distribution notice: ' + name)
+            payload['server/' + name] = path.read_bytes()
     payload['manifest.json']=(json.dumps({'schema_version':4,'name':'correspondence','version':manifest['version'],'server':{'mutable_paths':[]}},sort_keys=True,indent=2)+'\n').encode()
     payload['checksums.sha256']=''.join(hashlib.sha256(data).hexdigest()+'  '+name+'\n' for name,data in sorted(payload.items())).encode('ascii')
     return manifest,payload
@@ -305,7 +323,8 @@ def build(root,pex,output):
     name='correspondence-'+manifest['version']+'.dwpkg'
     server=output/name
     # Never reuse an immutable candidate version for changed bytes.
-    raw=packed(payload)
+    timestamp = release_timestamp(manifest['version'])
+    raw=packed(payload, timestamp)
     if server.exists() and server.read_bytes()!=raw:
         raise ValueError('Candidate version already contains different bytes; bump version')
     server.write_bytes(raw)
@@ -313,8 +332,11 @@ def build(root,pex,output):
     combined={'Scripts/CHIMCorrespondenceBridge.pex':bridge,'CHIM/server-plugins/correspondence/'+manifest['version']+'.dwpkg':raw}
     if companion is not None:
         combined['Scripts/CHIMCorrespondenceCompanion.pex'] = companion
+    for name in DISTRIBUTION_FILES:
+        if 'server/' + name in payload:
+            combined[name] = payload['server/' + name]
     bundle=output/('CHIM-Sealed-Fates-'+manifest['version']+'.zip')
-    bundle_raw=packed(combined)
+    bundle_raw=packed(combined, timestamp)
     if bundle.exists() and bundle.read_bytes()!=bundle_raw:
         raise ValueError('Paired candidate version already contains different bytes; bump version')
     bundle.write_bytes(bundle_raw)

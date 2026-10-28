@@ -1,3 +1,7 @@
+## Dev.29 offline repair boundary
+
+See [the findings assessment](DEV29-FINDINGS.md) for the exact disposition of GitHub issues1–4. New source/native builds, fake-boundary regressions and package checks do not establish Skyrim stolen flags, physical delivery or installed HTTP behavior. The legacy 3.4.2 connector preflight uses actual retained core sources with a fake database/config and never invokes a provider. Replay journals remain unbounded; full validated known-source reference work remains linear. No live/test2, installed game, campaign or provider is used for this release.
+
 # Verification and limits
 
 ## Current dev.28 — real browser form policy regression

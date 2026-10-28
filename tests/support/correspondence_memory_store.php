@@ -3,7 +3,7 @@ declare(strict_types=1);
 final class CorrespondenceMemoryStore implements CorrespondenceStore
 {
     public array $events=[],$docs=[],$operations=[],$commands=[],$notes=[],$documentLookups=[];
-    public int $writerTransactionCalls=0,$readTransactionCalls=0,$actorRowLockCalls=0;
+    public int $writerTransactionCalls=0,$readTransactionCalls=0,$actorRowLockCalls=0,$transactionMemoBuilds=0;
     public ?string $executor='Lydia';
     public array $clock=['ts'=>100,'gamets'=>100];
     public array $actors=[900001=>['id'=>900001,'npc_name'=>'Camilla','refid'=>'00013488'],900002=>['id'=>900002,'npc_name'=>'Jarl Balgruuf','refid'=>'0001A677']];
@@ -12,16 +12,17 @@ final class CorrespondenceMemoryStore implements CorrespondenceStore
     public ?Closure $beforePrepareNote=null;
     private bool $active=false;
     private bool $readOnly=false;
+    private array $transactionMemo=[];
     private ?array $actorCatalogCache=null;
     private function runTransaction(callable $work,bool $readOnly):mixed
     {
         if($this->active)return $work();
-        $this->actorCatalogCache=null;
+        $this->transactionMemo=[];$this->actorCatalogCache=null;
         $before=[$this->events,$this->docs,$this->operations,$this->commands,$this->notes];
         $this->active=true;$this->readOnly=$readOnly;
         try{return $work();}
         catch(Throwable $e){[$this->events,$this->docs,$this->operations,$this->commands,$this->notes]=$before;throw $e;}
-        finally{$this->active=false;$this->readOnly=false;$this->actorCatalogCache=null;}
+        finally{$this->active=false;$this->readOnly=false;$this->transactionMemo=[];$this->actorCatalogCache=null;}
     }
     public function transaction(callable $work): mixed { $this->writerTransactionCalls++;return $this->runTransaction($work,false); }
     public function readTransaction(callable $work): mixed
@@ -39,6 +40,12 @@ final class CorrespondenceMemoryStore implements CorrespondenceStore
         $rows=array_values($this->actors);
         if($this->active)$this->actorCatalogCache=$rows;
         return $rows;
+    }
+    public function transactionMemo(string $key,callable $build):mixed
+    {
+        if(!$this->active){$this->transactionMemoBuilds++;return $build();}
+        if(!array_key_exists($key,$this->transactionMemo)){$this->transactionMemoBuilds++;$this->transactionMemo[$key]=$build();}
+        return $this->transactionMemo[$key];
     }
     public function lockActorRows(array $npcIds,bool $includePlayer=false):array
     {

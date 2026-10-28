@@ -2,6 +2,7 @@
 No Skyrim VM, native concurrency, co-save, renderer or gameplay result is claimed.
 """
 import importlib.util
+import copy
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -21,17 +22,23 @@ class Form:
     def GetFormID(self): return self.fid
     def GetName(self): return self.name
     def IsPlayable(self): return self.playable
+class ActorBase(Form):
+    pass
+
 class Note(Form):
-    def __init__(self, fid, base): super().__init__(fid); self.owner=None; self.base=base
+    def __init__(self, fid, base): super().__init__(fid); self.owner=None; self.actor_owner=None; self.base=base
     def SetDisplayName(self, name, force): self.name=name
     def GetDisplayName(self): return self.name
     def SetFactionOwner(self, owner): self.owner=owner
     def GetFactionOwner(self): return self.owner
+    def SetActorOwner(self, owner): self.actor_owner=owner
+    def GetActorOwner(self): return self.actor_owner
     def Enable(self): pass
 class Actor(Form):
     def __init__(self, fid):
-        super().__init__(fid); self.inventory={}; self.dead=False; self.disabled=False
+        super().__init__(fid); self.base=ActorBase(fid+100000); self.note_owner_override=None; self.inventory={}; self.dead=False; self.disabled=False
         self.equipped=[]; self.quest=PList(); self.moves=0; self.notes=0; self.partial=False; self.reject_note=False; self.counter_adjustment=0
+    def GetActorBase(self): return self.base
     def GetItemCount(self, form):
         base=getattr(form,'base',form)
         return sum(count for held,count in self.inventory.items() if getattr(held,'base',held)==base)
@@ -42,6 +49,7 @@ class Actor(Form):
     def PlaceAtMe(self, template, count, persist, disabled): self.notes+=1; return Note(-16777216+self.notes, template)
     def AddItem(self, form, count, silent):
         if self.reject_note and isinstance(form,Note): return
+        if self.note_owner_override is not None and isinstance(form,Note): form.SetActorOwner(self.note_owner_override)
         self.inventory[form]=self.inventory.get(form,0)+count
     def RemoveItem(self, form, count, silent, recipient):
         self.moves+=1
@@ -87,7 +95,7 @@ def reset():
     journal.clear(); logs.clear(); forms.clear(); debug_messages.clear(); renderer[0]=True; extender[0]=PList([5,10,0]); api_version[0]=3; feature_version[0]=3
     payer=Actor(21); recipient=Actor(20); item=Form(15,'Gold')
     forms.update({('skyrim.esm',20):recipient,('skyrim.esm',21):payer,('skyrim.esm',15):item,
-                  ('aiagent.esp',0x22D30):Form(0x123,'Generic Note'),('aiagent.esp',0x21D0B):Form(0x124,'AIAssisted')})
+                  ('aiagent.esp',0x22D30):Form(0x123,'Generic Note')})
     payer.inventory[item]=20
     request=v.clone(); request['attachments']=[dict(kind='gold',form_id=15,plugin='Skyrim.esm',local_id=15,quantity=7)]
     return request,payer,recipient,item
@@ -96,11 +104,21 @@ def dispatch(request, action='Deliver'):
     v.namespace['DispatchExternalCommand']('managed-executor','ExtCmdCHIMCorrespondenceBridge_'+action,json.dumps(request,separators=(',',':')))
     return logs[-1]
 
+request,payer,recipient,item=reset(); forms.pop(('aiagent.esp',0x21D0B),None); receipt=dispatch(request)
+note=journal[v.namespace['JournalPath'](request)].get('note')
+check('recipient_note_does_not_depend_on_aia_assisted_faction',
+      receipt['status']=='delivered' and note is not None and note.GetActorOwner() is recipient.GetActorBase()
+      and note.GetFactionOwner() is None and receipt['note_form_id']==note.GetFormID())
 request,payer,recipient,item=reset(); receipt=dispatch(request)
 legacy_path='.chim_correspondence_v1.p'+request['playthrough_id']+'.s'+request['scope_token']+'.o'+request['operation_id']
 check('legacy_journal_path_format_preserved',v.namespace['JournalPath'](request)==legacy_path)
 check('production_removeitem_branch',receipt['status']=='delivered' and payer.GetItemCount(item)==13 and recipient.GetItemCount(item)==7)
 check('note_created_once',recipient.notes==1)
+note=journal[legacy_path]['note']
+template=forms[('aiagent.esp',0x22D30)]
+check('recipient_actor_owner_preserves_note_identity_title_and_count',
+      note.GetActorOwner() is recipient.GetActorBase() and note.GetDisplayName()==request['title']
+      and receipt['note_form_id']==note.GetFormID() and recipient.GetItemCount(template)==1)
 check('exact_both_deltas',receipt['attachments']==[dict(form_id=15,quantity=7,before_source=20,after_source=13,before_recipient=0,after_recipient=7)])
 check('no_exposure_or_private_provenance',not any(key in receipt for key in ('exposure','body','payer','author','actual_author','title')))
 replay=dispatch(request)
@@ -108,6 +126,18 @@ check('legacy_exact_wire_replay_without_mutation',replay==receipt and payer.move
 check('reconcile_cached_without_mutation',dispatch(request,'Reconcile')==receipt and payer.moves==1 and recipient.notes==1)
 changed=json.loads(json.dumps(request)); changed['attachments'][0]['quantity']=8
 check('same_operation_changed_payload',dispatch(changed)['reason']=='operation_conflict' and payer.moves==1)
+request,payer,recipient,item=reset(); receipt=dispatch(request)
+moves=payer.moves; notes=recipient.notes
+journal=copy.deepcopy(journal); logs.clear()
+restored=dispatch(request,'Reconcile')
+check('restored_cosave_replays_cached_receipt_without_mutation',
+      restored==receipt and payer.moves==moves==1 and recipient.notes==notes==1 and recipient.GetItemCount(item)==7)
+request,payer,recipient,item=reset(); wrong_actor=Actor(22); recipient.note_owner_override=wrong_actor.GetActorBase(); receipt=dispatch(request)
+note=journal[v.namespace['JournalPath'](request)]['note']
+check('wrong_actor_owner_is_unknown_before_attachment_transfer',
+      receipt['status']=='unknown' and receipt['reason']=='note_ownership_unknown' and payer.moves==0
+      and note.GetActorOwner() is wrong_actor.GetActorBase() and note.GetDisplayName()==request['title']
+      and receipt['note_form_id']==note.GetFormID() and recipient.GetItemCount(forms[('aiagent.esp',0x22D30)])==1)
 request,payer,recipient,item=reset(); receipt=dispatch(request,'Reconcile')
 check('missing_journal_read_only',receipt['status']=='unknown' and receipt['reason']=='journal_missing' and not journal and payer.moves==recipient.notes==0)
 path=v.namespace['JournalPath'](request)

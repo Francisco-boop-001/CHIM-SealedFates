@@ -25,7 +25,6 @@ payer=b.Actor(request['payer']['refid']); recipient=b.Actor(request['recipient']
 for identity, actor in ((request['payer'],payer),(request['recipient'],recipient)):
     b.forms[(identity['plugin'].lower(),identity['local_id'])]=actor
 b.forms[('aiagent.esp',0x22D30)]=b.Form(0x123,'Generic Note')
-b.forms[('aiagent.esp',0x21D0B)]=b.Form(0x124,'AIAssisted')
 for line in request['attachments']:
     item=b.Form(line['form_id'])
     b.forms[(line['plugin'].lower(),line['local_id'])]=item

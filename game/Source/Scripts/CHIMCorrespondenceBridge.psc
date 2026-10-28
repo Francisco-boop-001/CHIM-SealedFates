@@ -326,15 +326,14 @@ Function Replay(Int request, String parameter, Int existing) global
 EndFunction
 
 String Function Preflight(Int request, Actor payer, Actor recipient) global
-    If !payer || !recipient || (payer == recipient && JArray.count(JMap.getObj(request, "attachments")) > 0)
+    If !payer || !recipient || !recipient.GetActorBase() || (payer == recipient && JArray.count(JMap.getObj(request, "attachments")) > 0)
         Return "invalid_actor"
     EndIf
     If payer.IsDead() || recipient.IsDead() || payer.IsDisabled() || recipient.IsDisabled() || payer.IsDeleted() || recipient.IsDeleted()
         Return "actor_unavailable"
     EndIf
     Book template = Game.GetFormFromFile(0x022D30, "AIAgent.esp") as Book
-    Faction owner = Game.GetFormFromFile(0x021D0B, "AIAgent.esp") as Faction
-    If !template || template.GetName() != "Generic Note" || !owner
+    If !template || template.GetName() != "Generic Note"
         Return "note_dependency_unavailable"
     EndIf
     If recipient.GetItemCount(template) < 0 || recipient.GetItemCount(template) == 2147483647
@@ -382,7 +381,6 @@ Function Deliver(Int request, Int journal) global
         Return
     EndIf
     Book template = Game.GetFormFromFile(0x022D30, "AIAgent.esp") as Book
-    Faction owner = Game.GetFormFromFile(0x021D0B, "AIAgent.esp") as Faction
     Int notesBefore = recipient.GetItemCount(template)
     Int expectedNotes = notesBefore + 1
     ObjectReference note = recipient.PlaceAtMe(template, 1, true, true)
@@ -393,10 +391,10 @@ Function Deliver(Int request, Int journal) global
     JMap.setForm(journal, "note", note)
     JMap.setInt(journal, "note_form_id", note.GetFormID())
     note.SetDisplayName(JMap.getStr(request, "title"), true)
-    note.SetFactionOwner(owner)
+    note.SetActorOwner(recipient.GetActorBase())
     recipient.AddItem(note, 1, true)
     note.Enable()
-    If recipient.GetItemCount(template) != expectedNotes || note.GetDisplayName() != JMap.getStr(request, "title") || note.GetFactionOwner() != owner
+    If recipient.GetItemCount(template) != expectedNotes || note.GetDisplayName() != JMap.getStr(request, "title") || note.GetActorOwner() != recipient.GetActorBase()
         Finish(request, journal, "unknown", "note_ownership_unknown", note.GetFormID(), "[]")
         Return
     EndIf
@@ -431,7 +429,7 @@ Function Deliver(Int request, Int journal) global
         EndIf
         i += 1
     EndWhile
-    If recipient.GetItemCount(template) != expectedNotes || note.GetDisplayName() != JMap.getStr(request, "title") || note.GetFactionOwner() != owner
+    If recipient.GetItemCount(template) != expectedNotes || note.GetDisplayName() != JMap.getStr(request, "title") || note.GetActorOwner() != recipient.GetActorBase()
         Finish(request, journal, "unknown", "note_ownership_unknown", note.GetFormID(), actual + "]")
         Return
     EndIf
