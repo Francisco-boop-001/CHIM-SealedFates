@@ -1,6 +1,26 @@
 # Department / PRISMA compatibility
 
-**Optional Skyrim interface:** [Department prealpha.24](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.24) now pins exact Sealed Fates dev.28 and includes native **0.1.17.0**, which replaces both crashing gold-count callers. Its offline regressions, native build, emitted DLL call paths, package/source contents and public downloads were checked. This is not an actual Skyrim1.5.97, installed-server send, restore/save-load or physical-transfer acceptance. The web page remains available independently. No compatibility guard was bypassed.
+## Sealed Fates dev.29 / Department prealpha.25 — offline source/package compatibility
+
+[Department prealpha.25](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.25) is the optional interface update for Sealed Fates dev.29. Install each project's own single MO2 ZIP after ending the game session; the existing Sealed Fates web page remains independent. Do not use the older prealpha.24/dev.28 pins with changed dev.29 source.
+
+- Sealed Fates immutable runtime tag: `correspondence-v0.1.0-dev.29`, commit `dd128bb7568e0095423c49e02c0e70a395208a18`.
+- Department immutable source tag: `v0.1.0-prealpha.25`, commit `224d2bb473b86e6087a9711d6a42d716e46d9ba0`.
+- The owner closure now has 20 exact files, including migration006. Both production Department Stores and its source fixture implement `transactionMemo(string $key, callable $build): mixed`. Writer wrapper memo access does not enter commit; read adapter retention exists only inside its own callback lifetime, with finally cleanup. Direct calls rebuild.
+- Department's focused actual-service/source/memo tests and retained dev.28/dev.27 contracts pass offline. Its 14 package guards reject incorrect owner hashes even when adapter/proof agree on the same wrong hash. No unknown-source guard was bypassed.
+- Root independently downloaded all four public Department assets, matched every one of the 250 shipped source files to the immutable Git commit, checked all 20 owner pins against public Sealed Fates, and compared the installable against prealpha.24. Only the Department server DWPkg changes; the other 21 payloads, including native DLL and all UI files, are byte-identical. The source archive excludes the non-product `tasks/normal-chim-20261027.md` note.
+- Native remains 0.1.17.0, DLL SHA256 `5b55122b8916629c1130260a24781b709e0192a34049211a67f91e337177df6a`. No native/UI rebuild was needed.
+
+**This is offline source/package acceptance, not a new test2 runtime pairing.** No actual HTTP, installed server, provider, Skyrim UI/VM, physical transfer or save/co-save acceptance was run for this changed pairing. The Sealed Fates release gate records `web-only`; this proof does not replace the stricter `tested-paired` runtime receipt. Earlier test2 results remain evidence only for their exact old source.
+
+Migration006 needs eventlog-owner/admin rights and a maintenance window. The 3 s timeout bounds lock acquisition only; an uncapped first index build holds the eventlog lock until it finishes. Prepare that prerequisite before resuming active work. Publishing does not run a migration or install either package.
+
+The [portable offline compatibility record](../release-inputs/dev29-department-offline-compatibility.json) binds both public releases and their proof limits. [Publication results](DEV29-PUBLICATION.md).
+
+
+## Historical dev.28 / Department prealpha.24
+
+**Historical optional interface:** [Department prealpha.24](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.24) pins exact Sealed Fates dev.28 and includes native **0.1.17.0**, which replaces both crashing gold-count callers. Its offline regressions, native build, emitted DLL call paths, package/source contents and public downloads were checked. This is not an actual Skyrim1.5.97, installed-server send, restore/save-load or physical-transfer acceptance. The web page remains available independently. No compatibility guard was bypassed.
 
 
 **Historical dev.27: web interface only; no new Department pairing.** This release repairs web-origin comparison for a different Apache canonical port. Historical pairing evidence does not cover dev.27; exact-source refusals remain intact.

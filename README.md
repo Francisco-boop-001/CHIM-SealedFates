@@ -12,7 +12,7 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 ## Pick your interface
 
-**Optional Skyrim interface:** Department uses exact source pins. Dev.29 needs its own reviewed pairing; prealpha.24 pins dev.28 and should refuse changed source. The [compatibility record](docs/PRISMA-COMPATIBILITY.md) states the verified boundary. The web page works independently.
+**Optional Skyrim interface:** [Department prealpha.25](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.25) adds the exact dev.29 source pins and transaction-memo adapter support. Its offline service/package checks pass; native 1.17 and UI bytes are unchanged from prealpha.24. This is source/package compatibility, with no fresh installed-server or Skyrim acceptance. The web page works independently. [Exact scope](docs/PRISMA-COMPATIBILITY.md).
 
 **The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** Keep using CHIM's web page to compose letters, browse your inbox and outbox, check delivery status, and enable or pause autonomous correspondence. You do not need the new Skyrim interface to use those controls. Your browser has not been fired; I lack the qualifications to conduct that meeting.
 

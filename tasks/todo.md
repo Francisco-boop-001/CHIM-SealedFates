@@ -457,10 +457,10 @@ Goal: repair valid issues1,3 and remaining issue4 items in one verified dev.29 c
 - [x] Legacy connector: establish the actual3.4.2 source contract, add only a validated safe compatibility path and existing non-secret readiness refusal; preserve missing/unknown classifier refusal.
 - [x] Packaging: deterministic increasing release timestamps across client DWPkg choices; include distribution licenses; compress artwork and verify readability/dimensions.
 - [x] Documentation/licensing: repair historical/current docs; MIT code and CC BY4.0 artwork per explicit user choice; retain dependency credits.
-- [ ] Integrate and coordinate exact new Department source pins, review independent worker diffs and final candidate.
+- [x] Integrate and coordinate exact new Department source pins, review independent worker diffs and final candidate.
 - [x] Run red/green targeted offline, native source/compiler, package/security/restore/replay tests and final bughunt. Keep unsupported gameplay/PG acceptance distinct.
-- [ ] Commit, push and publish immutable verified source/assets with clear runtime limits.
-- [ ] Post verified outcomes on GitHub issues in Odigo's informative, sarcastic/self-deprecating tone; do not claim unperformed Skyrim/runtime checks.
+- [x] Commit, push and publish immutable verified source/assets with clear runtime limits.
+- [x] Post verified outcomes on GitHub issues in Odigo's informative, sarcastic/self-deprecating tone; do not claim unperformed Skyrim/runtime checks.
 
 Ownership/conflict scan: bridge worker owns game/bridge artifacts and bridge tests; history worker owns store/runtime and history tests; connector worker owns autonomy_host and connector tests. Root owns package scripts/version/docs/licenses/artwork/integration/release/GitHub. Store interface changes need review against both workers and Department; no worker may edit the root's package/version files. New bridge provenance must be finalized before root packages it. Journal deletion and guessed legacy model eligibility conflict with safety requirements and are forbidden. Root will review exact design before accepting either alternative.
 
@@ -471,3 +471,7 @@ Dev.29 storage design review: preserve full document/reference validation and cu
 ### Dev.29 pre-publication review
 
 Final candidate passes26/27 pure PHP suites (only the inherited Windows worker-path baseline), all73 package/preflight tests,17 lints and60/45/8 bridge cases. Root independently passes the frozen-source guarded Windows PG17 history regression and verifies exact owned-cluster shutdown. Actual pinned3.4.2 classes for both known dialogue drivers pass fake-DB preflight without a provider call. All requested source fixes are reviewed; exact JDB compaction remains unsupported without weakening replay safety, and full-reference history validation remains linear. No live/test2/game/provider access. Detailed evidence and installation prerequisites: docs/DEV29-PUBLICATION.md. Commit/tag, clean-export reproduction, public downloads, matching Department publication and GitHub issue explanations remain pending.
+
+### Dev.29 completion review
+
+Published runtime dd128bb7568e0095423c49e02c0e70a395208a18 and verified four clean-tag/draft/anonymous public assets. Sixteen older releases and32 prior tag refs remain unchanged. Posted and verified explanations on ordinary GitHub issues1–4; no issue-state/PR changes. Department prealpha.25 at224d2bb473b86e6087a9711d6a42d716e46d9ba0 is public; root checks all4 assets,250 source files,20 owner pins and21 unchanged native/UI/other payloads. Docs retain the owner/admin/uncapped one-time migration build limit, linear full-reference scans, unbounded exact journal, baseline Windows failure and all unperformed game/runtime gates. Live/test2/game/providers stayed untouched; the exact owned Windows PG fixture is stopped. Final documentation/main update retains identical runtime/asset closure.

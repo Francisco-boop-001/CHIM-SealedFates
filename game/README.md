@@ -26,6 +26,6 @@ Native gameplay, note rendering, co-save restore, real inventory atomicity/concu
 
 ## Ownership and retained replay evidence
 
-Dev.29 assigns each delivered note to the addressed actor's base and verifies that ownership after insertion and after attachments. It does not add NPCs to a shared faction. Source-translated fake-native tests and a real Caprica build do not prove Skyrim's stolen-item UI or follower-framework behavior.
+Dev.29 assigns each newly delivered note to the addressed actor's base and verifies that ownership after insertion and after attachments. Existing notes and cached receipts are not rewritten; reconciliation still replays the original result without moving inventory. It does not add NPCs to a shared faction. Source-translated fake-native tests and a real Caprica build do not prove Skyrim's stolen-item UI or follower-framework behavior.
 
 JContainers claims, exact dispatch payloads and cached receipts remain in the matching co-save. This history is intentionally not expired or replaced by a collision-prone hash: deleting it could permit duplicate physical transfers after replay or restoration. The available JContainers interface has no verified lossless compression or cryptographic digest primitive. History growth remains a known limitation; an external file is not an equivalent save authority. Full forwarded letter bodies are preserved on the server and are not embedded in these bridge dispatch packets.
