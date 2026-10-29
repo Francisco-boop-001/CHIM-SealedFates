@@ -14,13 +14,15 @@ Download **[CHIM-Sealed-Fates-0.1.0-dev.30.zip](https://github.com/Francisco-boo
 
 Already stale decisions and closed letters are **not automatically revived**. We cannot safely decide that every old cancellation deserves another delivery attempt.
 
-**Use the existing CHIM web plugin page for dev.30.** The Skyrim interface is optional; Department prealpha.25 pins dev.29 and is not a matching dev.30 interface release. Wait for its owner's matching update and keep its safety checks intact. This ZIP changes no Department DLL or UI.
+**The Skyrim interface is optional; the existing CHIM web plugin page still works.** [Department prealpha.26](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.26) now supports exact dev.30 sources. If dev.30 is already installed, update only Department's single MO2 ZIP after ending the game session. Its native DLL and UI are unchanged, and all version/hash, freshness, restore and no-resend protections stay in place. [Pairing evidence and limits](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/PRISMA-COMPATIBILITY.md). The courier has acquired compatible paperwork. Management would like this mistaken for competence.
 
 ## Verification and remaining limits
 
 Thirteen scenarios pass **86 database assertions on both isolated Windows PostgreSQL and test2**. All **27 PHP regression suites pass on test2**. Windows retains its documented `server_offscreen_host` path-check failure; that test passes on test2. Package/preflight, native-source translation, syntax and isolated browser-origin/CSRF checks are recorded with the clean-source build/download verification.
 
-These tests use synthetic observations and queued native commands. They do **not** prove actual Skyrim follower detection, unloaded-actor/framework behavior, rendered notes, physical letter/item/gold delivery, stolen-item flags, native crash recovery, save/co-save restoration, installed HTTP sends or real-model behavior for this release. No new Department pairing is claimed. This is still **PRE-ALPHA**.
+These tests use synthetic observations and queued native commands. They do **not** prove actual Skyrim follower detection, unloaded-actor/framework behavior, rendered notes, physical letter/item/gold delivery, stolen-item flags, native crash recovery, save/co-save restoration, installed HTTP sends or real-model behavior for this release.
+
+A subsequent Department prealpha.26 pairing passes 16 focused actual-service cases and 71 assertions on test2, including unreadable-state recovery, terminal identity cancellation, scheduler ownership, duplicate requests, uncertain receipts, full UTF-8 forwarding and restore refusal/recovery. That is service/database evidence, not installed HTTP or Skyrim acceptance. The original Sealed Fates build gate remains web-only; the focused follow-up does not satisfy its broader tested-paired gate. This is still **PRE-ALPHA**.
 
 No new migration is introduced by dev.30. Upgrades from older versions still need migration006's eventlog-owner/admin rights and maintenance window; its three-second timeout bounds lock acquisition, not the one-time index build. An already applied migration does not need manual reapplication. See [installation](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/INSTALL.md).
 

@@ -510,3 +510,28 @@ Authorization: commit, push and publish verified fixes. No live, installed-game,
 ### Dev.30 publication review
 
 Published immutable runtime 1eb58d999698002f8aeaa05b21464f7608717794 as correspondence-v0.1.0-dev.30. Clean-tag export matches the reviewed source and reproduces all four assets; draft and anonymous public downloads match every byte/hash. All75 package/preflight tests pass; runtime hashes remain exactly those tested with86 assertions on Windows/test2. Test2 passes27/27 PHP suites; the inherited Windows worker-path test remains documented. Both packaged PEX scripts are byte-identical to dev.29. Only manifest/checksums and two server runtime files change within the DWPkg. All earlier release metadata/assets and tag refs are preserved. Main advances only after public verification. Web-only boundary and remaining Skyrim/model/installed-send limits are explicit; no live/test2/game/provider access occurred during publication.
+
+
+## Department dev.30 pairing — 2026-10-28
+
+- [x] Coordinate the exact dev.30 closure and Department-owned implementation/release; keep previous pins and unknown-source refusal.
+- [x] Agree exclusive test2 use, run actual production-adapter/service companion recovery plus restore/no-duplicate controls on a new private-network-namespace fixture.
+- [x] Independently verify candidate source/pins, test results and exact release assets; publish only the verified pairing.
+- [x] Update Sealed Fates current compatibility/install docs and portable record without changing immutable dev.30 runtime/assets.
+- [x] Verify public releases and document remaining Skyrim/installed-runtime limits.
+
+Boundaries: Department owner owns its code and release; this chat owns Sealed Fates docs and independent proof. No live/installed-game/provider access. Test2 synthetic isolated fixtures only, with explicit reservation and shutdown; actual core adapter transport uses loopback only inside a new private network namespace. Source/package/service proof is not native UI or Skyrim gameplay acceptance.
+
+
+Pairing source review: immutable Department f2702045ae487f7e68811e222d36e30bd5b842a1 passes independent exact20-pin/new30 readiness, preserved15 legacy maps and focused service/interface/memo tests. Adapter delta is only the new map plus four version-list additions. Oldprealpha25 accepts29/refuses30; frozen new adapter accepts30. This is source/fake-DB evidence; the scoped16-case actualPG run and package/publication gates remain pending. PCV0.1.25 rebase stays separate; retainPCV0.1.24 guards and unchanged companion/native/UI payloads.
+
+
+Transport adjustment: pinned core ptp_connect defaults to localhost:5432 when its product env is empty and ignores config/env overrides. Approved an owned PG15 127.0.0.1:5432 listener only inside a fresh isolated Linux network namespace with loopback only/no external routes, not a host listener. Do not shim/patch core or claim socketOnly=true for this adapter lane. Bind core/source/namespace/role/database/system-ID/data-dir/PID and child-process identity before execution; stop rather than fall back to host connectivity. Prior owner-only socket PG tests did not exercise this core transport.
+
+
+Runtime review: frozen Department562f77f94f2aeb29d038d3824d087c92fe405abf, run20261029T033642Z-7e36f457 passes16/16cases and71assertions. Independently checked21Department hashes,20owner pins,11canonical captured core files and18raw child output/namespace bindings. Allstderr empty; ownedPGstopped,scratchremoved,bothleases released and initial test2 stopped state restored. Failed fixture attempts remain recorded; no guard weakened. Focused service proof only; historical overlap/stress/overshoot evidence is not a fresh full tested-paired release gate. Package/publication pending.
+
+
+### Department dev.30 pairing review
+
+Department prealpha.26 published from the exact tested562f77f94f2aeb29d038d3824d087c92fe405abf. Independent anonymous download verification matches all4approvedassets;258sourceZIPfiles match Git,15legacy maps and20dev30pins match,21outerpayloads and8generatedPCVoverlayfiles are unchanged. DLL/UI unchanged. Focused16case/71assertion test2 proof and18child traces match; cleanup releasedtest2Stopped. SFchanges are documentation/portable evidence only; originaldev30runtime/tag/assets stay immutable. No full tested-paired gate, installedHTTP/model/native/gameplay/physical/save-co-save acceptance claimed. PCV25 remains separate. Live and installedgame untouched.

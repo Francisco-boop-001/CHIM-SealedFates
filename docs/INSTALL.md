@@ -10,7 +10,7 @@ If the plugin page says **Operator access required**, and your browser is on the
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**Dev.30 uses the existing web plugin page.** Department prealpha.25 pins dev.29 and should refuse dev.30 until its owner publishes a matching update. Do not bypass that protection. The optional interface and required physical-delivery bridge are separate components. [Compatibility record](PRISMA-COMPATIBILITY.md).
+**Optional dev.30 interface:** use [Department prealpha.26](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.26). If Sealed Fates dev.30 is already installed, update only Department's single MO2 ZIP after ending the game session; no new Sealed Fates download is needed. Exact version/hash checks remain required. The pairing passed focused test2 service tests; actual Skyrim UI, physical delivery and save/co-save behavior remain gameplay checks. The optional interface and required physical-delivery bridge are separate components. [Compatibility record](PRISMA-COMPATIBILITY.md).
 
 ## Main install — one ZIP
 

@@ -1,4 +1,21 @@
-# Sealed Fates dev.30 — web-only release
+# Sealed Fates dev.30 / Department prealpha.26
+
+[Department prealpha.26](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.26) is the optional interface update for the exact Sealed Fates dev.30 source. **If dev.30 is already installed, update only Department's single MO2 ZIP after ending your game session.** The existing Sealed Fates web plugin page still works. The required delivery bridge and optional interface remain separate components.
+
+The exact pair passed **16 focused test2 service cases and 71 assertions**. That verifies the production adapter and owner services against PostgreSQL; it does not certify native Skyrim UI, physical letters/items/gold or save/co-save behavior. No live, installed-game or provider access occurred.
+
+- Sealed Fates tag `correspondence-v0.1.0-dev.30`, commit `1eb58d999698002f8aeaa05b21464f7608717794`; its four published assets are unchanged.
+- Department tag `v0.1.0-prealpha.26`, commit `562f77f94f2aeb29d038d3824d087c92fe405abf`.
+- All 20 owner pins match exact dev.30. The 15 older version maps remain unchanged; unknown or altered sources still refuse. Freshness, restore authority, scheduler ownership and uncertain-receipt/no-resend checks stay in place.
+- Tests cover temporary BGL/player/form failures and recovery, changed identities/episodes/restore epochs, confirmed opt-out/death, manual scheduler bypass, repeated requests, unknown/partial receipts and full UTF-8 forwarding. Terminal stale letters do not revive when names or fresh observations return.
+- Independent package checks match 258 source files to immutable Git. Only the Department server DWPkg changes; the other 21 payloads, including native DLL and UI, match prealpha.25 byte-for-byte. Eight generated PCV overlay files also match the previous package. Native remains 0.1.17.0, DLL SHA256 `5b55122b8916629c1130260a24781b709e0192a34049211a67f91e337177df6a`.
+- The unchanged Private Conversations pairing remains **0.1.24** with bundled companion prealpha.12. Private Conversations 0.1.25 requires its separate owner update; this release does not claim that pairing.
+
+The test2 run used synthetic data in a new PostgreSQL 15 database, with a private loopback listener inside an isolated network namespace. All owned processes stopped, scratch was removed, leases were released and test2 returned to its initial stopped state. No copied campaign was used. No HTTP transport, installed-server, model or Skyrim gameplay acceptance was performed. Retained overlap/stress/overshoot evidence is historical and is not counted as a fresh rerun. The focused follow-up does **not** satisfy the broader `tested-paired` release gate or relabel the original Sealed Fates web-only build decision.
+
+The [portable service compatibility record](../release-inputs/dev30-department-test2-compatibility.json) binds exact releases, case IDs, receipt hashes and limits. Migration006's existing owner/admin and maintenance prerequisites still apply to older upgrades; no new migration or installation is performed by publication.
+
+## Historical initial dev.30 publication — web-only
 
 The existing CHIM web plugin page remains available. Department prealpha.25 binds the exact dev.29 files and is **not a matching dev.30 interface release**. These companion/runtime fixes change that closure; do not bypass its version/hash checks. No Department/native/UI payload is included or changed here.
 

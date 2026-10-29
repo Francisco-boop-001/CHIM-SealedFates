@@ -1,8 +1,16 @@
+## Subsequent dev.30 / Department prealpha.26 service pairing
+
+The frozen Department source `562f77f94f2aeb29d038d3824d087c92fe405abf` and Sealed Fates dev.30 `1eb58d999698002f8aeaa05b21464f7608717794` passed 16 actual PostgreSQL service cases with 71 assertions on test2. Independent review matched all 21 Department test/production inputs, 20 Sealed Fates pins, 11 immutable retained core inputs and 18 child-process outputs. Tests use a fresh PostgreSQL 15 database, with loopback only inside a private network namespace and no external routes; this lane is not socket-only. The owned database stopped, scratch was removed, both locks were released and test2 returned to its initial stopped state.
+
+Coverage includes transient BGL/player/form loss with fresh recovery, confirmed opt-out/death/identity/episode cancellation, restore-epoch refusal, actual Department reconcile/manual-compose ownership checks, repeated-request no-resend, unknown/partial receipts and an intact UTF-8 forwarded letter. Changed player/NPC names can leave a terminal stale decision without an operator-close marker because closure also validates identity; restoring names and fresh observations cannot revive it or bypass scheduler ownership. Failed fixture runs remain separate evidence; guards were not weakened to pass them.
+
+Unchanged historical overlap/stress/overshoot checks were not rerun and are not counted among these 16 cases. This does not satisfy the broader `tested-paired` release gate. No HTTP transport, provider, installed server/game, native UI, physical transfer or save/co-save acceptance is claimed. [Exact released pair and portable record](PRISMA-COMPATIBILITY.md).
+
 ## Dev.30 companion recovery boundary
 
 Thirteen actual PostgreSQL scenarios pass 86 assertions on both new Windows PG17 and socket-only test2 PG15 fixtures. Transient profile/player/form metadata loss defers mail, stale observations still block delivery, fresh recovery sends once, and confirmed opt-outs/death/identity/episode/restore changes remain blocked. Test2 passes all 27 pure PHP regression suites. The Windows worker-path assertion remains an explicitly recorded baseline failure.
 
-These are synthetic server events and queued native commands, not Skyrim execution. Physical notes/items/gold, actual follower observations, save/co-save recovery, installed HTTP sends, real-model behavior and a matching Department dev.30 interface remain unverified. No live or installed-game changes occurred. Already stale/closed mail is not automatically revived. [Publication and test record](DEV30-PUBLICATION.md).
+These are synthetic server events and queued native commands, not Skyrim execution. Physical notes/items/gold, actual follower observations, save/co-save recovery, installed HTTP sends and real-model behavior remain unverified. Department prealpha.26 now supplies the exact dev.30 interface adapter; its focused test2 service proof is recorded above. No live or installed-game changes occurred. Already stale/closed mail is not automatically revived. [Publication and test record](DEV30-PUBLICATION.md).
 
 ## Dev.29 offline repair boundary
 

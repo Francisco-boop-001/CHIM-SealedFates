@@ -22,7 +22,7 @@ Private evidence in the owning workspace: `artifacts/chim-sealed-fates-companion
 
 Install the single `CHIM-Sealed-Fates-0.1.0-dev.30.zip` after ending the game session. It contains both unchanged matching Papyrus scripts and `CHIM/server-plugins/correspondence/0.1.0-dev.30.dwpkg`. No new migration is introduced by dev.30. Older upgrades still require migration006 and its documented owner/admin rights and uncapped one-time index build; an already applied migration is not a reason to reapply it manually.
 
-This release deliberately records **web-only**. Department prealpha.25 pins dev.29's exact files and is not a compatible dev.30 interface release; keep its checks and wait for a matching owner update. This Sealed Fates release changes no Department/native/UI payload and claims no new paired receipt.
+The original immutable release deliberately records **web-only**. At that publication, Department prealpha.25 pinned dev.29 and correctly refused dev.30. Subsequent Department prealpha.26 adds the exact dev.30 pins and passes 16 focused test2 service cases with 71 assertions. Its native/UI payload is unchanged. The [follow-up record](PRISMA-COMPATIBILITY.md) states its narrower scope; it does not replace the original build gate or satisfy the broader tested-paired gate. Sealed Fates' tag and assets remain unchanged.
 
 No live server, installed game/MO2 or provider was accessed for the fixes/publication. Test2 used fresh synthetic data, not its copied campaign. Queued native commands are not real inventory transfers. Actual follower observations, unloaded actors/framework behavior, rendering, physical letters/items/gold, Skyrim crashes, save/co-save recovery, installed HTTP sends and real-model behavior remain unverified for these changed files. This remains **PRE-ALPHA**; publication is not installation or gameplay acceptance.
 
@@ -31,7 +31,7 @@ No live server, installed game/MO2 or provider was accessed for the fixes/public
 
 Published [correspondence-v0.1.0-dev.30](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.30) at `1eb58d999698002f8aeaa05b21464f7608717794`. All75 package/preflight tests pass in the clean-tag run; its four rebuilt assets match both authenticated draft and anonymous public downloads. Both packaged PEX files are byte-identical to dev.29. The server DWPkg changes only its manifest/checksums, server manifest and the two reviewed runtime files.
 
-17 prior releases and 34 prior tag refs remain unchanged. The release stays PRE-ALPHA and web-only. Main receives this documentation after public asset verification; the release tag and assets are immutable.
+17 prior releases and 34 prior tag refs remain unchanged. The original release gate stays web-only and the release remains PRE-ALPHA; the subsequent optional Department service pairing is recorded separately. Main receives this documentation after public asset verification; the release tag and assets are immutable.
 
 The table below is developer verification evidence. Players install the single MO2 ZIP; no manual checksum calculation is required.
 
