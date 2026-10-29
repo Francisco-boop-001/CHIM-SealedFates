@@ -25,3 +25,23 @@ Install the single `CHIM-Sealed-Fates-0.1.0-dev.30.zip` after ending the game se
 This release deliberately records **web-only**. Department prealpha.25 pins dev.29's exact files and is not a compatible dev.30 interface release; keep its checks and wait for a matching owner update. This Sealed Fates release changes no Department/native/UI payload and claims no new paired receipt.
 
 No live server, installed game/MO2 or provider was accessed for the fixes/publication. Test2 used fresh synthetic data, not its copied campaign. Queued native commands are not real inventory transfers. Actual follower observations, unloaded actors/framework behavior, rendering, physical letters/items/gold, Skyrim crashes, save/co-save recovery, installed HTTP sends and real-model behavior remain unverified for these changed files. This remains **PRE-ALPHA**; publication is not installation or gameplay acceptance.
+
+
+## Public release result
+
+Published [correspondence-v0.1.0-dev.30](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.30) at `1eb58d999698002f8aeaa05b21464f7608717794`. All75 package/preflight tests pass in the clean-tag run; its four rebuilt assets match both authenticated draft and anonymous public downloads. Both packaged PEX files are byte-identical to dev.29. The server DWPkg changes only its manifest/checksums, server manifest and the two reviewed runtime files.
+
+17 prior releases and 34 prior tag refs remain unchanged. The release stays PRE-ALPHA and web-only. Main receives this documentation after public asset verification; the release tag and assets are immutable.
+
+The table below is developer verification evidence. Players install the single MO2 ZIP; no manual checksum calculation is required.
+
+| Asset | SHA-256 | Bytes |
+| --- | --- | ---: |
+
+| `CHIM-Sealed-Fates-0.1.0-dev.30.zip` | `fef5b26d30da32102b4d512d9f80e060331864fb9af3f803a64acf2fc8f5d68e` | 1097015 |
+
+| `SHA256SUMS.txt` | `bec94c3abf3e42c8cd6df6f0098533bc702adad773d24e92a4895cd35d024bba` | 289 |
+
+| `correspondence-0.1.0-dev.30.dwpkg` | `f557901c091c6d8316d955f71f284236d512e34235d678cc9ef372906daa0be1` | 1042686 |
+
+| `correspondence.tar.gz` | `5c7673ec73a4aa81918804bb3a9c8b43019515361bee8d21d2e309cb9e36f181` | 599388 |

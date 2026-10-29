@@ -500,8 +500,13 @@ Thirteen actual PostgreSQL cases pass86 assertions on both a newly owned Windows
 
 - [x] Set dev.30 identity and deterministic package date; preserve dev.29 and older assets/tags.
 - [x] Update player installation/release notes and explicit web-only Department boundary; record unperformed Skyrim checks.
-- [ ] Rerun package/preflight and source-bound regressions; commit explicit intended files and tag immutable source.
-- [ ] Export the clean tag, rebuild identical assets, push tag and verify draft downloads.
-- [ ] Publish verified PRE-ALPHA assets, verify anonymous downloads, then fast-forward main; record final review.
+- [x] Rerun package/preflight and source-bound regressions; commit explicit intended files and tag immutable source.
+- [x] Export the clean tag, rebuild identical assets, push tag and verify draft downloads.
+- [x] Publish verified PRE-ALPHA assets, verify anonymous downloads, then fast-forward main; record final review.
 
 Authorization: commit, push and publish verified fixes. No live, installed-game, provider or additional test2 access is necessary for publication. Runtime behavior is already bound to the 86-assertion Windows/test2 run; no historical closed/stale mail revival, optional-interface pin bypass or new gameplay claim.
+
+
+### Dev.30 publication review
+
+Published immutable runtime 1eb58d999698002f8aeaa05b21464f7608717794 as correspondence-v0.1.0-dev.30. Clean-tag export matches the reviewed source and reproduces all four assets; draft and anonymous public downloads match every byte/hash. All75 package/preflight tests pass; runtime hashes remain exactly those tested with86 assertions on Windows/test2. Test2 passes27/27 PHP suites; the inherited Windows worker-path test remains documented. Both packaged PEX scripts are byte-identical to dev.29. Only manifest/checksums and two server runtime files change within the DWPkg. All earlier release metadata/assets and tag refs are preserved. Main advances only after public verification. Web-only boundary and remaining Skyrim/model/installed-send limits are explicit; no live/test2/game/provider access occurred during publication.
