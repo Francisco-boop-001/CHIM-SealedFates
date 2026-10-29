@@ -1,4 +1,32 @@
-# Sealed Fates dev.29 — PRE-ALPHA: the courier hires an accountant
+# Sealed Fates dev.30 — PRE-ALPHA: unreadable is not undeliverable
+
+The post office was treating an unreadable checkbox as a resignation letter. A briefly missing player name could also send your companion's letter into administrative purgatory. I have instructed management to stop inventing reasons to lose the mail. Management is me. This explains a great deal.
+
+## Install one file
+
+Download **[CHIM-Sealed-Fates-0.1.0-dev.30.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.30/CHIM-Sealed-Fates-0.1.0-dev.30.zip)**. After ending your game session, follow [Updating](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/INSTALL.md#updating), replace your previous Sealed Fates MO2 mod, and keep one version enabled. The ZIP includes both unchanged matching Papyrus scripts and the server package. Confirm **0.1.0-dev.30** in CHIM after normal synchronization. No second Sealed Fates download or manual checksum calculation is required.
+
+## What changes
+
+- A missing or unreadable Background Life/Letters setting now **defers** queued companion mail instead of falsely recording an opt-out and closing the letter.
+- Temporarily unavailable player identity or physical actor mapping also defers delivery. A successfully resolved identity change still blocks it.
+- Recovery still needs a fresh same-episode waiting observation and valid playthrough/restore authority. Repeated ticks cannot create another operation or physical dispatch command. No resend, refund, freshness bypass or restore bypass has been added.
+
+Already stale decisions and closed letters are **not automatically revived**. We cannot safely decide that every old cancellation deserves another delivery attempt.
+
+**Use the existing CHIM web plugin page for dev.30.** The Skyrim interface is optional; Department prealpha.25 pins dev.29 and is not a matching dev.30 interface release. Wait for its owner's matching update and keep its safety checks intact. This ZIP changes no Department DLL or UI.
+
+## Verification and remaining limits
+
+Thirteen scenarios pass **86 database assertions on both isolated Windows PostgreSQL and test2**. All **27 PHP regression suites pass on test2**. Windows retains its documented `server_offscreen_host` path-check failure; that test passes on test2. Package/preflight, native-source translation, syntax and isolated browser-origin/CSRF checks are recorded with the clean-source build/download verification.
+
+These tests use synthetic observations and queued native commands. They do **not** prove actual Skyrim follower detection, unloaded-actor/framework behavior, rendered notes, physical letter/item/gold delivery, stolen-item flags, native crash recovery, save/co-save restoration, installed HTTP sends or real-model behavior for this release. No new Department pairing is claimed. This is still **PRE-ALPHA**.
+
+No new migration is introduced by dev.30. Upgrades from older versions still need migration006's eventlog-owner/admin rights and maintenance window; its three-second timeout bounds lock acquisition, not the one-time index build. An already applied migration does not need manual reapplication. See [installation](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/INSTALL.md).
+
+Live and the installed game stayed untouched. Test2 used a new socket-only database with synthetic data; its copied campaign was not used. All owned test databases were stopped. No provider calls or configuration changes were made. Publication does not install anything into your running setup.
+
+## Historical dev.29 — PRE-ALPHA: the courier hires an accountant
 
 The post office has reviewed its procedures. Apparently giving every letter to a faction nobody belongs to, dating every parcel 1980, and rereading the entire filing cabinet were not operational best practices. My managerial brilliance continues to require witnesses.
 

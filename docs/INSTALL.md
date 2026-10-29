@@ -1,6 +1,6 @@
 # Installation and removal
 
-**Dev.29 PRE-ALPHA:** install the single matching MO2 ZIP in a disposable game profile with a disposable server for the first playtest. It contains the updated physical delivery bridge, read-only companion observer and server package together. Native gameplay acceptance is still pending; see [release notes](RELEASE.md) and [companion requirements](COMPANION-CHECKINS.md).
+**Dev.30 PRE-ALPHA:** install the single matching MO2 ZIP after ending your game session. It includes the unchanged matching delivery bridge, read-only companion observer and updated server package. Test in a disposable game profile/server first; server fixtures do not prove native gameplay. See [release notes](RELEASE.md).
 
 ## Pick your interface
 
@@ -10,19 +10,19 @@ If the plugin page says **Operator access required**, and your browser is on the
 
 The interface is separate from the **matching Sealed Fates Papyrus bridge**, which is still required for physical note delivery and item/gold transfers. Skipping the optional interface does not mean skipping the delivery bridge.
 
-**For the optional Skyrim interface, use [Department prealpha.25](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.25) with Sealed Fates dev.29.** Update the separate Department MO2 mod with its single [complete ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.25/WorldOfDramaLlama-0.1.0-prealpha.25.zip) after ending the game session. It adds the exact owner pins and new memo method; its native 1.17 DLL, UI and other installable payloads are unchanged. Older prealpha.24 pins dev.28 and should refuse changed dev.29 source. Do not bypass that guard. This Sealed Fates ZIP does not replace the Department DLL. Offline source/package acceptance is not installed-server or Skyrim gameplay proof. [Compatibility record](PRISMA-COMPATIBILITY.md).
+**Dev.30 uses the existing web plugin page.** Department prealpha.25 pins dev.29 and should refuse dev.30 until its owner publishes a matching update. Do not bypass that protection. The optional interface and required physical-delivery bridge are separate components. [Compatibility record](PRISMA-COMPATIBILITY.md).
 
 ## Main install — one ZIP
 
-Download **[CHIM-Sealed-Fates-0.1.0-dev.29.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.29/CHIM-Sealed-Fates-0.1.0-dev.29.zip)**. This is the complete MO2 download; it includes the matching scripts and server payload.
+Download **[CHIM-Sealed-Fates-0.1.0-dev.30.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.30/CHIM-Sealed-Fates-0.1.0-dev.30.zip)**. This is the complete MO2 download; it includes the matching scripts and server payload.
 
 1. Follow **Updating** below to stop the offscreen service before replacing files. Replace the previous Sealed Fates MO2 mod with this ZIP. Confirm exactly one active version supplies `Scripts/CHIMCorrespondenceBridge.pex`, `Scripts/CHIMCorrespondenceCompanion.pex` and the correspondence DWPkg.
-2. On the next normal full game start/save load, CHIM synchronizes `CHIM/server-plugins/correspondence/0.1.0-dev.29.dwpkg`. Confirm dev.29 in the server Plugin Manager before enabling correspondence. An MO2 checkbox alone does not prove synchronization succeeded.
+2. On the next normal full game start/save load, CHIM synchronizes `CHIM/server-plugins/correspondence/0.1.0-dev.30.dwpkg`. Confirm dev.30 in the server Plugin Manager before enabling correspondence. An MO2 checkbox alone does not prove synchronization succeeded.
 3. In the web page, enable global autonomous correspondence and the selected NPC's Background Life and Send letters settings. Test the [supported wait signals and remaining limits](COMPANION-CHECKINS.md) on that disposable setup.
 
 Mind Poisoning, Sworn & Scorned and the optional Department interface remain separate downloads. This publication does not install anything into an existing live game/server or reset campaign data.
 
-CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Dev.29 uses the fixed release date 2026-10-28 for every ZIP member, newer than the earlier playtests. Future releases must declare their own increasing timestamp. Older reproducible archives used 1980, which could let an older playtest win when both were active. Keep only one version enabled. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
+CHIM selects client-synchronized packages by **file modification time**, not the highest version number. Dev.30 uses the fixed archive time 2026-10-28 01:00, later than dev.29's 00:00 and the earlier playtests. Future releases must declare their own increasing timestamp. Older reproducible archives used 1980, which could let an older playtest win when both were active. Keep only one version enabled. Check the merged package directory; an apparently current PEX alone does not establish the active server version. Actual MO2 timestamp preservation remains unverified.
 
 ## Server-only maintenance archive
 

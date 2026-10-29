@@ -89,3 +89,15 @@ Targeted PostgreSQL cases exercise replay, two-session claim contention, unknown
 Inspected native source was CHIM `5ca1bc361d1e11a3c58067599b494b1101c2c77b` with retained working-file hashes, and test2 core was `468584f7bfc34c2eaf76e6188efaf3294f4fd63c`. Source inspection and a successful compiler exit do not prove the installed DLL/PEX executes this path.
 
 The two-day threshold leaves transit room before a potential ordinary three-day follower wait timeout; that timeout is an externally corroborated compatibility concern, not a verified property of the installed framework. See the [reproduced vanilla follower script](https://www.gamesas.com/can-someone-post-the-vanilla-dialoguefollowerscript-t260493.html). This plugin changes no follower timeout.
+
+## Queued-letter availability recovery (dev.30)
+
+An unreadable or missing Background Life/Letters setting is not a confirmed opt-out. Companion polling and due delivery now leave those letters queued; temporarily unavailable player identity or physical actor mapping also defers delivery. Confirmed false participation flags, death, changed identities and ended/changed waiting episodes still block the pending letter. An unknown native observation still ends its waiting evidence; it is distinct from unreadable profile metadata.
+
+Recovery never supplies freshness by itself. Delivery still needs a fresh same-episode waiting sample, the current recipient/sender identities, matching playthrough/restore authority and the existing scheduler ownership checks. Repeated ticks cannot create another operation or physical dispatch command. Already stale decisions and operator-closed documents are not automatically revived, including ones affected before this fix.
+
+`tests/server_companion_availability_pg.php` exercises 13 synthetic cases with 86 assertions against actual production methods and PostgreSQL. It requires an explicitly pinned fresh database, role, system identifier, data directory and port; on test2 it additionally requires a private `/var/tmp/sf-availability-*` socket and no TCP listener. It never loads CHIM configuration or calls a provider.
+
+The 2026-10-28 run passed on a new Windows PostgreSQL 17 fixture and a new test2 PostgreSQL 15 fixture. All 27 pure PHP regression suites passed on test2. Windows retained its documented offscreen-host path-check failure; the other 26 suites, 73 package/release tests, 171 native-source translation checks, syntax checks and the isolated browser-origin test passed. Earlier test2 harness runs omitted process-local PHP extensions; their failures are retained separately and were corrected without installed configuration changes.
+
+Evidence is under `artifacts/chim-sealed-fates-companion-availability-fixes-20261028` in the owning workspace. Owned databases were identity-checked and stopped. This is server database/queue evidence, not Skyrim VM, physical delivery, a real-model run or a newly verified Department release pairing. Live and the installed game were untouched; publication does not install or validate it in your game.

@@ -137,7 +137,7 @@ final class CorrespondenceService
     }
     private function sameActor(array $actor): bool
     {
-        try { return $this->actor($actor['kind']==='player'?'player':'npc:'.$actor['id'])==$actor; } catch (Throwable) { return false; }
+        try { return $this->actor($actor['kind']==='player'?'player':'npc:'.$actor['id'])==$actor; } catch (InvalidArgumentException) { return false; }
     }
     private function actorSnapshotValid(mixed $actor): bool
     {

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.30 — PRE-ALPHA
+
+- Defer queued companion mail when participation/player/form metadata is temporarily unavailable; retain confirmed opt-out, death, identity, episode, freshness and restore refusals.
+- Keep one physical dispatch after fresh recovery, scheduler ownership and all native replay guards; do not automatically revive historical stale/closed mail.
+- Add real PostgreSQL recovery regressions: 13 scenarios/86 assertions on Windows and isolated test2. All27 pure PHP suites pass on test2; native gameplay remains unverified.
+- Publish one MO2 ZIP with unchanged scripts and an increasing deterministic package date. Web-only release until Department publishes matching owner pins.
+
 ## 0.1.0-dev.29 — PRE-ALPHA
 
 - Assign delivered notes to the recipient actor base and verify ownership through transfer completion; rebuild the source-bound anonymous bridge.

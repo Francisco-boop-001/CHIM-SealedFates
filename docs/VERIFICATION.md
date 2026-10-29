@@ -1,10 +1,16 @@
+## Dev.30 companion recovery boundary
+
+Thirteen actual PostgreSQL scenarios pass 86 assertions on both new Windows PG17 and socket-only test2 PG15 fixtures. Transient profile/player/form metadata loss defers mail, stale observations still block delivery, fresh recovery sends once, and confirmed opt-outs/death/identity/episode/restore changes remain blocked. Test2 passes all 27 pure PHP regression suites. The Windows worker-path assertion remains an explicitly recorded baseline failure.
+
+These are synthetic server events and queued native commands, not Skyrim execution. Physical notes/items/gold, actual follower observations, save/co-save recovery, installed HTTP sends, real-model behavior and a matching Department dev.30 interface remain unverified. No live or installed-game changes occurred. Already stale/closed mail is not automatically revived. [Publication and test record](DEV30-PUBLICATION.md).
+
 ## Dev.29 offline repair boundary
 
 See [the findings assessment](DEV29-FINDINGS.md) for the exact disposition of GitHub issues1–4. New source/native builds, fake-boundary regressions and package checks do not establish Skyrim stolen flags, physical delivery or installed HTTP behavior. The legacy 3.4.2 connector preflight uses actual retained core sources with a fake database/config and never invokes a provider. Replay journals remain unbounded; full validated known-source reference work remains linear. No live/test2, installed game, campaign or provider is used for this release.
 
 # Verification and limits
 
-## Current dev.28 — real browser form policy regression
+## Historical dev.28 — real browser form policy regression
 
 A standalone local PHP/Chromium fixture reproduces dev.27 no-referrer -> Origin:null -> HTTP403. The same real form with the production same-origin response policy reaches HTTP200; wrong CSRF remains400 and cross-origin navigation suppresses its referrer. Existing origin/access/CSRF validation is unchanged. The fixture never boots CHIM or connects to live/test2. Read-only live file/log inspection established installed dev.27 and403 metadata; it is not a live request-header capture or successful send test. Native crash repair remains Department-owned. PostgreSQL recovery, installed send, model, physical delivery and Skyrim acceptance remain unperformed.
 

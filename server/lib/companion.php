@@ -33,8 +33,9 @@ final class CorrespondenceCompanionPg
         return in_array($row['enabled']??null,[true,'t','true','1',1],true);
     }
 
-    private function eligible(): array
+    private function eligible(?array &$ineligible=null): array
     {
+        $ineligible=[];
         $rows=$this->store->offscreenActors();$names=[];$eligible=[];
         foreach($rows as $row){
             $name=$row['npc_name']??null;$id=filter_var($row['id']??null,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]]);
@@ -46,6 +47,8 @@ final class CorrespondenceCompanionPg
             $enabled=is_array($extended)&&in_array($extended['background_life_enabled']??null,[true,1,'true','1','t','on'],true)
                 &&in_array($extended['background_life_letters']??null,[true,1,'true','1','t','on'],true);
             $dead=is_array($metadata)&&is_array($metadata['stats']??null)&&in_array($metadata['stats']['is_dead']??null,[true,1,'true','1','t','on'],true);
+            if($dead||is_array($extended)&&(in_array($extended['background_life_enabled']??null,[false,0,'false','0','f','off'],true)
+                ||in_array($extended['background_life_letters']??null,[false,0,'false','0','f','off'],true)))$ineligible[$id]=true;
             if(!$enabled||$dead)continue;
             $row['_name_key']=$key;$row['_extended']=is_array($extended)?$extended:[];
             $eligible[$id]=$row;
@@ -84,9 +87,10 @@ final class CorrespondenceCompanionPg
             // The built-in player-backed agent carries the command; it is not companion identity evidence.
             $executor='The Narrator';
             $prior=$this->store->query('SELECT epoch::text,cursor_id::text FROM plugins.correspondence_companion_poll WHERE playthrough_id=$1',[$scope])[0]??null;
-            $eligible=$this->eligible();
+            $eligible=$this->eligible($ineligible);
             $queued=$this->store->query("SELECT actor_id::text,episode_id::text FROM plugins.correspondence_companion_decision WHERE playthrough_id=$1 AND epoch=$2::uuid AND status='queued'",[$scope,$epoch]);
-            foreach($queued as $decision)if(!isset($eligible[(int)$decision['actor_id']])){
+            // Unreadable participation is not evidence of an opt-out.
+            foreach($queued as $decision)if(isset($ineligible[(int)$decision['actor_id']])){
                 $this->cancel($scope,$epoch,(int)$decision['actor_id'],$decision['episode_id'],'actor_opted_out');
                 $this->store->query('DELETE FROM plugins.correspondence_companion_episode WHERE playthrough_id=$1 AND actor_id=$2',[$scope,$decision['actor_id']]);
             }
@@ -207,7 +211,7 @@ final class CorrespondenceCompanionPg
         return null;
     }
 
-    private function due(string $scope,string $epoch,int $gamets,array $eligible): ?array
+    private function due(string $scope,string $epoch,int $gamets,array $eligible,array $ineligible=[]): ?array
     {
         $rows=$this->store->query("SELECT d.actor_id::text,d.episode_id::text,d.document_id::text,d.due_gamets::text FROM plugins.correspondence_companion_decision d LEFT JOIN plugins.correspondence_companion_episode e ON e.playthrough_id=d.playthrough_id AND e.epoch=d.epoch AND e.actor_id=d.actor_id AND e.episode_id=d.episode_id WHERE d.playthrough_id=$1 AND d.epoch=$2::uuid AND d.status='queued' AND d.due_gamets<=$3::numeric ORDER BY (e.sample_gamets>=d.due_gamets AND e.sample_gamets BETWEEN $4::numeric AND $3::numeric) DESC NULLS LAST,d.due_gamets,d.actor_id LIMIT 1 FOR UPDATE OF d",[$scope,$epoch,(string)$gamets,(string)max(0,$gamets-self::HOUR)]);
         if($rows===[])return null;
@@ -217,10 +221,14 @@ final class CorrespondenceCompanionPg
             $this->cancel($scope,$epoch,$actorId,$decision['episode_id'],'operator_closed');
             return ['status'=>'stale','reason'=>'operator_closed'];
         }
+        if(!isset($eligible[$actorId])&&!isset($ineligible[$actorId]))return ['status'=>'idle','reason'=>'actor_unavailable'];
         $identityMatches=false;
         if(isset($eligible[$actorId])&&is_array($episode)&&$episode['episode_id']===$decision['episode_id'])
-            try{$identityMatches=json_decode($episode['identity'],true)===$this->identity($actorId);}catch(DomainException){}
-        if($identityMatches)try{$this->service->get($decision['document_id']);}catch(DomainException){$identityMatches=false;}
+            try{$identityMatches=json_decode($episode['identity'],true)===$this->identity($actorId);}catch(DomainException){return ['status'=>'idle','reason'=>'actor_unavailable'];}
+        if($identityMatches)try{$this->service->get($decision['document_id']);}catch(DomainException $error){
+            if($error->getMessage()==='player_unavailable')return ['status'=>'idle','reason'=>'player_unavailable'];
+            $identityMatches=false;
+        }
         if(!$identityMatches){
             $this->cancel($scope,$epoch,$actorId,$decision['episode_id'],'dispatch_state_changed');
             return ['status'=>'stale','reason'=>'dispatch_state_changed'];
@@ -244,8 +252,8 @@ final class CorrespondenceCompanionPg
         $work=$this->store->transaction(function()use($model):array {
             [$scope,$epoch,$gamets,$restoreToken]=$this->context();
             if(!$this->enabled($scope))return ['status'=>'paused','reason'=>'disabled'];
-            $eligible=$this->eligible();
-            $due=$this->due($scope,$epoch,$gamets,$eligible);if($due!==null)return $due;
+            $eligible=$this->eligible($ineligible);
+            $due=$this->due($scope,$epoch,$gamets,$eligible,$ineligible);if($due!==null)return $due;
             if($model===null)return ['status'=>'idle','reason'=>'model_unavailable'];
             $this->store->query("DELETE FROM plugins.correspondence_companion_decision WHERE playthrough_id=$1 AND epoch=$2::uuid AND status='claimed' AND attempted=FALSE AND created_at<clock_timestamp()-INTERVAL '120 seconds'",[$scope,$epoch]);
             $rows=$this->store->query("SELECT e.actor_id::text,e.episode_id::text,e.first_game_minute::text,e.game_minute::text,e.sample_gamets::text,e.identity::text FROM plugins.correspondence_companion_episode e WHERE e.playthrough_id=$1 AND e.epoch=$2::uuid AND e.game_minute-e.first_game_minute>=2880 AND e.sample_gamets<=$3::numeric AND e.sample_gamets>$4::numeric AND NOT EXISTS(SELECT 1 FROM plugins.correspondence_companion_decision d WHERE d.playthrough_id=e.playthrough_id AND d.epoch=e.epoch AND d.actor_id=e.actor_id AND d.episode_id=e.episode_id) ORDER BY e.sample_gamets,e.actor_id LIMIT 12",[$scope,$epoch,(string)$gamets,(string)max(0,$gamets-self::HOUR)]);

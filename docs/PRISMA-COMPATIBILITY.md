@@ -1,3 +1,11 @@
+# Sealed Fates dev.30 — web-only release
+
+The existing CHIM web plugin page remains available. Department prealpha.25 binds the exact dev.29 files and is **not a matching dev.30 interface release**. These companion/runtime fixes change that closure; do not bypass its version/hash checks. No Department/native/UI payload is included or changed here.
+
+Dev.30 has actual synthetic recovery/database tests on isolated Windows PostgreSQL and test2, but no new Department pairing receipt, installed HTTP send or Skyrim UI/VM acceptance. The release gate deliberately uses `--department-interface web-only`; this is not `tested-paired` certification.
+
+The dev.29/prealpha.25 record below remains valid only for those immutable versions. [Current release and gameplay limits](RELEASE.md).
+
 # Department / PRISMA compatibility
 
 ## Sealed Fates dev.29 / Department prealpha.25 — offline source/package compatibility

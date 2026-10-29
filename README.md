@@ -1,4 +1,4 @@
-**0.1.0-dev.29 — PRE-ALPHA.** Repairs note ownership and legacy dialogue-connector readiness, reduces repeated history work, and fixes package selection dates. Offline verification; installed-server and Skyrim acceptance remain pending. [Download](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.29) · [Release notes and limits](docs/RELEASE.md).
+**0.1.0-dev.30 — PRE-ALPHA.** Companion letters now wait for readable evidence instead of being cancelled by temporary metadata failures. Verified with isolated PostgreSQL on Windows and test2; Skyrim gameplay remains unverified. [Download](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.30) · [Release notes and limits](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -8,11 +8,11 @@ Part of the World of Drama-Llama.
 
 Skyrim has one courier, and he is VERY good at his job. Let's reward him with love letters, forged apologies, and forwarded insults. I call it 'emergent storytelling' because 'I have made this man's working conditions worse' looks dreadful on a feature list.
 
-Sealed Fates adds physical letters and optional item or gold transfers to CHIM, private written context, and bounded NPC correspondence. Optional waiting-companion check-ins use observed game circumstances; unknown state and silence remain valid. Dev.29 repairs recipient note ownership and supports the validated legacy `openaijson` and `openrouterjson` dialogue connectors. Strict claim and transfer checks are unchanged. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
+Sealed Fates adds physical letters and optional item or gold transfers to CHIM, private written context, and bounded NPC correspondence. Optional waiting-companion check-ins use observed game circumstances; unknown state and silence remain valid. Dev.29 repairs recipient note ownership and supports the validated legacy `openaijson` and `openrouterjson` dialogue connectors. Dev.30 preserves queued companion letters through unreadable participation or player metadata; fresh evidence is still required before delivery. Strict claim and transfer checks are unchanged. Start with the [installation guide](docs/INSTALL.md); read the [limits and verification notes](docs/VERIFICATION.md) before using it in a save you care about.
 
 ## Pick your interface
 
-**Optional Skyrim interface:** [Department prealpha.25](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.25) adds the exact dev.29 source pins and transaction-memo adapter support. Its offline service/package checks pass; native 1.17 and UI bytes are unchanged from prealpha.24. This is source/package compatibility, with no fresh installed-server or Skyrim acceptance. The web page works independently. [Exact scope](docs/PRISMA-COMPATIBILITY.md).
+**Optional Skyrim interface:** dev.30 is a **web-only release** until Department publishes matching source pins. Department prealpha.25 supports dev.29, and must refuse these changed files; do not bypass that check. The existing web plugin page works independently. [Exact scope](docs/PRISMA-COMPATIBILITY.md).
 
 **The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** Keep using CHIM's web page to compose letters, browse your inbox and outbox, check delivery status, and enable or pause autonomous correspondence. You do not need the new Skyrim interface to use those controls. Your browser has not been fired; I lack the qualifications to conduct that meeting.
 
@@ -20,9 +20,9 @@ The interface is separate from the **matching Sealed Fates Papyrus bridge**, whi
 
 ## Download
 
-Install **[CHIM-Sealed-Fates-0.1.0-dev.29.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.29/CHIM-Sealed-Fates-0.1.0-dev.29.zip)** as your single Sealed Fates MO2 mod. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
+Install **[CHIM-Sealed-Fates-0.1.0-dev.30.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.30/CHIM-Sealed-Fates-0.1.0-dev.30.zip)** as your single Sealed Fates MO2 mod. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
 
-The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.29.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
+The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.30.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
 
 ## The web page
 

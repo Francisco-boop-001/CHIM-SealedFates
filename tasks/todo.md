@@ -475,3 +475,33 @@ Final candidate passes26/27 pure PHP suites (only the inherited Windows worker-p
 ### Dev.29 completion review
 
 Published runtime dd128bb7568e0095423c49e02c0e70a395208a18 and verified four clean-tag/draft/anonymous public assets. Sixteen older releases and32 prior tag refs remain unchanged. Posted and verified explanations on ordinary GitHub issues1–4; no issue-state/PR changes. Department prealpha.25 at224d2bb473b86e6087a9711d6a42d716e46d9ba0 is public; root checks all4 assets,250 source files,20 owner pins and21 unchanged native/UI/other payloads. Docs retain the owner/admin/uncapped one-time migration build limit, linear full-reference scans, unbounded exact journal, baseline Windows failure and all unperformed game/runtime gates. Live/test2/game/providers stayed untouched; the exact owned Windows PG fixture is stopped. Final documentation/main update retains identical runtime/asset closure.
+
+
+## Companion availability recovery fixes — 2026-10-28
+
+Goal: transient participation/player metadata loss defers queued companion letters; recovery dispatches once only with current identity, same episode, fresh observations and restore authority. Confirmed opt-outs, death, identity/episode changes and restore failures must remain blocked.
+
+- [x] Add actual PostgreSQL recovery tests and observe both failures before product edits.
+- [x] Repair eligibility classification and identity availability propagation in the smallest shared paths; preserve scheduler ownership and all freshness/restore barriers.
+- [x] Rerun offline reproductions, full applicable regressions and guard controls; review the diff.
+- [x] Check test2 availability/isolation, run the same controlled database cases there if available, stop owned fixtures and record exact limits.
+- [x] Add a short review and hand off source changes with verification evidence.
+
+Scope: Sealed Fates source/tests/docs only. Test2 testing is newly authorized; live and installed game remain protected. No provider calls, publication or deployment to an installed campaign. Already stale/closed historical mail is not automatically revived.
+
+### Recovery fix review
+
+Both red PostgreSQL tests failed on the original bugs before implementation. Unreadable participation now defers in polling and due scheduling, while explicit false/death still cancels. Shared identity lookup preserves unavailable-player errors rather than labelling them a mismatch; due scheduling defers unavailable player/form mappings, but resolved identity changes still reject. Runtime writers, restore barriers, native scope/nonces/journal, freshness thresholds and manual ownership gates are unchanged.
+
+Thirteen actual PostgreSQL cases pass86 assertions on both a newly owned Windows PG17 fixture and a newly owned socket-only test2 PG15 fixture: stale observations block, fresh recovery dispatches once, repeated ticks queue one physical command, and identity/episode/restore changes stay blocked. Test2 passes27/27 pure PHP suites; Windows passes26/27 with its inherited worker-path check failure. All73 package/preflight tests,171 native-source checks,18 lints and isolated Chromium/CSRF checks pass. Initial test2 harness runs lacked ctype/tokenizer under php -n; final runs use process-local extension flags and all private clusters stopped. Detailed output/source hashes: artifacts/chim-sealed-fates-companion-availability-fixes-20261028. No live/installed-game/provider access, historical-mail revival, publication or installed Department pairing claim.
+
+
+## Dev.30 publication — 2026-10-28
+
+- [x] Set dev.30 identity and deterministic package date; preserve dev.29 and older assets/tags.
+- [x] Update player installation/release notes and explicit web-only Department boundary; record unperformed Skyrim checks.
+- [ ] Rerun package/preflight and source-bound regressions; commit explicit intended files and tag immutable source.
+- [ ] Export the clean tag, rebuild identical assets, push tag and verify draft downloads.
+- [ ] Publish verified PRE-ALPHA assets, verify anonymous downloads, then fast-forward main; record final review.
+
+Authorization: commit, push and publish verified fixes. No live, installed-game, provider or additional test2 access is necessary for publication. Runtime behavior is already bound to the 86-assertion Windows/test2 run; no historical closed/stale mail revival, optional-interface pin bypass or new gameplay claim.
