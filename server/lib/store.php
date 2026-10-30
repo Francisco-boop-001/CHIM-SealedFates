@@ -22,6 +22,11 @@ final class CorrespondencePgStore implements CorrespondenceStore
     /** The connection must be dedicated to this store; failed advisory cleanup closes it. */
     public function __construct(private mixed $connection, private Closure $executorResolver, private Closure $notePreparer, private ?string $restoreSentinelPath=null) {}
     private function clearTransactionCache():void{$this->transactionMemo=[];$this->actorCatalog=null;$this->offscreenActorRows=null;$this->playerName=null;}
+    private function compareNativeCounters(string $left,string $right):int
+    {
+        if(preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/D',$left)!==1||preg_match('/\A(?:0|[1-9][0-9]{0,18})\z/D',$right)!==1)throw new InvalidArgumentException('invalid_native_counter');
+        return (strlen($left)<=>strlen($right))?:strcmp($left,$right);
+    }
     public function bindRequestClock(array $request):void
     {
         if($this->active)throw new LogicException('clock_rebind_during_transaction');
@@ -536,8 +541,11 @@ final class CorrespondencePgStore implements CorrespondenceStore
     }
     public function managedExecutor():?string
     {
+        $activity=$this->currentNativeActivityState();
+        if($activity===false)return null;
+        if($activity===true)return 'The Narrator';
         $name=($this->executorResolver)($this);
-        if(!is_string($name)||$name===''||preg_match('/[|@\r\n]/',$name))return null;
+        if(!is_string($name)||$name===''||$name==='The Narrator'||preg_match('/[|@\r\n]/',$name))return null;
         $matches=array_filter($this->actors(),fn($a)=>$a['npc_name']===$name);return count($matches)===1?$name:null;
     }
     public function prepareNote(string $title,string $body):void
@@ -627,17 +635,110 @@ final class CorrespondencePgStore implements CorrespondenceStore
             &&is_array($payload['anchor']??null)&&$this->eventMatches($payload['anchor']))return;
         $this->transaction(function()use($raw){
             $scope=$this->scope()['playthrough_id'];
+            $existing=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1 FOR UPDATE',[$scope]));
             $anchor=$this->appendEvent('correspondence_presence',correspondenceJson(['token'=>correspondenceUuid()]),'','correspondence_v1');
             $payload=['raw'=>$raw,'observed_at'=>time(),'anchor'=>$anchor];
+            if(is_array($existing)&&array_key_exists('activity',$existing))$payload['activity']=$existing['activity'];
             $this->query('INSERT INTO plugins.correspondence_presence(playthrough_id,payload) VALUES($1,$2::jsonb) ON CONFLICT(playthrough_id) DO UPDATE SET payload=EXCLUDED.payload',[$scope,correspondenceJson($payload)]);
         });
     }
+    public function observeNativeActivity(array $request,bool $active):bool
+    {
+        if(($request[0]??null)!=='request')throw new InvalidArgumentException('native_request_required');
+        $clock=correspondenceRequestClock($request);$this->bindRequestClock($request);
+        $interactionGeneration=$GLOBALS['chim_interaction_generation']??null;
+        if(!is_int($interactionGeneration)||$interactionGeneration<0)$interactionGeneration=null;
+        if(($_SERVER['HTTP_X_CHIM_PASSIVE']??'')==='1')$active=false;
+        if(function_exists('chimInteractionAllowed')){
+            try{$interactionAllowed=chimInteractionAllowed()===true;}catch(Throwable){$interactionAllowed=false;}
+            if(!$interactionAllowed||$interactionGeneration===null)$active=false;
+        }
+        $active=$active===true;
+        return $this->transaction(function()use($clock,$interactionGeneration,$active){
+            $scope=$this->scope()['playthrough_id'];$restore=$this->currentRestoreGeneration();
+            if(!is_string($restore)||$restore==='')throw new DomainException('restore_epoch_pending');
+            $floor=$this->queryRaw('SELECT native_ts_floor::text AS native_ts_floor FROM plugins.correspondence_restore_state WHERE singleton IS TRUE')[0]['native_ts_floor']??null;
+            if(!is_string($floor)||$this->compareNativeCounters($clock['ts'],$floor)<=0)throw new DomainException('request_before_restore_epoch');
+            $payload=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1 FOR UPDATE',[$scope]));
+            $prior=$payload['activity']??null;
+            if(is_array($prior)&&($prior['restore_generation']??null)===$restore){
+                $last=$prior['native_ts']??null;
+                if(!is_string($last)||preg_match('/\A[1-9][0-9]{0,18}\z/D',$last)!==1||filter_var($last,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])===false)throw new DomainException('native_activity_counter_unavailable');
+                if($this->compareNativeCounters($clock['ts'],$last)<=0)return false;
+                $receivedAt=$prior['received_at']??null;
+                if(($prior['active']??null)===$active&&is_int($receivedAt)&&$receivedAt<=time()&&time()-$receivedAt<15
+                    &&$this->validateNativeActivity($prior,$scope)===$active)return false;
+            }
+            $activity=[
+                'playthrough_id'=>$scope,
+                'native_type'=>'request',
+                'native_ts'=>$clock['ts'],
+                'gamets'=>$clock['gamets'],
+                'request_sha256'=>hash('sha256',correspondenceCanonicalJson(['request',$clock['ts'],$clock['gamets']])),
+                'interaction_generation'=>$interactionGeneration,
+                'restore_generation'=>$restore,
+                'received_at'=>time(),
+                'active'=>$active,
+            ];
+            $anchorData=['kind'=>'manual_delivery_activity']+$activity;
+            $activity['anchor']=$this->appendEvent('correspondence_presence',correspondenceJson($anchorData),'','correspondence_v1');
+            $payload=is_array($payload)?$payload:[];$payload['activity']=$activity;
+            $this->query('INSERT INTO plugins.correspondence_presence(playthrough_id,payload) VALUES($1,$2::jsonb) ON CONFLICT(playthrough_id) DO UPDATE SET payload=EXCLUDED.payload',[$scope,correspondenceJson($payload)]);
+            return true;
+        });
+    }
+    private function validateNativeActivity(mixed $activity,string $scope):?bool
+    {
+        if(!is_array($activity))return null;
+        try{correspondenceKeys($activity,['playthrough_id','native_type','native_ts','gamets','request_sha256','interaction_generation','restore_generation','received_at','active','anchor']);}
+        catch(InvalidArgumentException){return null;}
+        if($activity['playthrough_id']!==$scope||$activity['native_type']!=='request'||!is_string($activity['native_ts'])||preg_match('/\A[1-9][0-9]{0,18}\z/D',$activity['native_ts'])!==1
+            ||filter_var($activity['native_ts'],FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])===false||!is_string($activity['gamets'])||preg_match('/\A[1-9][0-9]{0,18}\z/D',$activity['gamets'])!==1
+            ||filter_var($activity['gamets'],FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])===false||!is_string($activity['request_sha256'])||preg_match('/\A[0-9a-f]{64}\z/D',$activity['request_sha256'])!==1
+            ||($activity['interaction_generation']!==null&&(!is_int($activity['interaction_generation'])||$activity['interaction_generation']<0))||!is_string($activity['restore_generation'])||$activity['restore_generation']===''
+            ||!is_int($activity['received_at'])||$activity['received_at']>time()||time()-$activity['received_at']>45||!is_bool($activity['active']))return null;
+        $restore=$this->restoreGeneration();if(!is_string($restore)||!hash_equals($restore,$activity['restore_generation']))return null;
+        $floor=$this->query('SELECT native_ts_floor::text AS native_ts_floor FROM plugins.correspondence_restore_state WHERE singleton IS TRUE')[0]['native_ts_floor']??null;
+        if(!is_string($floor)||$this->compareNativeCounters($activity['native_ts'],$floor)<=0)return null;
+        $requestHash=hash('sha256',correspondenceCanonicalJson(['request',$activity['native_ts'],$activity['gamets']]));
+        if(!hash_equals($requestHash,$activity['request_sha256']))return null;
+        $anchor=$activity['anchor']??null;
+        if(!is_array($anchor))return null;
+        try{correspondenceKeys($anchor,['rowid','ts','gamets','type','data','sess','localts','people']);}
+        catch(InvalidArgumentException){return null;}
+        if((!is_int($anchor['rowid'])&&(!is_string($anchor['rowid'])||preg_match('/\A[1-9][0-9]*\z/D',$anchor['rowid'])!==1))||(is_int($anchor['rowid'])&&$anchor['rowid']<1)
+            ||$anchor['type']!=='info'||$anchor['ts']!==$activity['native_ts']||$anchor['gamets']!==$activity['gamets']
+            ||$anchor['sess']!=='correspondence_v1'||$anchor['people']!==''||!is_string($anchor['data'])||!$this->eventMatches($anchor))return null;
+        $anchorData=['kind'=>'manual_delivery_activity']+array_intersect_key($activity,array_flip(['playthrough_id','native_type','native_ts','gamets','request_sha256','interaction_generation','restore_generation','received_at','active']));
+        try{$anchoredData=json_decode($anchor['data'],true,16,JSON_THROW_ON_ERROR);if(!is_array($anchoredData))return null;correspondenceKeys($anchoredData,['kind','playthrough_id','native_type','native_ts','gamets','request_sha256','interaction_generation','restore_generation','received_at','active']);}
+        catch(JsonException|InvalidArgumentException){return null;}
+        if(!hash_equals(correspondenceCanonicalJson($anchorData),correspondenceCanonicalJson($anchoredData)))return null;
+        if(!$activity['active'])return false;
+        if(($_SERVER['HTTP_X_CHIM_PASSIVE']??'')==='1')return false;
+        if(function_exists('chimInteractionAllowed')){
+            try{if(chimInteractionAllowed()!==true)return false;}catch(Throwable){return false;}
+            $generation=$GLOBALS['chim_interaction_generation']??null;
+            if(!is_int($generation)||$activity['interaction_generation']!==$generation)return null;
+        }elseif(array_key_exists('chim_interaction_generation',$GLOBALS)){
+            $generation=$GLOBALS['chim_interaction_generation'];if(!is_int($generation)||$activity['interaction_generation']!==$generation)return null;
+        }elseif($activity['interaction_generation']!==null)return null;
+        return true;
+    }
+    private function currentNativeActivityState():?bool
+    {
+        $scope=$this->scope()['playthrough_id'];$payload=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1',[$scope]));
+        return $this->validateNativeActivity($payload['activity']??null,$scope);
+    }
     public function observedExecutor():?string
     {
-        $payload=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1',[$this->scope()['playthrough_id']]));
-        if(!$payload||!is_int($payload['observed_at']??null)||$payload['observed_at']>time()||time()-$payload['observed_at']>45||!$this->eventMatches($payload['anchor']))return null;
+        $scope=$this->scope()['playthrough_id'];$payload=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1',[$scope]));
+        if(!$payload)return null;
+        $activity=$this->validateNativeActivity($payload['activity']??null,$scope);
+        if($activity!==null)return $activity?'The Narrator':null;
+        if(!is_int($payload['observed_at']??null)||$payload['observed_at']>time()||time()-$payload['observed_at']>45||!is_array($payload['anchor']??null)||!$this->eventMatches($payload['anchor']))return null;
         return correspondenceExecutorFromSnapshot($payload['raw'],$this->actors());
-    }}
+    }
+}
 
 
 

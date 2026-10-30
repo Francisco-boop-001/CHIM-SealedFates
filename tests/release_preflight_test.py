@@ -30,7 +30,7 @@ class ReleasePreflightTest(unittest.TestCase):
             path.write_bytes(b'fixture:' + name.encode('utf-8'))
         for name in pkg.DISTRIBUTION_FILES:
             shutil.copyfile(ROOT / name, self.root / name)
-        manifest = {'name': 'correspondence', 'version': '0.1.0-dev.30'}
+        manifest = {'name': 'correspondence', 'version': '0.1.0-dev.31'}
         (self.root / 'server' / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
 
     @staticmethod
@@ -45,7 +45,7 @@ class ReleasePreflightTest(unittest.TestCase):
         data = (self.root / relative).read_bytes()
         return {'bytes': len(data), 'sha256': self.digest(data)}
 
-    def pairing_fixtures(self):
+    def pairing_fixtures(self, owner_version='0.1.0-dev.31'):
         owner_files = {
             'server/manifest.json': self.file_entry('server/manifest.json'),
             'server/lib/store.php': self.file_entry('server/lib/store.php'),
@@ -65,7 +65,7 @@ class ReleasePreflightTest(unittest.TestCase):
             'ready': True,
             'errorReason': None,
             'owner': {
-                'version': '0.1.0-dev.30',
+                'version': owner_version,
                 'manifestSha256': owner_files['server/manifest.json']['sha256'],
                 'selectedClosurePins': [
                     {'file': path.removeprefix('server/'),
@@ -111,7 +111,7 @@ class ReleasePreflightTest(unittest.TestCase):
             'failedCases': 0,
             'cases': [{'id': 'case-' + str(index), 'status': 'passed'}
                       for index, _ in enumerate(coverage)],
-            'ownerVersion': '0.1.0-dev.30',
+            'ownerVersion': owner_version,
             'ownerFiles': copy.deepcopy(owner_files),
             'departmentFiles': copy.deepcopy(department_files),
             'behaviorCoverage': coverage,
@@ -125,7 +125,7 @@ class ReleasePreflightTest(unittest.TestCase):
             'schemaVersion': 1,
             'kind': 'department-owner-pairing',
             'status': 'pass',
-            'owner': {'version': '0.1.0-dev.30', 'files': copy.deepcopy(owner_files)},
+            'owner': {'version': owner_version, 'files': copy.deepcopy(owner_files)},
             'department': {'files': copy.deepcopy(department_files)},
             'sourceReadiness': {'receipt': 'source-readiness.json'},
             'behavior': {
@@ -164,14 +164,16 @@ class ReleasePreflightTest(unittest.TestCase):
 
     def test_previous_owner_version_is_not_relabelled_as_current(self):
         manifest = self.root / 'server' / 'manifest.json'
-        manifest.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.23'}), encoding='utf-8')
-        with self.assertRaisesRegex(ValueError, 'Unsupported owner release identity'):
-            gate.preflight(self.root, 'web-only', None)
+        for version in ('0.1.0-dev.23', '0.1.0-dev.30'):
+            with self.subTest(version=version):
+                manifest.write_text(json.dumps({'name': 'correspondence', 'version': version}), encoding='utf-8')
+                with self.assertRaisesRegex(ValueError, 'Unsupported owner release identity'):
+                    gate.preflight(self.root, 'web-only', None)
 
     def test_web_only_is_explicit_and_binds_current_owner_closure(self):
         result = gate.preflight(self.root, 'web-only', None)
         self.assertEqual(result['departmentInterface'], 'web-only')
-        self.assertEqual(result['owner']['version'], '0.1.0-dev.30')
+        self.assertEqual(result['owner']['version'], '0.1.0-dev.31')
         first_hash = result['owner']['sourceClosureSha256']
         self.assertRegex(first_hash, r'^[0-9a-f]{64}$')
 
@@ -189,8 +191,16 @@ class ReleasePreflightTest(unittest.TestCase):
         receipt = self.write_pairing(*fixtures)
         result = gate.preflight(self.root, 'tested-paired', receipt)
         self.assertEqual(result['departmentInterface'], 'tested-paired')
-        self.assertEqual(result['owner']['version'], '0.1.0-dev.30')
+        self.assertEqual(result['owner']['version'], '0.1.0-dev.31')
         self.assertEqual(result['pairing']['departmentFiles'], fixtures[0]['department']['files'])
+
+    def test_dev30_pairing_receipt_is_rejected_for_dev31_source(self):
+        manifest = self.root / 'server' / 'manifest.json'
+        manifest.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.30'}), encoding='utf-8')
+        receipt = self.write_pairing(*self.pairing_fixtures('0.1.0-dev.30'))
+        manifest.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.31'}), encoding='utf-8')
+        with self.assertRaisesRegex(ValueError, 'Pairing receipt owner or Department identity differs'):
+            gate.preflight(self.root, 'tested-paired', receipt)
 
     def test_tested_pair_refuses_source_changed_between_capture_and_receipt_verification(self):
         envelope, readiness, behavior, freeze = self.pairing_fixtures()
@@ -390,15 +400,16 @@ class ReleasePreflightTest(unittest.TestCase):
 
     def test_unknown_owner_version_fails_closed_in_web_only_mode(self):
         path = self.root / 'server' / 'manifest.json'
-        path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.31'}), encoding='utf-8')
+        path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.32'}), encoding='utf-8')
         with self.assertRaises(ValueError):
             gate.preflight(self.root, 'web-only', None)
 
     def test_unknown_owner_version_fails_closed_in_tested_pair_mode(self):
         path = self.root / 'server' / 'manifest.json'
-        path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.31'}), encoding='utf-8')
+        receipt = self.write_pairing(*self.pairing_fixtures())
+        path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.32'}), encoding='utf-8')
         with self.assertRaises(ValueError):
-            gate.preflight(self.root, 'tested-paired', None)
+            gate.preflight(self.root, 'tested-paired', receipt)
 
     def test_invalid_interface_fails_closed(self):
         with self.assertRaises(ValueError):

@@ -26,7 +26,7 @@ try{
             elseif($request['action']==='retry')$result=$service->retry($request['document_id']);
             elseif($request['action']==='close')$result=$service->close($request['document_id']);
             else $result=$service->dispatch($request['document_id'],$request['action']==='reconcile');
-            $message=match($result['state']){'queued'=>'Letter queued; a recent managed game actor is needed before dispatch.','dispatched'=>'Letter dispatched; physical receipt is pending.','read'=>'Letter opened in the operator view; no NPC exposure was created.','delivered'=>'Physical delivery confirmed.','exposed'=>'Recipient context has received this letter.','unknown'=>'Outcome unknown. Use the read-only check; do not send another copy.','failed'=>'Delivery failed; no social result has been claimed.',default=>'Request recorded.'};
+            $message=match($result['state']){'queued'=>'Letter queued; keep Skyrim running with CHIM Interaction enabled, then try this saved letter again.','dispatched'=>'Letter dispatched; physical receipt is pending.','read'=>'Letter opened in the operator view; no NPC exposure was created.','delivered'=>'Physical delivery confirmed.','exposed'=>'Recipient context has received this letter.','unknown'=>'Outcome unknown. Use the read-only check; do not send another copy.','failed'=>'Delivery failed; no social result has been claimed.',default=>'Request recorded.'};
             if(($result['operator_closed']??false)===true)$message='Closed by operator. The delivery outcome is unchanged; nothing was resent or refunded. Read-only checks remain available for pending or unknown delivery.';
         }
     }

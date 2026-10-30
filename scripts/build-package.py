@@ -20,7 +20,7 @@ SERVER_FILES = (
     'migrations/005_companion.sql', 'migrations/006_history_indexes.sql',
 )
 DISTRIBUTION_FILES = ('LICENSE', 'ARTWORK-LICENSE.txt', 'NOTICE.md')
-RELEASE_TIMESTAMPS = {'0.1.0-dev.29': (2026, 10, 28, 0, 0, 0), '0.1.0-dev.30': (2026, 10, 28, 1, 0, 0)}
+RELEASE_TIMESTAMPS = {'0.1.0-dev.29': (2026, 10, 28, 0, 0, 0), '0.1.0-dev.30': (2026, 10, 28, 1, 0, 0), '0.1.0-dev.31': (2026, 10, 30, 0, 0, 0)}
 LEGACY_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 
 def release_timestamp(version):

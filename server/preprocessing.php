@@ -6,6 +6,10 @@ $type=is_string($gameRequest[0]??null)?strtolower(trim($gameRequest[0])):null;
 if(is_array($gameRequest??null))correspondenceBeginRequestIngress($gameRequest);
 if($type==='info'&&in_array($gameRequest[4]??null,['written_evidence_v1','correspondence_v1'],true)){correspondenceDiagnostic('receipt_rejected');if(function_exists('terminate'))terminate();exit;}
 if($type==='init'){correspondencePrepareRestoreInit(is_array($gameRequest??null)?$gameRequest:[]);return;}
+if(is_array($gameRequest??null)&&($gameRequest[0]??null)==='request'){
+    $activity=correspondenceManualDeliveryObserveNativeRequest($gameRequest,'correspondenceProduction');
+    if(($activity['status']??null)==='failed')correspondenceDiagnostic('presence_rejected');
+}
 if(in_array($type,['written_evidence','correspondence_anchor','correspondence_dispatch','correspondence_receipt_confirmed','correspondence_presence','correspondence_companion_observation'],true)){
     correspondenceDiagnostic('receipt_rejected');if(function_exists('terminate'))terminate();exit;
 }
