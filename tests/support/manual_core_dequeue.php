@@ -105,7 +105,7 @@ function manualDeliveryCoreRoundTrip(PgSql\Connection $db,string $documentId,str
         $wireKeys=array_fill_keys(['protocol_version','document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce','recipient','payer','title','renderer_key','attachments'],true);
         $expectedWire=array_intersect_key($operation,$wireKeys);$expectedKeys=array_keys($wireKeys);sort($expectedKeys,SORT_STRING);$wireFields=array_keys($wire);sort($wireFields,SORT_STRING);$operationFields=array_keys($expectedWire);sort($operationFields,SORT_STRING);$changed=[];
         foreach($wireKeys as $key=>$_)if(!array_key_exists($key,$wire)||!array_key_exists($key,$expectedWire)||correspondenceCanonicalJson([$key=>$wire[$key]])!==correspondenceCanonicalJson([$key=>$expectedWire[$key]]))$changed[]=$key;
-        $wireMatches=$wireFields===$expectedKeys&&$operationFields===$expectedKeys&&correspondenceCanonicalJson($wire)===correspondenceCanonicalJson($expectedWire);
+        $wireMatches=$wireFields===$expectedKeys&&$operationFields===$expectedKeys&&manualCoreShape($wire)===manualCoreShape($expectedWire)&&correspondenceCanonicalJson($wire)===correspondenceCanonicalJson($expectedWire);
         manualCoreCheck($wireMatches,'delivery_wire_mismatch:document='.$documentId.' operation='.$document['operation_id'].' changed='.implode(',',$changed).' wire_shape='.manualCoreShape($wire).' operation_shape='.manualCoreShape($expectedWire));
         manualCoreCheck(($wire['document_id']??null)===$documentId&&($wire['operation_id']??null)===$document['operation_id']&&($wire['attachments'][0]['quantity']??null)===500,'delivery_wire_must_preserve_document_operation_and_500_gold');
         $second=$run();
