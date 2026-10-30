@@ -642,6 +642,20 @@ final class CorrespondencePgStore implements CorrespondenceStore
             $this->query('INSERT INTO plugins.correspondence_presence(playthrough_id,payload) VALUES($1,$2::jsonb) ON CONFLICT(playthrough_id) DO UPDATE SET payload=EXCLUDED.payload',[$scope,correspondenceJson($payload)]);
         });
     }
+    private function nativeActivityIsNoop(string $nativeTs,string $scope,string $restore,string $floor,mixed $payload,bool $active):bool
+    {
+        if($this->compareNativeCounters($nativeTs,$floor)<=0)throw new DomainException('request_before_restore_epoch');
+        $prior=is_array($payload)?($payload['activity']??null):null;
+        if(is_array($prior)&&($prior['restore_generation']??null)===$restore){
+            $last=$prior['native_ts']??null;
+            if(!is_string($last)||preg_match('/\A[1-9][0-9]{0,18}\z/D',$last)!==1||filter_var($last,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])===false)throw new DomainException('native_activity_counter_unavailable');
+            if($this->compareNativeCounters($nativeTs,$last)<=0)return true;
+            $receivedAt=$prior['received_at']??null;
+            if(($prior['active']??null)===$active&&is_int($receivedAt)&&$receivedAt<=time()&&time()-$receivedAt<15
+                &&$this->validateNativeActivity($prior,$scope)===$active)return true;
+        }
+        return false;
+    }
     public function observeNativeActivity(array $request,bool $active):bool
     {
         if(($request[0]??null)!=='request')throw new InvalidArgumentException('native_request_required');
@@ -654,21 +668,22 @@ final class CorrespondencePgStore implements CorrespondenceStore
             if(!$interactionAllowed||$interactionGeneration===null)$active=false;
         }
         $active=$active===true;
+        $coalesced=$this->readTransaction(function()use($clock,$active){
+            $scope=$this->scope()['playthrough_id'];$restore=$this->currentRestoreGeneration();
+            if(!is_string($restore)||$restore==='')throw new DomainException('restore_epoch_pending');
+            $floor=$this->queryRaw('SELECT native_ts_floor::text AS native_ts_floor FROM plugins.correspondence_restore_state WHERE singleton IS TRUE')[0]['native_ts_floor']??null;
+            if(!is_string($floor))throw new DomainException('request_before_restore_epoch');
+            $payload=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1',[$scope]));
+            return $this->nativeActivityIsNoop($clock['ts'],$scope,$restore,$floor,$payload,$active);
+        });
+        if($coalesced)return false;
         return $this->transaction(function()use($clock,$interactionGeneration,$active){
             $scope=$this->scope()['playthrough_id'];$restore=$this->currentRestoreGeneration();
             if(!is_string($restore)||$restore==='')throw new DomainException('restore_epoch_pending');
             $floor=$this->queryRaw('SELECT native_ts_floor::text AS native_ts_floor FROM plugins.correspondence_restore_state WHERE singleton IS TRUE')[0]['native_ts_floor']??null;
-            if(!is_string($floor)||$this->compareNativeCounters($clock['ts'],$floor)<=0)throw new DomainException('request_before_restore_epoch');
+            if(!is_string($floor))throw new DomainException('request_before_restore_epoch');
             $payload=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1 FOR UPDATE',[$scope]));
-            $prior=$payload['activity']??null;
-            if(is_array($prior)&&($prior['restore_generation']??null)===$restore){
-                $last=$prior['native_ts']??null;
-                if(!is_string($last)||preg_match('/\A[1-9][0-9]{0,18}\z/D',$last)!==1||filter_var($last,FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])===false)throw new DomainException('native_activity_counter_unavailable');
-                if($this->compareNativeCounters($clock['ts'],$last)<=0)return false;
-                $receivedAt=$prior['received_at']??null;
-                if(($prior['active']??null)===$active&&is_int($receivedAt)&&$receivedAt<=time()&&time()-$receivedAt<15
-                    &&$this->validateNativeActivity($prior,$scope)===$active)return false;
-            }
+            if($this->nativeActivityIsNoop($clock['ts'],$scope,$restore,$floor,$payload,$active))return false;
             $activity=[
                 'playthrough_id'=>$scope,
                 'native_type'=>'request',

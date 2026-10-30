@@ -151,7 +151,7 @@ function manualColdEngine(string $scratch,bool $withInteraction):array
     $runtimePath=$lib.'/playthrough_runtime.php';manualDeliveryCheck(file_put_contents($runtimePath,$runtime)===strlen($runtime),'cold_runtime_stub_write_failed');$files[]=$runtimePath;
     $statePath=null;
     if($withInteraction){
-        $coreRoot=manualDeliveryEnv('CORE_ROOT');$sourcePath=$coreRoot.'/lib/chim_interaction.php';
+        $coreRoot=manualDeliveryEnv('CORE_ROOT');$sourcePath=$coreRoot.'/chim_interaction.php';
         manualDeliveryCheck(is_file($sourcePath)&&hash_file('sha256',$sourcePath)==='0f85286f47da7f02b8527ba9099e3d93452185399a9c0f66918072b877ccb6de','exact_captured_chim_interaction_required');
         $source=file_get_contents($sourcePath);manualDeliveryCheck(is_string($source)&&$source!=='','captured_chim_interaction_read_failed');
         $interactionPath=$lib.'/chim_interaction.php';manualDeliveryCheck(file_put_contents($interactionPath,$source)===strlen($source),'cold_interaction_copy_failed');$files[]=$interactionPath;
@@ -245,8 +245,8 @@ manualDeliveryCheck($identity===['db'=>$database,'role'=>$role,'dir'=>$directory
 $root=dirname(__DIR__);require_once $root.'/server/lib/bootstrap.php';
 if($manualColdMode!==null){
     try{
-        $coldRoot=realpath($manualColdRoot);$coldScratch=realpath(dirname(dirname($directory)));
-        manualDeliveryCheck(is_string($coldRoot)&&is_string($coldScratch)&&str_starts_with($coldRoot,$coldScratch.'/cold-web-'),'owned_fake_engine_root_required');
+        $coldRoot=realpath($manualColdRoot);$coldScratch=realpath(dirname(dirname($directory)));$testWork=is_string($coldScratch)?realpath($coldScratch.'/test-work'):false;
+        manualDeliveryCheck(is_string($coldRoot)&&is_string($testWork)&&dirname($coldRoot)===$testWork&&preg_match('/\Acold-web-[a-f0-9]{16}\z/D',basename($coldRoot))===1,'owned_fake_engine_root_required');
         manualDeliveryCheck(!function_exists('chimInteractionAllowed')&&!array_key_exists('chim_interaction_generation',$GLOBALS),'cold_child_must_start_without_interaction_state');
         $GLOBALS['ENGINE_PATH']=$coldRoot;correspondenceEnterRuntime($coldRoot);
         if($manualColdMode==='legacy')manualDeliveryCheck(!function_exists('chimInteractionAllowed')&&!array_key_exists('chim_interaction_generation',$GLOBALS),'legacy_cold_host_keeps_null_generation');

@@ -21,6 +21,9 @@ function correspondenceEnterRuntime(string $root):void
     }
     if(!function_exists('ptr_runtime_enter'))throw new DomainException('core_restore_barrier_unavailable');
     ptr_runtime_enter();
+    $interactionHelper=$root.'/lib/chim_interaction.php';
+    if(!function_exists('chimInteractionAllowed')&&is_file($interactionHelper))require_once $interactionHelper;
+    if(function_exists('chimInteractionBegin'))chimInteractionBegin();
 }
 function correspondenceReleaseInitFence():bool
 {
