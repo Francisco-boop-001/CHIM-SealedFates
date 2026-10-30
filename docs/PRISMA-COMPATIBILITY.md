@@ -1,4 +1,8 @@
-# Sealed Fates dev.30 / Department prealpha.28
+# Sealed Fates dev.31 / matching Department release pending
+
+Sealed Fates dev.31 adds manual Dispatch through the existing player-backed Narrator using fresh active native polling, with no nearby NPC conversation. The web page remains independent. **Department prealpha.29 supports dev.30 only.** Its new 21-pin dev.31 port and matching release are being verified separately; no pairing is claimed yet and version/hash checks must stay enabled. Update the optional interface only when its own release explicitly supports dev.31. [Owner verification and gameplay limits](DEV31-DELIVERY.md).
+
+# Historical Sealed Fates dev.30 / Department prealpha.28
 
 [Department prealpha.28](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.28) adds recovery for a saved manual letter that stayed queued. **Sealed Fates dev.30 itself is unchanged.** The Skyrim interface is optional; the existing web plugin page still works independently.
 
@@ -12,7 +16,7 @@ Exact pair: Sealed Fates `correspondence-v0.1.0-dev.30`, commit `1eb58d999698002
 
 Verification: **6 actual PostgreSQL 15 groups, 83 assertions and 45 child-process records** on disposable test2; **16 focused browser checks**, **6 native host tests**, **16 package checks**, and **4 final PHP bootstrap responses accepted by the emitted DLL's pure validator**, plus an extra-capability refusal. This includes unprofiled synthetic 500-gold resume, duplicate/concurrent attempts, stale/null restore authority refusal, restart discovery, long history, and backdated/concurrent-event cursor invalidation. The final independent bughunt found no additional unresolved defect in that scope. The test2 fixture used only private loopback inside a new network namespace; its owned database stopped, scratch was removed and test2 returned to its initial stopped state. No live data, actual player letter, installed game or providers were used.
 
-Physical Skyrim delivery, actual gold/item movement, native PRISMA rendering/input, and save/co-save behavior still need gameplay testing. The separate mouse-control fault is not fixed here. The optional host interaction gate was source/contract checked because that helper is absent from the captured core; it was not exercised on an actual host. Historical broader stress/overlap tests were not rerun. This focused proof does **not** satisfy the broader `tested-paired` release gate or change the original dev.30 web-only build decision. [Portable source and proof record](../release-inputs/dev30-department-resume-compatibility.json).
+Physical Skyrim delivery, actual gold/item movement, native PRISMA rendering/input, and save/co-save behavior still need gameplay testing. The separate mouse-control fault is not fixed here. The optional host interaction gate was source/contract checked only: the earlier fixture subset did not stage the helper. That does not establish its absence from the host; the gate was not exercised on an actual host. Historical broader stress/overlap tests were not rerun. This focused proof does **not** satisfy the broader `tested-paired` release gate or change the original dev.30 web-only build decision. [Portable source and proof record](../release-inputs/dev30-department-resume-compatibility.json).
 
 ## Historical dev.30 / Department prealpha.26 service pairing
 

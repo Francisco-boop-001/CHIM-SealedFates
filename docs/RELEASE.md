@@ -1,4 +1,32 @@
-# Sealed Fates dev.30 — PRE-ALPHA: unreadable is not undeliverable
+# Sealed Fates dev.31 — PRE-ALPHA: the courier can work alone
+
+The post office wanted you to find someone to talk to before it would process a letter. I have been informed this is called going outside and rather defeats the point of correspondence.
+
+## Install one file
+
+After ending your game session, update your Sealed Fates MO2 mod with **[CHIM-Sealed-Fates-0.1.0-dev.31.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.31/CHIM-Sealed-Fates-0.1.0-dev.31.zip)**. Keep one version enabled and confirm dev.31 in CHIM after normal synchronization. The ZIP includes the matching scripts and server package. No second Sealed Fates download, checksum exercise or new migration is needed for an existing dev.30 installation. Older upgrades retain migration006's maintenance prerequisites; see [Updating](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/INSTALL.md#updating).
+
+## Send without finding an NPC
+
+Manual mail can use CHIM's existing player-backed **The Narrator** carrier. It needs recent active native game polling, not a nearby NPC or a conversation with the recipient. It does not require Background Life, global autonomy or companion check-ins to be enabled for this manual delivery route. Those features keep their own participation rules.
+
+Skyrim and CHIM must be normally initialized, active and able to process commands. Interaction Off, passive traffic or missing/expired native evidence cannot authorize this route. Pausing, recording, application menus or native maintenance can delay polling. The freshness window remains **45 seconds**; web/interface refreshes cannot invent game activity.
+
+For an earlier queued letter, select that saved letter and use **Dispatch** in the web page, or **Resume delivery** in a matching Department release. If fresh polling is missing, return to the running game briefly, then try that same saved letter again; no NPC conversation is needed. Its saved body, recipient, items and gold remain authoritative. Reconcile checks status only. Unknown, partial and already-dispatched outcomes are not permission to send a new copy. There is no automatic resend or refund.
+
+## Interface compatibility
+
+**The Skyrim interface is optional; the web plugin page still works independently.** Department prealpha.29 supports exact Sealed Fates dev.30. A matching dev.31 interface release is being verified separately; do not bypass its version/hash guards. Each owner mod still has its own single MO2 ZIP. This owner update introduces no DLL, Papyrus binary, Quest, timer or migration. [Current pairing status](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/PRISMA-COMPATIBILITY.md).
+
+## What was verified
+
+Nineteen controlled PostgreSQL cases pass on isolated test2, including zero-nearby 500-gold dispatch, native/passive/Off evidence, replay/expiry, restore and profile changes, concurrent attempts, and fresh web processes using the captured Interaction helper. The captured core dequeue/request-response route emits the renderer and Narrator command once with the saved document, operation and 500-gold payload; a second dequeue is empty. This is server/command evidence, not an inventory receipt.
+
+The independent bughunt found and resolved cold-process generation initialization and unnecessary idle writer locking. Unchanged-state early heartbeats are skipped without renewing proof; due checkpoints and transitions retain the writer-side restore checks. The read path still observes the shared restore advisory fence. Package/preflight checks pass. Windows retains its inherited worker-path fixture failure; it is not represented as a passing run. [Detailed proof and limits](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/DEV31-DELIVERY.md).
+
+**Still unverified in Skyrim:** first-time Narrator initialization, actual physical notes and gold/items, unloaded-actor behavior, installed PRISMA rendering/input, native crash recovery and save/co-save restoration. No new real-model evaluation was needed or performed for this transport change. This remains PRE-ALPHA. Live and the installed game were untouched; publication does not install anything into your current session.
+
+# Historical Sealed Fates dev.30 — PRE-ALPHA: unreadable is not undeliverable
 
 The post office was treating an unreadable checkbox as a resignation letter. A briefly missing player name could also send your companion's letter into administrative purgatory. I have instructed management to stop inventing reasons to lose the mail. Management is me. This explains a great deal.
 

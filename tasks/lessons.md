@@ -23,3 +23,14 @@
 - Mistake: explaining fresh NPC presence without clearly distinguishing Department's locked unresolved-transfer composer from the separate web page's same-letter dispatch action can imply the Send button will unlock.
 - Rule: trace the exact visible control, API action and resulting state before giving a recovery instruction; renewed dispatch eligibility does not itself resume a queued document or clear a duplicate-send lock.
 - Prevention: describe the current interface limitation, name the exact same-document action available, and preserve unresolved operation identity throughout recovery.
+
+
+## Source-bound native activity fixtures
+
+- Mistake: new fixtures assumed nested child results, writable scratch roots and PHP object-key order instead of checking the existing producers. These caused setup/assertion failures before complete runtime verification.
+- Rule: trace every fixture producer and consumer before a server run. Reuse the owned writable test directory and pinned file layout. Compare JSON objects through the existing canonical serializer with exact fields/types/list order; never relax the authority assertion to hide a fixture failure.
+- Prevention: verify cold-child paths, null handling, result shapes and timing assumptions offline, freeze exact Git bytes, and keep every failed run and cleanup receipt.
+
+## Tests during an active game session
+
+- Warn the user in this chat before each server test, including isolated test2. Keep live and the installed game untouched. If a test ever requires stopping live, wait for explicit confirmation; do not infer permission from general test authorization.

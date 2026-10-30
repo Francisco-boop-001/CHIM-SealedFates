@@ -1,0 +1,177 @@
+{
+  "schemaVersion": 1,
+  "kind": "focused-npc-independent-manual-delivery",
+  "status": "verified_server_command_route_not_gameplay",
+  "ownerVersion": "0.1.0-dev.31",
+  "testedSourceCommit": "5cf96facf30f128830c38ea2b9422f47bf1d8611",
+  "ownerClosurePins": {
+    "manifest.json": {
+      "bytes": 825,
+      "sha256": "5673071e13f3c9a3d11165567374d224de820194579a17b6633dbc1f4776399a"
+    },
+    "lib/runtime.php": {
+      "bytes": 44409,
+      "sha256": "ffb9a97a4f2549bfd7251389d65fd916beb01a734f557ece794f81efbde45153"
+    },
+    "lib/store.php": {
+      "bytes": 58236,
+      "sha256": "bcdfccc71c388c7bebaa57734a9a06820c5eed888f2a818f73930982148b8426"
+    },
+    "lib/boundaries.php": {
+      "bytes": 4601,
+      "sha256": "21034b79e36d208b30ed0ea5aa6892581ae6749c5a9190a3b4a422f4f74b7d0f"
+    },
+    "lib/bootstrap.php": {
+      "bytes": 18030,
+      "sha256": "efb6d191e876fe2d10043afe2bdf2dc5e7c931ee3fc60e24cb57cc0623b1ed66"
+    },
+    "lib/autonomy_policy.php": {
+      "bytes": 19079,
+      "sha256": "db83aa3f1bc85c80c12c57294262ee7d4c93dc4bfcbd9eef4de8ced31b6fba18"
+    },
+    "lib/autonomy_store.php": {
+      "bytes": 88622,
+      "sha256": "c163243334c8a558c800fd946d27564acf2f49d8df51ddf914899d784809a795"
+    },
+    "lib/autonomy_host.php": {
+      "bytes": 8376,
+      "sha256": "b0ce613ebc7d02d6b3dc539b003022981a07e808208070554a68a105f42fcf12"
+    },
+    "lib/offscreen_policy.php": {
+      "bytes": 7457,
+      "sha256": "23639437e41eafaebd98ec85ce81cf3815ac51365f036c9e33b373fc17504058"
+    },
+    "lib/offscreen.php": {
+      "bytes": 146239,
+      "sha256": "26f9f9a31844bfb433d7d6bf2c996e8ad6e0c9f6c15c5a054d96cb3630e0f439"
+    },
+    "lib/offscreen_host.php": {
+      "bytes": 44189,
+      "sha256": "7ae21d2db282d9de0f1d37ca27a43624343fefd5e371b671a5f543177e1a2155"
+    },
+    "lib/companion.php": {
+      "bytes": 27285,
+      "sha256": "ce3c2c0c40c10f23d60e1604dafc38901832be8ef528b53b515269d42ce82e32"
+    },
+    "lib/companion_policy.php": {
+      "bytes": 6671,
+      "sha256": "b245767ef4764e82e4fd945f0ab0508993b4095b3bba6012ebeb3a1f09754be5"
+    },
+    "lib/companion_host.php": {
+      "bytes": 2904,
+      "sha256": "eb94e158b0c0e3bb1497d2efc68c483a01ffd371d1534187e0b054c102561403"
+    },
+    "migrations/001_initial.sql": {
+      "bytes": 967,
+      "sha256": "b2052570036697147dacb5d041c0a692294af78a83f946e7819d83235e16dc99"
+    },
+    "migrations/002_autonomy.sql": {
+      "bytes": 1563,
+      "sha256": "20e0ba2901f9ff352311e00a706c976c793e1e1185c224afcb599f426acb63d3"
+    },
+    "migrations/003_offscreen.sql": {
+      "bytes": 3196,
+      "sha256": "245ae41800da5d9d291cf25df9e4766059677710241a086c15ca6999d7500855"
+    },
+    "migrations/004_restore_state.sql": {
+      "bytes": 526,
+      "sha256": "d6a13622ece3af538996558d892852c5126581d99b4964eec0203a5b5b1a559e"
+    },
+    "migrations/005_companion.sql": {
+      "bytes": 1699,
+      "sha256": "b5b65588aea68eacd97907b1c548ba0c8d2c00b064b8d2c405a5aba5239a9cee"
+    },
+    "migrations/006_history_indexes.sql": {
+      "bytes": 689,
+      "sha256": "9691b8ae97f60981e4baca883aecd8d2d615ddbb77c0b90ea1f6efd6c1f58a66"
+    },
+    "preprocessing.php": {
+      "bytes": 3028,
+      "sha256": "31fc70b865da5f5db27c5f8187c3b614df4de6b3b1a9ac04578470dfe7ddea1e"
+    }
+  },
+  "runtimeIdenticalToOfflineCommit": "8dcb7b0d61ce6d6f676e63de0a6eefb9473e9cdd",
+  "runtime": {
+    "distro": "DwemerAI4Skyrim3-test2",
+    "runId": "20261030T224815Z-b3002d83",
+    "caseCount": 19,
+    "cases": [
+      "zero_npc_gold_once",
+      "native_request_capture",
+      "passive_header",
+      "interaction_off",
+      "replay_fence",
+      "heartbeat_coalescing",
+      "heartbeat_noop_lock",
+      "activity_ttl",
+      "authority_rejections",
+      "restore_ingress_fail_closed",
+      "presence_merge",
+      "legacy_route",
+      "managed_scope",
+      "expired_inactive_fallback",
+      "request_conflict",
+      "concurrent_dispatch",
+      "actual_core_route",
+      "cold_web_boundary",
+      "cold_legacy_activity"
+    ],
+    "sourceFilesBoundToGit": 138,
+    "database": "fresh socket-only PostgreSQL15; non-superuser role; synthetic data; no campaign copied",
+    "network": "new loopback-only namespace with no external route/listener",
+    "core": "captured hash-pinned DataDequeue, request-response branch and IsGameOutput; saved 500-gold/document/operation payload preserved; second dequeue empty",
+    "coreInteractionGate": "fixture controlled for dequeue; actual captured helper separately executed in cold-process cases",
+    "coldPlaythroughEntry": "fixture ptr_runtime_enter stub; actual owner restore-state checks retained",
+    "renderer": "native renderer command format verified; physical renderer/PNG/game download not executed",
+    "noopLockSeconds": {
+      "newer": 0.003165006637573242,
+      "replay": 0.0024781227111816406
+    },
+    "restoreFence": "existing shared advisory lock remains; no exclusive-writer nonblocking claim",
+    "cleanup": "owned PG stopped; scratch removed; three leases released; initial test2 stopped state restored"
+  },
+  "sourceProofHashes": {
+    "source-binding.json": "dbb34c117b63b1acaaf2fdb1b3fcc9ac44ce59feed2a47c49106d550d747cd25",
+    "database-identity.json": "fbb996339e90c63a3a543c8eadcf348cdc77e71c656e16e6e9ef421c970624c2",
+    "network.json": "26fe652770f1c844b7aecd074c69768b6c707a61f66e14abe856383e08b9e8a1",
+    "fixture-result.json": "94a8be25908b6f72db3157ca7a5d7ef485c9df765d8eaf44f74be061f9f913ed",
+    "fixture.stdout.raw": "138bc269d4e76edaa61306f07fbd0ba796e186b9f718c519df3725c9245d2634",
+    "fixture.stderr.raw": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "linux-shutdown.json": "6cb2076a158d0474331d5dcf73106aae3e6b7f95a8e007722ef1419136ff19b1",
+    "windows-shutdown.json": "62e4ce28b3d5290e7a59b0aa1db85a68e71aa2fcba3469d87db3c984a0cf5acb",
+    "linux-lease.json": "c4949a454d648be60e31cab82513977949c16d9ab8335e4d4985b2ca8d8c7114",
+    "cleanup-gate.json": "e452cbd3d8f6e5e8dbf4f1fb99308addc4f54eeb4ad93af761dd4e637e379d81"
+  },
+  "capturedCoreHashes": {
+    "chim_interaction.php": "0f85286f47da7f02b8527ba9099e3d93452185399a9c0f66918072b877ccb6de",
+    "comm.php": "fc0a3f75bac47f8899a7c1c550aa1dafc3a59fdf36de39c0f1cb7722e432612c",
+    "data_functions.php": "50338dab670806b37600ec3a65e1762ee638a0c1656262ced979b4aa5cfc3a0c"
+  },
+  "independentVerificationSha256": "21ee6be1e7b606c41f4aadca34bd0b6b10b51824ef8433e93ffe469ff45d8ebb",
+  "offline": {
+    "sourceCommit": "8dcb7b0d61ce6d6f676e63de0a6eefb9473e9cdd",
+    "phpSuitesPassed": 36,
+    "phpSuitesRun": 37,
+    "knownWindowsFixtureFailure": "server_offscreen_host development-plugin worker path; inherited, not reported passing",
+    "pythonPackagePreflightChecks": 77,
+    "cleanExportPrerequisites": "explicit pinned offline ingress helper paths and empty dist directory; initial failures retained",
+    "serverRuntimeFilesUnchangedAtFinalTest": true
+  },
+  "causalRed": {
+    "zeroNearbyManual": "c1b1843 test2 run20261030T214251Z-deeab8ee failed expected got queued against dev.30 runtime",
+    "coldGeneration": "offline exact526 bootstrap with captured helper failed cold_generation_not_initialized",
+    "writerLock": "test2 run20261030T222816Z-7c96c170 failed expected no-op writer-lock assertion"
+  },
+  "releaseGate": "web-only; focused owner proof is not the broader tested-paired certification",
+  "department": "matching 21-pin consumer port and actual adapter proof pending; prealpha.29 supports dev.30 only",
+  "limits": [
+    "No installed CHIM/game access or live-dependent test.",
+    "No actual Skyrim physical notes, gold/items, unloaded actors, native crash recovery or save/co-save acceptance.",
+    "No first-ever Narrator initialization or installed PRISMA rendering/input proof.",
+    "No new provider/model evaluation.",
+    "Captured core files are content-hash pins; no independent upstream Git mapping is claimed.",
+    "Historical fixture setup/assertion failures remain preserved; only final selected19 cases counted."
+  ],
+  "liveEntered": false,
+  "installedGameEntered": false
+}

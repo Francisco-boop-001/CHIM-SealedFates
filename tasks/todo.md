@@ -567,3 +567,15 @@ Final runtime checkpoint: Department29dca91590eb passes6groups/83assertions,45ch
 Department prealpha.28 published from b66568de0b9411bacd114a15e99e118776e81764 after final scoped bughunt and16package checks. Six test2 groups/83assertions,16browser cases,6native host tests and4actualPHP-to-DLL bootstrap responses pass; extra capability refused. R12fresh-ingress capture and R13packager PCV25 validator corrections are included; cursor count watermark closes backdated-insert omission. Final independent reviewer found no additional in-scope defect. All4assets match two separate source builds and anonymous public downloads;285source members match Git,18/22runtime payloads unchanged,all20owner pins/oldermaps unchanged; officialCHIM consumer acceptsall3packages without activation/database use. All26olderDepartment releases/143assets preserved.
 
 SealedFateschanges are current compatibility/install/release/verification docs, portable proof record and task lessons only. OriginalSFdev30runtime/tag/fourassets remain unchanged; no extra SFdownload or new migration introduced. Test2 returned to initialstoppedstate. Live, installedgame, actualplayerletter and providers untouched duringfix/tests. ActualSkyrim UI/input/physicalletter/items/gold/save-co-save remain unverified; separatemousefault remains unresolved. Optionalhostinteraction branch source/contractonly; no fulltested-paired gate claimed.
+
+
+## NPC-independent manual delivery - 2026-10-30
+
+- [x] Trace captured CHIM native command polling, Narrator routing, rendering and bridge receipts with no nearby NPC; compare supported alternatives and record exact feasibility boundaries.
+- [x] Design the smallest shared web/Department owner route using independent fresh native-game authority, keeping scope/restore/identity/receipts and same-document retry guards; coordinate the Department owner seam.
+- [x] Write causal failing owner tests, implement shared owner changes and run source-bound offline regressions; matching consumer work stays with Department.
+- [ ] Confirm exclusive test2 availability/isolation, exercise actual owner and Department routes against synthetic data, including zero-NPC success, stale/restore refusal and concurrent/repeated attempts; prove owned cleanup.
+- [x] Independently bughunt the owner source, fix cold initialization and idle writer contention, correct strict fixtures and rerun 19 cases.
+- [ ] Commit, build reproducible source-bound packages, verify compatible public releases/downloads and publish clear gameplay limits.
+
+Success: ordinary manual player letters and attachments no longer need nearby NPC presence; web and Department share the supported route. Browser activity cannot invent fresh native evidence. Old save/profile/identity, uncertain receipts and concurrent/replayed attempts cannot create duplicate transfers. Preserve optional web interface unless source-level feasibility is disproven after bounded alternatives; no premature removal. No live, installed-game, production configuration or provider access. Test2 only through an agreed exclusive owned fixture.

@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.1.0-dev.31 — PRE-ALPHA
+
+- Add manual Dispatch/Resume through the existing player-backed **The Narrator** when a fresh active native request is available (45-second freshness window); no nearby NPC, NPC interaction or Background Life opt-in is needed.
+- Use the same saved letter and preserve freshness, restore, receipt and duplicate protections. No automatic retry, migration, new DLL or PEX is added.
+- Initialize the existing Interaction helper in fresh web/API requests and avoid eventlog writer locks for replayed/coalesced heartbeats; real writes retain their restore fence and under-lock recheck.
+- Verify nineteen controlled test2 cases and the captured core command/dequeue route; physical Skyrim delivery remains a separate gameplay gate.
+- Department prealpha.29 pins only Sealed Fates dev.30; its 21-pin dev.31 owner port and matching release are pending. Physical Skyrim delivery/transfers, installed PRISMA and save/co-save behavior remain unverified.
+
 ## 0.1.0-dev.30 — PRE-ALPHA
 
 - Defer queued companion mail when participation/player/form metadata is temporarily unavailable; retain confirmed opt-out, death, identity, episode, freshness and restore refusals.

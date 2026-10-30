@@ -1,4 +1,4 @@
-**0.1.0-dev.30 — PRE-ALPHA.** Companion letters now wait for readable evidence instead of being cancelled by temporary metadata failures. Verified with isolated PostgreSQL on Windows and test2; Skyrim gameplay remains unverified. [Download](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.30) · [Release notes and limits](docs/RELEASE.md).
+**0.1.0-dev.31 — PRE-ALPHA.** Manual letters can use CHIM's player-backed **The Narrator** carrier with fresh active native polling; no nearby NPC or conversation is required. The web page remains available. A matching Department release is being verified separately; prealpha.29 supports dev.30 only. [Release notes and gameplay limits](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -12,7 +12,9 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 ## Pick your interface
 
-**Optional Skyrim interface:** [Department prealpha.28](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.28) supports Sealed Fates dev.30 and adds **Resume delivery** for an eligible saved queued letter. It also finds waiting letters after reopening the interface. If dev.30 is already installed, update only [Department's single MO2 ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.28/WorldOfDramaLlama-0.1.0-prealpha.28.zip) after exiting Skyrim completely; this update includes a new native DLL. Six focused test2 groups passed 83 assertions. Actual Skyrim UI and physical delivery still need gameplay checks. The web plugin page still works. [Recovery steps and exact limits](docs/PRISMA-COMPATIBILITY.md).
+**Dev.31 interface status:** Department prealpha.29 pins Sealed Fates dev.30. Its guarded 21-pin dev.31 port and matching release are pending; do not bypass the version/hash checks. The Sealed Fates web page remains independent; Department stays a separate optional mod. [Compatibility details](docs/PRISMA-COMPATIBILITY.md).
+
+**Historical dev.30 Skyrim interface:** [Department prealpha.28](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.28) supports Sealed Fates dev.30 and adds **Resume delivery** for an eligible saved queued letter. It also finds waiting letters after reopening the interface. If dev.30 is already installed, update only [Department's single MO2 ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.28/WorldOfDramaLlama-0.1.0-prealpha.28.zip) after exiting Skyrim completely; this update includes a new native DLL. Six focused test2 groups passed 83 assertions. Actual Skyrim UI and physical delivery still need gameplay checks. The web plugin page still works. [Recovery steps and exact limits](docs/PRISMA-COMPATIBILITY.md).
 
 **The new in-game Skyrim interface is optional. The existing Sealed Fates web plugin page still works.** Keep using CHIM's web page to compose letters, browse your inbox and outbox, check delivery status, and enable or pause autonomous correspondence. You do not need the new Skyrim interface to use those controls. Your browser has not been fired; I lack the qualifications to conduct that meeting.
 
@@ -20,9 +22,9 @@ The interface is separate from the **matching Sealed Fates Papyrus bridge**, whi
 
 ## Download
 
-Install **[CHIM-Sealed-Fates-0.1.0-dev.30.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.30/CHIM-Sealed-Fates-0.1.0-dev.30.zip)** as your single Sealed Fates MO2 mod. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
+Download **[CHIM-Sealed-Fates-0.1.0-dev.31.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.31/CHIM-Sealed-Fates-0.1.0-dev.31.zip)**. After ending your game session, update your single Sealed Fates MO2 mod with this ZIP. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
 
-The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.30.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
+The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.31.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
 
 ## The web page
 
@@ -31,6 +33,8 @@ The existing web plugin page now wears the same parchment, serif type, rust-red 
 ## What it does
 
 The player can write a letter, address it, and attach selected items or gold. The paired Papyrus bridge records physical delivery; delivery does not mean the NPC has read the letter. An NPC is exposed to a letter only when its own context render includes it. Opening the player's browser inbox is not a game read event.
+
+Dev.31 adds manual Dispatch/Resume through the existing player-backed **The Narrator** carrier, authorized by a fresh active native request no more than 45 seconds old. It needs no nearby managed NPC, NPC interaction or Background Life opt-in. The same saved letter supplies its recipient, body and attachments; no automatic retry or resend is added. Freshness, restore, receipt and duplicate protections remain. This source change does not prove a physical Skyrim note or item/gold transfer, installed PRISMA behavior, or save/co-save behavior.
 
 Claimed sender, actual author, and inventory payer are separate values. The printed attribution or a signature in the letter is not proof of who wrote it. Forwarding retains the complete visible original under attribution labels and a separate cover note; the combined text must fit within 2,000 codepoints and 8,000 bytes. Oversized forwards are unavailable instead of clipped.
 
