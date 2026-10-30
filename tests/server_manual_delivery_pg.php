@@ -365,8 +365,8 @@ foreach($selected as $case){
             manualDeliveryCheck(($newerResult['status']??null)==='coalesced'&&$newerElapsed<0.8,'fresh_coalesced_heartbeat_must_not_take_eventlog_writer_lock');
             $start=microtime(true);$replay=manualObserveNative($ctx['store'],$accepted);$replayElapsed=microtime(true)-$start;
             manualDeliveryCheck(($replay['status']??null)==='coalesced'&&$replayElapsed<0.8,'equal_native_replay_must_not_take_eventlog_writer_lock');
-            $released=manualWorkerResult($workers[0]);manualDeliveryCheck(($released['result']['row_exclusive_lock_released']??null)===true,'eventlog_lock_holder_must_release_cleanly');
-            $caseEvidence[$case]=['newer_elapsed_seconds'=>$newerElapsed,'replay_elapsed_seconds'=>$replayElapsed,'holder'=>$released['result']];
+            $released=manualWorkerResult($workers[0]);manualDeliveryCheck(($released['row_exclusive_lock_released']??null)===true,'eventlog_lock_holder_must_release_cleanly');
+            $caseEvidence[$case]=['newer_elapsed_seconds'=>$newerElapsed,'replay_elapsed_seconds'=>$replayElapsed,'holder'=>$released];
         }finally{
             manualStopWorkers($workers);manualDeliverySql($db,'RESET statement_timeout');manualDeliverySql($db,'RESET lock_timeout');
         }
@@ -412,7 +412,7 @@ foreach($selected as $case){
         $next=manualRequest();$ctx['store']->bindRequestClock($next);$ctx['store']->observeManaged($snapshot);
         $afterSnapshot=manualPresence($db,$ctx['scope']);
         manualDeliveryCheck(($afterSnapshot['raw']??null)===$snapshot&&($afterSnapshot['activity']['anchor']??null)===($activityBefore['anchor']??null)&&$ctx['store']->observedExecutor()==='The Narrator','managed_snapshot_write_preserves_valid_native_activity');
-        $newest=manualRequest();manualObserveNative($ctx['store'],$newest);$afterActivity=manualPresence($db,$ctx['scope']);
+        $due=manualRequest();manualSeedActivity($db,$ctx['store'],$due,true,-15);$newest=manualRequest();manualObserveNative($ctx['store'],$newest);$afterActivity=manualPresence($db,$ctx['scope']);
         manualDeliveryCheck(($afterActivity['raw']??null)===$snapshot&&($afterActivity['activity']['native_ts']??null)===$newest[1],'activity_write_preserves_latest_managed_snapshot');
     }elseif($case==='legacy_route'){
         $ctx=manualContext($db,[manualCamilla()]);
