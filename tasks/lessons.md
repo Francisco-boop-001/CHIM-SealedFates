@@ -16,3 +16,10 @@
 - Mistake: testing a synthesized valid Origin missed that the page's no-referrer policy causes Chromium form POSTs to carry Origin: null. The canonical-port repair alone could not establish browser send readiness.
 - Rule: reproduce security-header interactions with a real browser and the actual emitted response policy before claiming a web submission fix. Preserve null/cross-origin refusal and CSRF; repair the header that creates the invalid request.
 - Prevention: run the standalone browser fixture with production header extraction plus same-origin and wrong-CSRF controls, and distinguish it from an installed-game/server send.
+
+
+## Explain recovery in the interface the player is using
+
+- Mistake: explaining fresh NPC presence without clearly distinguishing Department's locked unresolved-transfer composer from the separate web page's same-letter dispatch action can imply the Send button will unlock.
+- Rule: trace the exact visible control, API action and resulting state before giving a recovery instruction; renewed dispatch eligibility does not itself resume a queued document or clear a duplicate-send lock.
+- Prevention: describe the current interface limitation, name the exact same-document action available, and preserve unresolved operation identity throughout recovery.

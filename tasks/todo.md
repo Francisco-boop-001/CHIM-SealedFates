@@ -535,3 +535,35 @@ Runtime review: frozen Department562f77f94f2aeb29d038d3824d087c92fe405abf, run20
 ### Department dev.30 pairing review
 
 Department prealpha.26 published from the exact tested562f77f94f2aeb29d038d3824d087c92fe405abf. Independent anonymous download verification matches all4approvedassets;258sourceZIPfiles match Git,15legacy maps and20dev30pins match,21outerpayloads and8generatedPCVoverlayfiles are unchanged. DLL/UI unchanged. Focused16case/71assertion test2 proof and18child traces match; cleanup releasedtest2Stopped. SFchanges are documentation/portable evidence only; originaldev30runtime/tag/assets stay immutable. No full tested-paired gate, installedHTTP/model/native/gameplay/physical/save-co-save acceptance claimed. PCV25 remains separate. Live and installedgame untouched.
+
+
+## Department queued-letter recovery - 2026-10-30
+
+- [x] Agree exact Department-owned design for explicit same-document resume and clear reasons; preserve existing identities, freshness, restore and no-resend authority.
+- [x] Owner reproduces disabled queued composer, implements all affected UI/protocol/native/server boundaries and runs focused red/green/regression tests without live/game access.
+- [x] Independently bughunt the frozen implementation, resolve valid findings, and rerun affected tests until a fresh focused pass has no findings.
+- [x] Verify frozen candidate/source/package bytes and release limits, then coordinate authorized commit/push/publication and verify public downloads.
+- [x] Update only required Sealed Fates compatibility/documentation records; keep immutable dev.30 runtime/assets and the live letter untouched.
+
+Acceptance: manual letter stored with no operation resumes explicitly through the same request/document after valid fresh native evidence, exactly once. Stale/invalid presence, changed restore/profile, companion/autonomy ownership, closed mail, unknown/partial/dispatched receipts, concurrent/repeated calls and mixed client/server versions fail safely without duplicate physical sends or gold movement. Status/reconciliation remains read-only; no new compose or fabricated evidence. UI shows the actual blocker and recovery action. Department retains prealpha.27 PCV25/companion13 compatibility.
+
+Ownership: Department programs and packages its component; root independently reviews/bughunts and owns Sealed Fates contract support and final evidence. No live/installed-game changes or tests depending on them. Existing shared disposable testing requires an agreed free window before entry; prefer offline fixtures. The existing live letter is private observation evidence, never a test fixture.
+
+
+Completeness review: required native update restarts the UI, losing its in-memory operation list. Include bounded read-only same-profile rediscovery of existing unresolved manual/player-paid letters, original IDs and recipient/status/transfer/resume metadata only. Preserve unknown/partial/dispatched/closed-unconfirmed protection across restart; loading or refreshing never dispatches. Discovery failure/truncation cannot silently unlock new transfers or discard retained operations. No generic mailbox expansion or automatic retry.
+
+
+Discovery replan: the first26 manual documents can all be resolved, so a fixed all-history window would falsely block new transfers after normal use. Approved minimal context/restore-bound keyset continuation with fixed25row reads and explicit continuation UI; preserve known operations and new-transfer fence until a complete authoritative scan. Tests must find older queued/unknown500 beyond the first page and reach true empty completion after more than26 resolved letters. Do not raise a finite cap or trust raw receipt status as a substitute for verified receipt integrity. Hold final consumer DLL build until this wire contract is frozen.
+
+
+Cursor authority: accepted compact per-context MAC key created only by existing private bootstrap-state write, never returned to UI/logs. Pending reads neither create cursor state nor rotate keys. Continuations bind principal/view/server context/scope/owner source/restore generation, expiry and uppermost manual-document watermark; context rotation, tampering or new letters invalidate safely. Avoid recursive context-state lock acquisition. This extends only the necessary recovery read; no owner migration or sixth bootstrap capability.
+
+
+Final runtime checkpoint: Department29dca91590eb passes6groups/83assertions,45childtraces; root independently verified raw hashes,22Department/20owner/11coreinputs and isolation/cleanup. Reviewer found no additional unresolved runtime/UI defect. Actual archive assembly then exposed R13: inherited PCV24 helper rejects the correct PCV25 overlay from public27. Department owns minimal packager/helper correction and actual-baseline regression; final packaging review/publication remain held, without rerunning unchanged runtime or recompiling unchanged DLL.
+
+
+### Queued-letter recovery review
+
+Department prealpha.28 published from b66568de0b9411bacd114a15e99e118776e81764 after final scoped bughunt and16package checks. Six test2 groups/83assertions,16browser cases,6native host tests and4actualPHP-to-DLL bootstrap responses pass; extra capability refused. R12fresh-ingress capture and R13packager PCV25 validator corrections are included; cursor count watermark closes backdated-insert omission. Final independent reviewer found no additional in-scope defect. All4assets match two separate source builds and anonymous public downloads;285source members match Git,18/22runtime payloads unchanged,all20owner pins/oldermaps unchanged; officialCHIM consumer acceptsall3packages without activation/database use. All26olderDepartment releases/143assets preserved.
+
+SealedFateschanges are current compatibility/install/release/verification docs, portable proof record and task lessons only. OriginalSFdev30runtime/tag/fourassets remain unchanged; no extra SFdownload or new migration introduced. Test2 returned to initialstoppedstate. Live, installedgame, actualplayerletter and providers untouched duringfix/tests. ActualSkyrim UI/input/physicalletter/items/gold/save-co-save remain unverified; separatemousefault remains unresolved. Optionalhostinteraction branch source/contractonly; no fulltested-paired gate claimed.

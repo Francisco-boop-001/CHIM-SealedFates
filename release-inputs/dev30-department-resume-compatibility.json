@@ -1,0 +1,217 @@
+{
+  "schemaVersion": 1,
+  "kind": "focused-queued-letter-recovery-compatibility",
+  "status": "verified_public_focused_recovery",
+  "owner": {
+    "version": "0.1.0-dev.30",
+    "commit": "1eb58d999698002f8aeaa05b21464f7608717794",
+    "tag": "correspondence-v0.1.0-dev.30",
+    "assets": {
+      "CHIM-Sealed-Fates-0.1.0-dev.30.zip": {
+        "sha256": "fef5b26d30da32102b4d512d9f80e060331864fb9af3f803a64acf2fc8f5d68e",
+        "bytes": 1097015
+      },
+      "correspondence-0.1.0-dev.30.dwpkg": {
+        "sha256": "f557901c091c6d8316d955f71f284236d512e34235d678cc9ef372906daa0be1",
+        "bytes": 1042686
+      },
+      "correspondence.tar.gz": {
+        "sha256": "5c7673ec73a4aa81918804bb3a9c8b43019515361bee8d21d2e309cb9e36f181",
+        "bytes": 599388
+      },
+      "SHA256SUMS.txt": {
+        "sha256": "bec94c3abf3e42c8cd6df6f0098533bc702adad773d24e92a4895cd35d024bba",
+        "bytes": 289
+      }
+    }
+  },
+  "department": {
+    "version": "0.1.0-prealpha.28",
+    "commit": "b66568de0b9411bacd114a15e99e118776e81764",
+    "tag": "v0.1.0-prealpha.28",
+    "releaseURL": "https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.28",
+    "assets": {
+      "SHA256SUMS.txt": {
+        "id": 692798551,
+        "sha256": "fa97e55195944b6c7e02bcf312f61ec2222544dca8bf66050004a0f30e420db1",
+        "bytes": 339
+      },
+      "WorldOfDramaLlama-0.1.0-prealpha.28-offline-proof.zip": {
+        "id": 692798541,
+        "sha256": "e3f771644e831cebc56884fc251e83cffcf98eab18bc6fcb5b758ff5c843084f",
+        "bytes": 14414
+      },
+      "WorldOfDramaLlama-0.1.0-prealpha.28-source.zip": {
+        "id": 692798543,
+        "sha256": "54ec6e168e55c6bb0136809e386392e1d13e0168f7762c0af3a888f454c9c262",
+        "bytes": 1408391
+      },
+      "WorldOfDramaLlama-0.1.0-prealpha.28.zip": {
+        "id": 692798553,
+        "sha256": "73665957569091e4cbd307bb85d65a3f236cafef5f55472fe82ccdb803c7c97b",
+        "bytes": 633379
+      }
+    },
+    "releaseId": 429287070,
+    "publishedAt": "2026-10-30T17:05:55Z"
+  },
+  "ownerClosurePins": {
+    "manifest.json": "f72c181f2a3c7d893d205a9b6e648ac5e4ca03e81fa1423d43ceb7db084d772f",
+    "lib/runtime.php": "ffb9a97a4f2549bfd7251389d65fd916beb01a734f557ece794f81efbde45153",
+    "lib/store.php": "5f846b73c330183980c9e8c1655cf32b57dbe0f2added7d69fc35cd8dac08f9c",
+    "lib/boundaries.php": "21034b79e36d208b30ed0ea5aa6892581ae6749c5a9190a3b4a422f4f74b7d0f",
+    "lib/bootstrap.php": "4cf8e693705ad78a8fdd5420ea682060f8712088b1a3b03a1b84510b4672f151",
+    "lib/autonomy_policy.php": "db83aa3f1bc85c80c12c57294262ee7d4c93dc4bfcbd9eef4de8ced31b6fba18",
+    "lib/autonomy_store.php": "c163243334c8a558c800fd946d27564acf2f49d8df51ddf914899d784809a795",
+    "lib/autonomy_host.php": "b0ce613ebc7d02d6b3dc539b003022981a07e808208070554a68a105f42fcf12",
+    "lib/offscreen_policy.php": "23639437e41eafaebd98ec85ce81cf3815ac51365f036c9e33b373fc17504058",
+    "lib/offscreen.php": "26f9f9a31844bfb433d7d6bf2c996e8ad6e0c9f6c15c5a054d96cb3630e0f439",
+    "lib/offscreen_host.php": "7ae21d2db282d9de0f1d37ca27a43624343fefd5e371b671a5f543177e1a2155",
+    "lib/companion.php": "ce3c2c0c40c10f23d60e1604dafc38901832be8ef528b53b515269d42ce82e32",
+    "lib/companion_policy.php": "b245767ef4764e82e4fd945f0ab0508993b4095b3bba6012ebeb3a1f09754be5",
+    "lib/companion_host.php": "b632693d26720fa063b7bbcd771cbce4997039aadff1c6755cb361c0239d1203",
+    "migrations/001_initial.sql": "b2052570036697147dacb5d041c0a692294af78a83f946e7819d83235e16dc99",
+    "migrations/002_autonomy.sql": "20e0ba2901f9ff352311e00a706c976c793e1e1185c224afcb599f426acb63d3",
+    "migrations/003_offscreen.sql": "245ae41800da5d9d291cf25df9e4766059677710241a086c15ca6999d7500855",
+    "migrations/004_restore_state.sql": "d6a13622ece3af538996558d892852c5126581d99b4964eec0203a5b5b1a559e",
+    "migrations/005_companion.sql": "b5b65588aea68eacd97907b1c548ba0c8d2c00b064b8d2c405a5aba5239a9cee",
+    "migrations/006_history_indexes.sql": "9691b8ae97f60981e4baca883aecd8d2d615ddbb77c0b90ea1f6efd6c1f58a66"
+  },
+  "runtime": {
+    "distro": "DwemerAI4Skyrim3-test2",
+    "runId": "20261030T163407Z-73ea3382",
+    "testedSourceCommit": "29dca91590eb54a44be1ce887494780a11814d5e",
+    "releaseSourceCommit": "b66568de0b9411bacd114a15e99e118776e81764",
+    "counts": {
+      "assertions": 83,
+      "cases": 6,
+      "failed": 0,
+      "passed": 6
+    },
+    "cases": [
+      {
+        "assertions": 26,
+        "id": "adapter.resume_manual_readonly_and_retry",
+        "status": "passed"
+      },
+      {
+        "assertions": 12,
+        "id": "adapter.resume_guard_refusals",
+        "status": "passed"
+      },
+      {
+        "assertions": 6,
+        "id": "adapter.resume_concurrent_attempts",
+        "status": "passed"
+      },
+      {
+        "assertions": 13,
+        "id": "adapter.resume_reason_projection",
+        "status": "passed"
+      },
+      {
+        "assertions": 16,
+        "id": "adapter.pending_restart_projection",
+        "status": "passed"
+      },
+      {
+        "assertions": 10,
+        "id": "adapter.pending_limited_and_failure",
+        "status": "passed"
+      }
+    ],
+    "departmentInputs": 22,
+    "ownerInputs": 20,
+    "retainedCoreInputs": 11,
+    "childProcesses": 45,
+    "network": "loopback-only inside fresh isolated Linux network namespace; not socket-only",
+    "ownedDatabaseStopped": true,
+    "scratchRemoved": true,
+    "initialStoppedStateRestored": true
+  },
+  "offline": {
+    "browserCases": 16,
+    "nativeHostTests": 6,
+    "packageTests": 16,
+    "actualPhpBootstrapCasesThroughEmittedDll": 4,
+    "extraCapabilityRejected": true,
+    "nativeVersion": "0.1.18.0",
+    "dllSha256": "04d4e59012e2a591b88bbb2c81f5973de9c9b0eaede2ba56f50fb31d815e3a6b",
+    "finalScopedBughuntOpenFindings": 0,
+    "nativePhpBootstrapReplaySourceCommit": "29dca91590eb54a44be1ce887494780a11814d5e"
+  },
+  "proofHashes": {
+    "actual-pg.json": "74e985a0b725314217dd2258332fecf82d6f3360a913015d6752dd16ad31bb59",
+    "source-load-trace.json": "e88c689f22f998cefa84b8af5a652ba6875d903db3ae3ae7c07eaeaa6f6dd11a",
+    "network.json": "89b422f2137fd6f0d6370f8bf962bc622fe6cc6af025a27799560273790c5a6f",
+    "shutdown.json": "8c1a0590d29bd262ea6e0660d528fd601b7ba884649bac8c643543f1dd25e58e",
+    "windows-shutdown.json": "3d1c40d402b2b316cc4d52c787d69a090bfac4166bd9faa882308795d819f55f",
+    "lease.json": "3f0880da1282e39d11992ac8122073a476d6c2997d364072cf92c4caba3d035c"
+  },
+  "limits": {
+    "liveAccessDuringFixVerification": false,
+    "installedGameAccess": false,
+    "actualPlayerLetterResent": false,
+    "providerCalls": false,
+    "skyrimGameplay": false,
+    "physicalLetterItemGoldDelivery": false,
+    "saveCosaveAcceptance": false,
+    "nativePrismaInputRendering": false,
+    "installedHttpAcceptance": false,
+    "optionalInteractionHostBranch": "source/contract only; helper absent from captured core",
+    "historicalStressOverlapRerun": false,
+    "fullTestedPairedReleaseGateSatisfied": false,
+    "originalDev30ReleaseDecision": "web-only; unchanged",
+    "discoveryIsGlobalCrossClientPaymentLock": false,
+    "separateMouseFaultFixed": false
+  },
+  "package": {
+    "sourceMembersMatchingGit": 285,
+    "runtimeMembers": 22,
+    "unchangedRuntimeMembers": 18,
+    "allSupportedOwnerMapsUnchanged": true,
+    "correctFinalDll": true,
+    "allFourCleanRebuildAssetsByteIdentical": true,
+    "gnuChecksumsVerified": true,
+    "curatedProofMembers": 6,
+    "privateLiveLetterDataAbsentFromProof": true,
+    "officialConsumerValidation": {
+      "status": "PASS",
+      "packages": 3,
+      "activated": false,
+      "databaseTouched": false,
+      "consumerSha256": "a35936ac82fe4bad92bedb514cc9b75353f663d21de07b88c9e4f1ec36e89e42"
+    }
+  },
+  "sourceBinding": {
+    "testedCommit": "29dca91590eb54a44be1ce887494780a11814d5e",
+    "releaseCommit": "b66568de0b9411bacd114a15e99e118776e81764",
+    "nonruntimePaths": [
+      "README.md",
+      "docs/BUILD.md",
+      "docs/superpowers/plans/2026-10-30-letter-resume.md",
+      "packaging/build-installable-prealpha28.py",
+      "packaging/tests/test_installable_prealpha28.py",
+      "tasks/todo.md"
+    ],
+    "nativeInputs": 27,
+    "bootstrapInputs": 14,
+    "uiInputs": 3,
+    "pgInputs": 22
+  },
+  "independentEvidenceHashes": {
+    "independent-pg-verification.json": "c8eb6db216da903f3222f1bf7891b64c8003b1615ecd4c75a9f0ebaba9827913",
+    "independent-final-source-verification.json": "6d0d5ba3e6621465126b93d66b02550868484900f06d794a4dd5dcf71c219d11",
+    "independent-candidate-verification.json": "48c9b2ddb9ce55e98f235b7302ab843de7ab0cb953a3e1f7a700d72ec322c17e",
+    "independent-bughunt/review.md": "cecff93407a6ae2b09c56b113ecb002f5c0dec434d4df828a0cf2b8d789c13cd",
+    "independent-final-candidate-verification.json": "c6192a9badf22ab14be5c1a4338e25bf5fec492094995d01372dff98c63e9f3a",
+    "independent-public-department28-verification.json": "dde4d0cde03c5d406659f3b84ea8fea26008ba4e4a96a6e773f5c532e1b388ff"
+  },
+  "publication": {
+    "anonymousAssetsVerified": 4,
+    "olderDepartmentReleasesPreserved": 26,
+    "olderDepartmentAssetsPreserved": 143,
+    "tagObject": "aecefae9e8a16f3bd2430813d50b373fb0008d99",
+    "sourceCommit": "b66568de0b9411bacd114a15e99e118776e81764"
+  }
+}

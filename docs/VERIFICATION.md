@@ -1,4 +1,10 @@
-## Subsequent dev.30 / Department prealpha.26 service pairing
+## Department prealpha.28 queued-letter recovery follow-up
+
+The final release source `b66568de0b9411bacd114a15e99e118776e81764` differs from tested `29dca91590eb54a44be1ce887494780a11814d5e` only in four documentation files and the packager plus its regression test. The packaging correction reuses the existing PCV25-aware validator; the actual public prealpha.27 baseline passes and an altered overlay with repaired checksums is still rejected. Independent checks bind 22 PostgreSQL inputs, 27 native inputs, 14 PHP bootstrap inputs and 3 UI inputs to those immutable sources. The test2 run passes 6 groups / 83 assertions, including fresh-request recovery, stale/null/pending-restore refusals, concurrent attempts and a backdated-insert paging regression. All 45 child-process output/trace triples and isolation/cleanup receipts were independently checked. The final scoped bughunt found no additional unresolved defect.
+
+Six native host tests, 16 focused browser cases and 16 package tests pass. Four current serialized PHP bootstrap responses pass the emitted DLL pure validator; an extra capability is rejected. These are distinct evidence layers: no Skyrim/SKSE plugin load, installed HTTP send, physical note or gold movement, save/co-save acceptance or provider evaluation is established. The optional interaction helper is source/contract-only in the captured host. Test2 returned to its initial stopped state; live and the installed game were untouched. [Current pair, recovery instructions and portable record](PRISMA-COMPATIBILITY.md).
+
+## Historical dev.30 / Department prealpha.26 service pairing
 
 The frozen Department source `562f77f94f2aeb29d038d3824d087c92fe405abf` and Sealed Fates dev.30 `1eb58d999698002f8aeaa05b21464f7608717794` passed 16 actual PostgreSQL service cases with 71 assertions on test2. Independent review matched all 21 Department test/production inputs, 20 Sealed Fates pins, 11 immutable retained core inputs and 18 child-process outputs. Tests use a fresh PostgreSQL 15 database, with loopback only inside a private network namespace and no external routes; this lane is not socket-only. The owned database stopped, scratch was removed, both locks were released and test2 returned to its initial stopped state.
 
@@ -10,7 +16,7 @@ Unchanged historical overlap/stress/overshoot checks were not rerun and are not 
 
 Thirteen actual PostgreSQL scenarios pass 86 assertions on both new Windows PG17 and socket-only test2 PG15 fixtures. Transient profile/player/form metadata loss defers mail, stale observations still block delivery, fresh recovery sends once, and confirmed opt-outs/death/identity/episode/restore changes remain blocked. Test2 passes all 27 pure PHP regression suites. The Windows worker-path assertion remains an explicitly recorded baseline failure.
 
-These are synthetic server events and queued native commands, not Skyrim execution. Physical notes/items/gold, actual follower observations, save/co-save recovery, installed HTTP sends and real-model behavior remain unverified. Department prealpha.26 now supplies the exact dev.30 interface adapter; its focused test2 service proof is recorded above. No live or installed-game changes occurred. Already stale/closed mail is not automatically revived. [Publication and test record](DEV30-PUBLICATION.md).
+These are synthetic server events and queued native commands, not Skyrim execution. Physical notes/items/gold, actual follower observations, save/co-save recovery, installed HTTP sends and real-model behavior remain unverified. Department prealpha.28 now supplies the exact dev.30 interface and queued-letter recovery; its focused proof and the historical prealpha.26 service proof are recorded above. No live or installed-game changes occurred. Already stale/closed mail is not automatically revived. [Publication and test record](DEV30-PUBLICATION.md).
 
 ## Dev.29 offline repair boundary
 
