@@ -141,7 +141,9 @@ function manualColdEngine(string $scratch,bool $withInteraction):array
 {
     $scratch=realpath($scratch);
     manualDeliveryCheck(is_string($scratch)&&preg_match('#\A/var/tmp/sf-manual-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}\z#D',$scratch)===1,'owned_cold_engine_scratch_required');
-    $root=$scratch.'/cold-web-'.bin2hex(random_bytes(8));
+    $testWork=realpath($scratch.'/test-work');
+    manualDeliveryCheck(is_string($testWork)&&$testWork===$scratch.'/test-work'&&is_dir($testWork)&&is_writable($testWork),'owned_test_work_scratch_required');
+    $root=$testWork.'/cold-web-'.bin2hex(random_bytes(8));
     manualDeliveryCheck(mkdir($root,0700),'cold_engine_root_create_failed');
     $lib=$root.'/lib';manualDeliveryCheck(mkdir($lib,0700),'cold_engine_lib_create_failed');
     $dirs=[$root,$lib];$files=[];
@@ -494,10 +496,10 @@ foreach($selected as $case){
         try{
             $fresh=manualContext($db);$freshNative=manualRequest();$freshProof=manualSeedActivity($db,$fresh['store'],$freshNative,true,0,['interaction_generation'=>null]);$freshDoc=$fresh['service']->compose(manualInput());
             $freshClock=manualRequest();$freshResult=manualColdChild($freshDoc['document_id'],'legacy',$freshClock[1],$freshClock[2],$engine,'dispatched');
-            manualDeliveryCheck(($freshResult['result']['captured_generation']??'unexpected')===null&&($freshResult['result']['gate_allowed']??'unexpected')===null&&$freshProof['interaction_generation']===null,'legacy_cold_generation_null_proof_dispatches_while_fresh');
+            manualDeliveryCheck(array_key_exists('captured_generation',$freshResult['result'])&&$freshResult['result']['captured_generation']===null&&array_key_exists('gate_allowed',$freshResult['result'])&&$freshResult['result']['gate_allowed']===null&&$freshProof['interaction_generation']===null,'legacy_cold_generation_null_proof_dispatches_while_fresh');
             $expired=manualContext($db);$expiredNative=manualRequest();$expiredProof=manualSeedActivity($db,$expired['store'],$expiredNative,true,-46,['interaction_generation'=>null]);$expiredDoc=$expired['service']->compose(manualInput());
             $expiredClock=manualRequest();$expiredResult=manualColdChild($expiredDoc['document_id'],'legacy',$expiredClock[1],$expiredClock[2],$engine,'queued');
-            manualDeliveryCheck(($expiredResult['result']['captured_generation']??'unexpected')===null&&($expiredResult['result']['gate_allowed']??'unexpected')===null&&$expiredProof['interaction_generation']===null,'legacy_cold_generation_null_proof_expires_before_dispatch');
+            manualDeliveryCheck(array_key_exists('captured_generation',$expiredResult['result'])&&$expiredResult['result']['captured_generation']===null&&array_key_exists('gate_allowed',$expiredResult['result'])&&$expiredResult['result']['gate_allowed']===null&&$expiredProof['interaction_generation']===null,'legacy_cold_generation_null_proof_expires_before_dispatch');
             $caseEvidence[$case]=['fresh'=>$freshResult['result'],'expired'=>$expiredResult['result']];
         }finally{manualDropColdEngine($engine);}
     }
