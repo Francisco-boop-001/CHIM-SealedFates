@@ -27,9 +27,15 @@ function manualReset(mixed $db):void
     if((manualDeliverySql($db,"SELECT to_regclass('chim_meta.playthrough_profiles') AS profiles")[0]['profiles']??null)!==null)manualDeliverySql($db,'DELETE FROM chim_meta.playthrough_profiles');
     manualDeliverySql($db,"UPDATE plugins.correspondence_restore_state SET epoch='11111111-1111-4111-8111-111111111111',pending=FALSE,native_ts_floor=0 WHERE singleton IS TRUE");
 }
-function manualContext(mixed $db,array $nearby=[]):array
+function manualEnsureProfileTable(mixed $db):void
+{
+    manualDeliverySql($db,'CREATE SCHEMA IF NOT EXISTS chim_meta');
+    manualDeliverySql($db,'CREATE TABLE IF NOT EXISTS chim_meta.playthrough_profiles(id bigint PRIMARY KEY,is_active boolean NOT NULL)');
+}
+function manualContext(mixed $db,array $nearby=[],?int $activeProfile=null):array
 {
     manualReset($db);
+    if($activeProfile!==null){manualEnsureProfileTable($db);manualDeliverySql($db,'INSERT INTO chim_meta.playthrough_profiles(id,is_active) VALUES($1,TRUE)',[(string)$activeProfile]);}
     $store=new CorrespondencePgStore($db,static fn(CorrespondencePgStore $s):?string=>$s->observedExecutor(),static fn(string $title,string $body):bool=>true);
     $store->ensureSchema();$request=manualRequest();$store->bindRequestClock($request);
     $raw=manualSnapshot($nearby);$store->observeManaged($raw);
@@ -48,7 +54,7 @@ function manualSavePresence(mixed $db,string $scope,array $payload):void
 }
 function manualSeedActivity(mixed $db,CorrespondencePgStore $store,array $request,bool $active,int $receivedAtShift=0,array $overrides=[]):array
 {
-    $clock=correspondenceRequestClock($request);$scope=$store->scope()['playthrough_id'];$restore=$store->restoreGeneration();
+    $clock=correspondenceRequestClock($request);$store->bindRequestClock($request);$scope=$store->scope()['playthrough_id'];$restore=$store->restoreGeneration();
     manualDeliveryCheck(is_string($restore)&&$restore!=='','test_restore_generation_required');
     $record=[
         'playthrough_id'=>$overrides['playthrough_id']??$scope,
@@ -56,7 +62,7 @@ function manualSeedActivity(mixed $db,CorrespondencePgStore $store,array $reques
         'native_ts'=>$clock['ts'],
         'gamets'=>$clock['gamets'],
         'request_sha256'=>hash('sha256',correspondenceCanonicalJson(['request',$clock['ts'],$clock['gamets']])),
-        'interaction_generation'=>isset($GLOBALS['chim_interaction_generation'])&&is_int($GLOBALS['chim_interaction_generation'])?$GLOBALS['chim_interaction_generation']:null,
+        'interaction_generation'=>array_key_exists('interaction_generation',$overrides)?$overrides['interaction_generation']:(isset($GLOBALS['chim_interaction_generation'])&&is_int($GLOBALS['chim_interaction_generation'])?$GLOBALS['chim_interaction_generation']:null),
         'restore_generation'=>$overrides['restore_generation']??$restore,
         'received_at'=>time()+$receivedAtShift,
         'active'=>$active,
@@ -131,6 +137,44 @@ function manualRunJsonChild(array $command,array $input):array
         if(is_resource($process)){@proc_terminate($process);@proc_close($process);}
     }
 }
+function manualColdEngine(string $scratch,bool $withInteraction):array
+{
+    $scratch=realpath($scratch);
+    manualDeliveryCheck(is_string($scratch)&&preg_match('#\A/var/tmp/sf-manual-[0-9]{8}T[0-9]{6}Z-[a-f0-9]{8}\z#D',$scratch)===1,'owned_cold_engine_scratch_required');
+    $root=$scratch.'/cold-web-'.bin2hex(random_bytes(8));
+    manualDeliveryCheck(mkdir($root,0700),'cold_engine_root_create_failed');
+    $lib=$root.'/lib';manualDeliveryCheck(mkdir($lib,0700),'cold_engine_lib_create_failed');
+    $dirs=[$root,$lib];$files=[];
+    $runtime="<?php\ndeclare(strict_types=1);\nfunction ptr_runtime_enter():void{\$GLOBALS['ptr_runtime_generation']='db-only';}\n";
+    $runtimePath=$lib.'/playthrough_runtime.php';manualDeliveryCheck(file_put_contents($runtimePath,$runtime)===strlen($runtime),'cold_runtime_stub_write_failed');$files[]=$runtimePath;
+    $statePath=null;
+    if($withInteraction){
+        $coreRoot=manualDeliveryEnv('CORE_ROOT');$sourcePath=$coreRoot.'/lib/chim_interaction.php';
+        manualDeliveryCheck(is_file($sourcePath)&&hash_file('sha256',$sourcePath)==='0f85286f47da7f02b8527ba9099e3d93452185399a9c0f66918072b877ccb6de','exact_captured_chim_interaction_required');
+        $source=file_get_contents($sourcePath);manualDeliveryCheck(is_string($source)&&$source!=='','captured_chim_interaction_read_failed');
+        $interactionPath=$lib.'/chim_interaction.php';manualDeliveryCheck(file_put_contents($interactionPath,$source)===strlen($source),'cold_interaction_copy_failed');$files[]=$interactionPath;
+        $conf=$root.'/conf';$stateDir=$conf.'/chim_interaction';manualDeliveryCheck(mkdir($conf,0700)&&mkdir($stateDir,0700),'cold_interaction_state_dir_create_failed');array_push($dirs,$conf,$stateDir);
+        $statePath=$stateDir.'/state.json';$state=json_encode(['enabled'=>true,'generation'=>7],JSON_THROW_ON_ERROR);
+        manualDeliveryCheck(file_put_contents($statePath,$state)===strlen($state),'cold_interaction_state_write_failed');$files[]=$statePath;
+    }
+    return ['root'=>$root,'files'=>$files,'dirs'=>$dirs,'state_path'=>$statePath];
+}
+function manualSetColdInteractionState(array $engine,bool $enabled,int $generation):void
+{
+    $path=$engine['state_path']??null;manualDeliveryCheck(is_string($path),'cold_interaction_state_path_required');
+    $state=json_encode(['enabled'=>$enabled,'generation'=>$generation],JSON_THROW_ON_ERROR);
+    manualDeliveryCheck(file_put_contents($path,$state,LOCK_EX)===strlen($state),'cold_interaction_state_update_failed');
+}
+function manualDropColdEngine(array $engine):void
+{
+    foreach(array_reverse($engine['files']??[]) as $path)if(is_file($path)&&!unlink($path))throw new RuntimeException('cold_fixture_file_cleanup_failed');
+    foreach(array_reverse($engine['dirs']??[]) as $path)if(is_dir($path)&&!rmdir($path))throw new RuntimeException('cold_fixture_dir_cleanup_failed');
+}
+function manualColdChild(string $document,string $mode,string $ts,string $gamets,array $engine,string $expected):array
+{
+    $command=[PHP_BINARY,'-n','-d','extension=ctype','-d','extension=mbstring','-d','extension=tokenizer','-d','extension=pgsql',__FILE__,'--cold-web='.$document,'--cold-mode='.$mode,'--cold-ts='.$ts,'--cold-gamets='.$gamets,'--cold-root='.$engine['root'],'--cold-expect='.$expected];
+    return manualRunJsonChild($command,[]);
+}
 function manualStopWorkers(array &$workers):void
 {
     foreach($workers as &$worker){
@@ -141,8 +185,9 @@ function manualStopWorkers(array &$workers):void
     }unset($worker);
 }
 
-$manualCases=['zero_npc_gold_once','native_request_capture','passive_header','interaction_off','replay_fence','heartbeat_coalescing','activity_ttl','authority_rejections','restore_ingress_fail_closed','presence_merge','legacy_route','expired_inactive_fallback','request_conflict','concurrent_dispatch','actual_core_route'];
+$manualCases=['zero_npc_gold_once','native_request_capture','passive_header','interaction_off','replay_fence','heartbeat_coalescing','heartbeat_noop_lock','activity_ttl','authority_rejections','restore_ingress_fail_closed','presence_merge','legacy_route','managed_scope','expired_inactive_fallback','request_conflict','concurrent_dispatch','actual_core_route','cold_web_boundary','cold_legacy_activity'];
 $manualSelection=null;$manualWorkerId=null;$manualWorkerTs=null;$manualWorkerGamets=null;$manualWorkerGeneration=null;$manualWorkerGenerationSet=false;
+$manualColdId=null;$manualColdMode=null;$manualColdTs=null;$manualColdGamets=null;$manualColdRoot=null;$manualColdExpected=null;$manualHoldMs=null;
 foreach(array_slice($argv,1) as $argument){
     if(str_starts_with($argument,'--tests=')){
         manualDeliveryCheck($manualSelection===null,'one_test_selector_allowed');
@@ -157,12 +202,23 @@ foreach(array_slice($argv,1) as $argument){
     elseif(str_starts_with($argument,'--worker-generation=')){
         $manualWorkerGenerationSet=true;$value=substr($argument,20);
         if($value!=='none')$manualWorkerGeneration=(int)$value;
-    }else manualDeliveryCheck(false,'unknown_cli_argument');
+    }elseif(str_starts_with($argument,'--cold-web='))$manualColdId=substr($argument,11);
+    elseif(str_starts_with($argument,'--cold-mode='))$manualColdMode=substr($argument,12);
+    elseif(str_starts_with($argument,'--cold-ts='))$manualColdTs=substr($argument,10);
+    elseif(str_starts_with($argument,'--cold-gamets='))$manualColdGamets=substr($argument,14);
+    elseif(str_starts_with($argument,'--cold-root='))$manualColdRoot=substr($argument,12);
+    elseif(str_starts_with($argument,'--cold-expect='))$manualColdExpected=substr($argument,14);
+    elseif(str_starts_with($argument,'--hold-eventlog-ms='))$manualHoldMs=(int)substr($argument,19);
+    else manualDeliveryCheck(false,'unknown_cli_argument');
 }
+if($manualColdMode!==null)manualDeliveryCheck($manualWorkerId===null&&preg_match('/\A[0-9a-fA-F-]{36}\z/D',(string)$manualColdId)===1&&in_array($manualColdMode,['active','off','changed','legacy'],true)
+    &&is_string($manualColdTs)&&preg_match('/\A[1-9][0-9]{0,18}\z/D',$manualColdTs)===1&&is_string($manualColdGamets)&&preg_match('/\A[1-9][0-9]{0,18}\z/D',$manualColdGamets)===1
+    &&is_string($manualColdRoot)&&is_string($manualColdExpected)&&in_array($manualColdExpected,['dispatched','queued'],true),'valid_cold_web_child_args_required');
+if($manualHoldMs!==null)manualDeliveryCheck($manualWorkerId===null&&$manualColdMode===null&&$manualHoldMs>=800&&$manualHoldMs<=4000,'valid_eventlog_lock_holder_args_required');
 $GLOBALS['manual_request_number']=0;
-$manualDefineInteraction=$manualWorkerId!==null
+$manualDefineInteraction=$manualColdMode!==null?false:($manualWorkerId!==null
     ?($manualWorkerGenerationSet&&is_int($manualWorkerGeneration))
-    :($manualSelection===null||in_array('interaction_off',$manualSelection,true)||in_array('actual_core_route',$manualSelection,true));
+    :($manualSelection===null||in_array('interaction_off',$manualSelection,true)||in_array('managed_scope',$manualSelection,true)||in_array('actual_core_route',$manualSelection,true)||in_array('cold_web_boundary',$manualSelection,true)||in_array('cold_legacy_activity',$manualSelection,true)||in_array('heartbeat_noop_lock',$manualSelection,true)));
 if($manualDefineInteraction){
     $GLOBALS['manual_interaction_enabled']=true;
     $GLOBALS['chim_interaction_generation']=$manualWorkerGeneration??7;
@@ -185,6 +241,35 @@ $identity=manualDeliverySql($db,"SELECT current_database() db,current_user role,
 manualDeliveryCheck($identity===['db'=>$database,'role'=>$role,'dir'=>$directory,'port'=>$port,'listeners'=>'','sockets'=>$socket,'socket_only'=>'1','sid'=>$system],'fixture_identity_mismatch');
 
 $root=dirname(__DIR__);require_once $root.'/server/lib/bootstrap.php';
+if($manualColdMode!==null){
+    try{
+        $coldRoot=realpath($manualColdRoot);$coldScratch=realpath(dirname(dirname($directory)));
+        manualDeliveryCheck(is_string($coldRoot)&&is_string($coldScratch)&&str_starts_with($coldRoot,$coldScratch.'/cold-web-'),'owned_fake_engine_root_required');
+        manualDeliveryCheck(!function_exists('chimInteractionAllowed')&&!array_key_exists('chim_interaction_generation',$GLOBALS),'cold_child_must_start_without_interaction_state');
+        $GLOBALS['ENGINE_PATH']=$coldRoot;correspondenceEnterRuntime($coldRoot);
+        if($manualColdMode==='legacy')manualDeliveryCheck(!function_exists('chimInteractionAllowed')&&!array_key_exists('chim_interaction_generation',$GLOBALS),'legacy_cold_host_keeps_null_generation');
+        else manualDeliveryCheck(function_exists('chimInteractionAllowed')&&($GLOBALS['chim_interaction_generation']??null)===7,'cold_web_runtime_loads_and_captures_current_generation');
+        if($manualColdMode==='off')manualSetColdInteractionState(['state_path'=>$coldRoot.'/conf/chim_interaction/state.json'],false,8);
+        elseif($manualColdMode==='changed')manualSetColdInteractionState(['state_path'=>$coldRoot.'/conf/chim_interaction/state.json'],true,8);
+        $store=new CorrespondencePgStore($db,static fn(CorrespondencePgStore $s):?string=>$s->observedExecutor(),static fn(string $title,string $body):bool=>true);
+        $store->ensureSchema();$store->bindRequestClock(['request',$manualColdTs,$manualColdGamets,'cold web child']);
+        $dispatch=(new CorrespondenceService($store))->dispatch($manualColdId);
+        $operationCount=manualDeliverySql($db,'SELECT count(*)::int n FROM plugins.correspondence_operations WHERE document_id=$1::uuid',[$manualColdId])[0]['n']??null;
+        $commands=manualDeliverySql($db,"SELECT actor FROM public.responselog WHERE action='command' AND text LIKE 'ExtCmdCHIMCorrespondenceBridge_Deliver@%' AND text LIKE $1",['%'.$manualColdId.'%']);
+        manualDeliveryCheck(($dispatch['state']??null)===$manualColdExpected,'cold_child_dispatch_state_mismatch');
+        if($manualColdExpected==='dispatched')manualDeliveryCheck($operationCount==='1'&&count($commands)===1&&$commands[0]['actor']==='The Narrator','cold_child_dispatch_must_queue_one_narrator_operation');
+        else manualDeliveryCheck(($dispatch['reason']??null)==='executor_unavailable'&&$operationCount==='0'&&$commands===[],'cold_child_refusal_must_happen_before_queue');
+        echo json_encode(['mode'=>$manualColdMode,'captured_generation'=>$GLOBALS['chim_interaction_generation']??null,'gate_allowed'=>function_exists('chimInteractionAllowed')?chimInteractionAllowed():null,'dispatch'=>$dispatch,'operation_count'=>$operationCount,'command_actors'=>array_column($commands,'actor')],JSON_THROW_ON_ERROR)."\n";
+        pg_close($db);exit(0);
+    }catch(Throwable $error){fwrite(STDERR,'cold_web_child: '.$error->getMessage().PHP_EOL);pg_close($db);exit(1);}
+}
+if($manualHoldMs!==null){
+    try{
+        manualDeliverySql($db,'BEGIN');manualDeliverySql($db,'LOCK TABLE public.eventlog IN ROW EXCLUSIVE MODE');
+        fwrite(STDOUT,"READY\n");usleep($manualHoldMs*1000);manualDeliverySql($db,'COMMIT');
+        echo json_encode(['row_exclusive_lock_released'=>true],JSON_THROW_ON_ERROR)."\n";pg_close($db);exit(0);
+    }catch(Throwable $error){try{manualDeliverySql($db,'ROLLBACK');}catch(Throwable){}fwrite(STDERR,'eventlog_lock_holder: '.$error->getMessage().PHP_EOL);pg_close($db);exit(1);}
+}
 if($manualWorkerId!==null){
     manualDeliveryCheck(preg_match('/\A[0-9a-fA-F-]{36}\z/D',$manualWorkerId)===1&&is_string($manualWorkerTs)&&preg_match('/\A[1-9][0-9]{0,18}\z/D',$manualWorkerTs)===1&&is_string($manualWorkerGamets)&&preg_match('/\A[1-9][0-9]{0,18}\z/D',$manualWorkerGamets)===1,'valid_dispatch_worker_args_required');
     $store=new CorrespondencePgStore($db,static fn(CorrespondencePgStore $s):?string=>$s->observedExecutor(),static fn(string $title,string $body):bool=>true);
@@ -249,7 +334,7 @@ foreach($selected as $case){
         $activity=manualPresence($db,$ctx['scope'])['activity']??[];
         manualDeliveryCheck(($activity['active']??null)===false&&$ctx['store']->observedExecutor()===null,'interaction_off_stores_inactive_proof_and_suppresses_old_actor');
     }elseif($case==='replay_fence'){
-        $ctx=manualContext($db);$proof=manualSeedActivity($db,$ctx['store'],$ctx['request'],true,-46);$saved=manualPresence($db,$ctx['scope'])['activity'];
+        $ctx=manualContext($db);manualSeedActivity($db,$ctx['store'],$ctx['request'],true,-46);$saved=manualPresence($db,$ctx['scope'])['activity'];
         manualObserveNative($ctx['store'],$ctx['request']);
         $older=$ctx['request'];$older[1]=(string)((int)$older[1]-1);manualObserveNative($ctx['store'],$older);
         $after=manualPresence($db,$ctx['scope'])['activity'];
@@ -257,7 +342,6 @@ foreach($selected as $case){
         manualDeliveryCheck($ctx['store']->observedExecutor()===null,'expired_replayed_activity_stays_expired');
         $fresh=manualRequest();manualObserveNative($ctx['store'],$fresh);$renewed=manualPresence($db,$ctx['scope'])['activity'];
         manualDeliveryCheck($renewed['native_ts']===$fresh[1]&&$renewed['received_at']>=time()-1&&$ctx['store']->observedExecutor()==='The Narrator','strictly_newer_native_counter_accepts_fresh_activity');
-        manualDeliveryCheck($proof['anchor']===$saved['anchor'],'seed_anchor_unchanged');
     }elseif($case==='heartbeat_coalescing'){
         $ctx=manualContext($db);manualSeedActivity($db,$ctx['store'],$ctx['request'],true);
         $before=manualPresence($db,$ctx['scope'])['activity'];$countBefore=manualDeliverySql($db,"SELECT count(*)::int n FROM public.eventlog WHERE type='info' AND sess='correspondence_v1'")[0]['n']??null;
@@ -267,6 +351,23 @@ foreach($selected as $case){
         $due=manualContext($db);manualSeedActivity($db,$due['store'],$due['request'],true,-15);$dueBefore=manualPresence($db,$due['scope'])['activity'];
         $next=manualRequest();manualObserveNative($due['store'],$next);$dueAfter=manualPresence($db,$due['scope'])['activity'];
         manualDeliveryCheck(($dueAfter['native_ts']??null)===$next[1]&&($dueAfter['received_at']??null)>($dueBefore['received_at']??PHP_INT_MAX)&&($dueAfter['anchor']??null)!==($dueBefore['anchor']??null),'new_counter_after_15_seconds_creates_a_new_anchor');
+    }elseif($case==='heartbeat_noop_lock'){
+        $ctx=manualContext($db);$accepted=manualRequest();manualObserveNative($ctx['store'],$accepted);$workers=[];
+        manualDeliverySql($db,"SET lock_timeout='250ms'");manualDeliverySql($db,"SET statement_timeout='250ms'");
+        try{
+            $command=[PHP_BINARY,'-n','-d','extension=ctype','-d','extension=mbstring','-d','extension=tokenizer','-d','extension=pgsql',__FILE__,'--hold-eventlog-ms=1800'];
+            $pipes=[];$process=proc_open($command,[0=>['pipe','r'],1=>['pipe','w'],2=>['pipe','w']],$pipes,null,null,['bypass_shell'=>true]);
+            manualDeliveryCheck(is_resource($process),'eventlog_lock_holder_launch_failed');$workers[]=['process'=>$process,'pipes'=>$pipes];
+            manualDeliveryCheck(manualWorkerReady($workers[0]),'eventlog_row_exclusive_lock_not_ready');fclose($workers[0]['pipes'][0]);$workers[0]['pipes'][0]=null;
+            $newer=manualRequest();$start=microtime(true);$newerResult=manualObserveNative($ctx['store'],$newer);$newerElapsed=microtime(true)-$start;
+            manualDeliveryCheck(($newerResult['status']??null)==='coalesced'&&$newerElapsed<0.8,'fresh_coalesced_heartbeat_must_not_take_eventlog_writer_lock');
+            $start=microtime(true);$replay=manualObserveNative($ctx['store'],$accepted);$replayElapsed=microtime(true)-$start;
+            manualDeliveryCheck(($replay['status']??null)==='coalesced'&&$replayElapsed<0.8,'equal_native_replay_must_not_take_eventlog_writer_lock');
+            $released=manualWorkerResult($workers[0]);manualDeliveryCheck(($released['result']['row_exclusive_lock_released']??null)===true,'eventlog_lock_holder_must_release_cleanly');
+            $caseEvidence[$case]=['newer_elapsed_seconds'=>$newerElapsed,'replay_elapsed_seconds'=>$replayElapsed,'holder'=>$released['result']];
+        }finally{
+            manualStopWorkers($workers);manualDeliverySql($db,'RESET statement_timeout');manualDeliverySql($db,'RESET lock_timeout');
+        }
     }elseif($case==='activity_ttl'){
         $fresh=manualContext($db);manualSeedActivity($db,$fresh['store'],$fresh['request'],true,-44);
         manualDeliveryCheck($fresh['store']->observedExecutor()==='The Narrator','server_receipt_inside_45_seconds_is_fresh');
@@ -295,7 +396,7 @@ foreach($selected as $case){
         $nullToken=manualContext($db);$prior=manualSeedActivity($db,$nullToken['store'],$nullToken['request'],true);$incoming=manualRequest();
         $GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED']=true;$GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']=null;$GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']=$incoming[1];
         try{manualObserveNative($nullToken['store'],$incoming);}finally{unset($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED'],$GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN'],$GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']);}
-        manualDeliveryCheck(manualPresence($db,$nullToken['scope'])['activity']['anchor']===$prior['anchor'],'captured_null_restore_token_cannot_replace_proof');
+        manualDeliveryCheck(hash_equals(correspondenceCanonicalJson(manualPresence($db,$nullToken['scope'])['activity']['anchor']),correspondenceCanonicalJson($prior['anchor'])),'captured_null_restore_token_cannot_replace_proof');
         manualDeliveryCheck(manualSafeExecutor($nullToken['store'])===null,'captured_null_restore_token_fails_closed');
         $pending=manualContext($db);$document=$pending['service']->compose(manualInput());
         manualSeedActivity($db,$pending['store'],$pending['request'],true);
@@ -320,6 +421,18 @@ foreach($selected as $case){
         $empty=manualContext($db);$rogue=new CorrespondencePgStore($db,static fn():string=>'The Narrator',static fn(string $title,string $body):bool=>true);
         $rogue->ensureSchema();$rogue->bindRequestClock($empty['request']);
         manualDeliveryCheck($rogue->managedExecutor()===null,'resolver_cannot_select_narrator_without_validated_activity');
+    }elseif($case==='managed_scope'){
+        $ctx=manualContext($db,[],42);$native=manualRequest();manualObserveNative($ctx['store'],$native);$activity=manualPresence($db,'42')['activity']??[];
+        manualDeliveryCheck($ctx['raw']===manualSnapshot([])&&$ctx['store']->scope()['playthrough_id']==='42'&&($activity['playthrough_id']??null)==='42'&&$ctx['store']->observedExecutor()==='The Narrator','native_activity_is_bound_to_the_active_managed_profile');
+        $document=$ctx['service']->compose(manualInput());$sent=$ctx['service']->dispatch($document['document_id']);$operation=$ctx['store']->loadOperation($sent['operation_id']??'');
+        manualDeliveryCheck(($sent['state']??null)==='dispatched'&&($operation['playthrough_id']??null)==='42'&&($operation['attachments'][0]['quantity']??null)===500,'active_profile_zero_npc_dispatch_keeps_500_gold_operation_in_profile_scope');
+        manualDeliverySql($db,'UPDATE chim_meta.playthrough_profiles SET is_active=FALSE WHERE id=42');
+        manualDeliverySql($db,'INSERT INTO chim_meta.playthrough_profiles(id,is_active) VALUES(43,TRUE) ON CONFLICT(id) DO UPDATE SET is_active=EXCLUDED.is_active');
+        manualDeliveryCheck($ctx['store']->scope()['playthrough_id']==='43'&&$ctx['store']->observedExecutor()===null,'switching_managed_profile_cannot_reuse_prior_native_activity');
+        $other=$ctx['service']->compose(manualInput());$otherDispatch=$ctx['service']->dispatch($other['document_id']);
+        manualDeliveryCheck(($otherDispatch['state']??null)==='queued'&&($otherDispatch['reason']??null)==='executor_unavailable','profile_42_activity_cannot_dispatch_profile_43_document');
+        $oldRefused=false;try{$ctx['service']->dispatch($document['document_id']);}catch(DomainException $error){$oldRefused=$error->getMessage()==='document_unavailable';}
+        manualDeliveryCheck($oldRefused&&(manualDeliverySql($db,'SELECT count(*)::int n FROM plugins.correspondence_operations WHERE document_id=$1::uuid',[$document['document_id']])[0]['n']??null)==='1','profile_switch_refuses_old_document_without_replacing_its_operation');
     }elseif($case==='expired_inactive_fallback'){
         $ctx=manualContext($db);manualSeedActivity($db,$ctx['store'],$ctx['request'],false,-46);
         $freshSnapshot=manualSnapshot([manualCamilla()]);$newRequest=manualRequest();$ctx['store']->bindRequestClock($newRequest);$ctx['store']->observeManaged($freshSnapshot);
@@ -359,6 +472,34 @@ foreach($selected as $case){
         $core=$child['result'];
         manualDeliveryCheck(($core['document_id']??null)===$document['document_id']&&($core['operation_id']??null)===$sent['operation_id']&&count($core['lines']??[])===2&&($core['second_dequeue']??null)===[]&&($core['marks']['native_game']??null)===false,'actual_core_dequeue_proves_renderer_and_narrator_command_once');
         $caseEvidence[$case]=['stdout'=>$child['stdout'],'stderr'=>$child['stderr'],'result'=>$core];
+    }elseif($case==='cold_web_boundary'){
+        $engine=manualColdEngine(dirname(dirname($directory)),true);
+        try{
+            $ctx=manualContext($db);$native=manualRequest();manualObserveNative($ctx['store'],$native);$proof=manualPresence($db,$ctx['scope'])['activity']??[];
+            manualDeliveryCheck($ctx['raw']===manualSnapshot([])&&($proof['interaction_generation']??null)===7,'cold_web_fixture_has_active_zero_npc_generation_7_proof');
+            $activeDoc=$ctx['service']->compose(manualInput());$offDoc=$ctx['service']->compose(manualInput());$changedDoc=$ctx['service']->compose(manualInput());
+            $activeClock=manualRequest();manualSetColdInteractionState($engine,true,7);$active=manualColdChild($activeDoc['document_id'],'active',$activeClock[1],$activeClock[2],$engine,'dispatched');
+            manualDeliveryCheck(($active['result']['captured_generation']??null)===7&&($active['result']['gate_allowed']??null)===true,'cold_web_active_child_captures_current_generation_7');
+            $offClock=manualRequest();manualSetColdInteractionState($engine,true,7);$off=manualColdChild($offDoc['document_id'],'off',$offClock[1],$offClock[2],$engine,'queued');
+            manualDeliveryCheck(($off['result']['captured_generation']??null)===7&&($off['result']['gate_allowed']??null)===false,'cold_web_off_after_capture_refuses_before_queue');
+            $changedClock=manualRequest();manualSetColdInteractionState($engine,true,7);$changed=manualColdChild($changedDoc['document_id'],'changed',$changedClock[1],$changedClock[2],$engine,'queued');
+            manualDeliveryCheck(($changed['result']['captured_generation']??null)===7&&($changed['result']['gate_allowed']??null)===false,'cold_web_generation_change_after_capture_refuses_before_queue');
+            $nullCtx=manualContext($db);$nullProof=manualSeedActivity($db,$nullCtx['store'],manualRequest(),true,0,['interaction_generation'=>null]);$nullDoc=$nullCtx['service']->compose(manualInput());
+            $nullClock=manualRequest();manualSetColdInteractionState($engine,true,7);$nullCore=manualColdChild($nullDoc['document_id'],'active',$nullClock[1],$nullClock[2],$engine,'queued');
+            manualDeliveryCheck(($nullCore['result']['captured_generation']??null)===7&&($nullCore['result']['gate_allowed']??null)===true&&$nullProof['interaction_generation']===null,'core_aware_cold_web_never_downgrades_to_null_generation_proof');
+            $caseEvidence[$case]=['active'=>$active['result'],'off'=>$off['result'],'changed'=>$changed['result'],'null_proof_with_core'=>$nullCore['result']];
+        }finally{manualDropColdEngine($engine);}
+    }elseif($case==='cold_legacy_activity'){
+        $engine=manualColdEngine(dirname(dirname($directory)),false);
+        try{
+            $fresh=manualContext($db);$freshNative=manualRequest();$freshProof=manualSeedActivity($db,$fresh['store'],$freshNative,true,0,['interaction_generation'=>null]);$freshDoc=$fresh['service']->compose(manualInput());
+            $freshClock=manualRequest();$freshResult=manualColdChild($freshDoc['document_id'],'legacy',$freshClock[1],$freshClock[2],$engine,'dispatched');
+            manualDeliveryCheck(($freshResult['result']['captured_generation']??'unexpected')===null&&($freshResult['result']['gate_allowed']??'unexpected')===null&&$freshProof['interaction_generation']===null,'legacy_cold_generation_null_proof_dispatches_while_fresh');
+            $expired=manualContext($db);$expiredNative=manualRequest();$expiredProof=manualSeedActivity($db,$expired['store'],$expiredNative,true,-46,['interaction_generation'=>null]);$expiredDoc=$expired['service']->compose(manualInput());
+            $expiredClock=manualRequest();$expiredResult=manualColdChild($expiredDoc['document_id'],'legacy',$expiredClock[1],$expiredClock[2],$engine,'queued');
+            manualDeliveryCheck(($expiredResult['result']['captured_generation']??'unexpected')===null&&($expiredResult['result']['gate_allowed']??'unexpected')===null&&$expiredProof['interaction_generation']===null,'legacy_cold_generation_null_proof_expires_before_dispatch');
+            $caseEvidence[$case]=['fresh'=>$freshResult['result'],'expired'=>$expiredResult['result']];
+        }finally{manualDropColdEngine($engine);}
     }
     $completed[]=$case;echo $case," PASS\n";
 }
