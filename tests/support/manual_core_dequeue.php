@@ -13,6 +13,14 @@ function manualCoreSql(PgSql\Connection $db,string $sql,array $args=[]):array
     manualCoreCheck($result instanceof PgSql\Result,'fixture_sql_failed');
     try{return pg_num_fields($result)>0?(pg_fetch_all($result)?:[]):[];}finally{pg_free_result($result);}
 }
+function manualCoreShape(mixed $value):string
+{
+    if(!is_array($value))return get_debug_type($value);
+    if(array_is_list($value))return '['.implode(',',array_map('manualCoreShape',$value)).']';
+    $keys=array_keys($value);sort($keys,SORT_STRING);$shape=[];
+    foreach($keys as $key)$shape[]=$key.':'.manualCoreShape($value[$key]);
+    return '{'.implode(',',$shape).'}';
+}
 
 // The fixture supplies the captured gate result; DataDequeue still filters actual rows by its generation.
 if(!function_exists('chimInteractionAllowed')){
@@ -35,6 +43,8 @@ function manualDeliveryCoreRoundTrip(PgSql\Connection $db,string $documentId,str
     manualCoreCheck(($GLOBALS['manual_core_owned_connection']??null)===$db,'owned_database_connection_required');
     manualCoreCheck(!function_exists('DataDequeue')&&!function_exists('chimInteractionIsGameOutput'),'isolated_core_child_required');
     require_once __DIR__.'/correspondence_core_function.php';
+    // Reuse the local serializer because PostgreSQL JSONB changes object-key order.
+    require_once dirname(__DIR__,2).'/server/lib/runtime.php';
     $core=getenv('CORRESPONDENCE_MANUAL_CORE_ROOT');
     manualCoreCheck(is_string($core)&&is_dir($core),'explicit_captured_core_root_required');
     $dataFunctions=$core.'/data_functions.php';$interaction=$core.'/chim_interaction.php';$commPath=$core.'/comm.php';
@@ -91,8 +101,12 @@ function manualDeliveryCoreRoundTrip(PgSql\Connection $db,string $documentId,str
         $commandParts=explode('@',$parsed[1]['text'],2);
         manualCoreCheck(count($commandParts)===2&&$commandParts[0]==='ExtCmdCHIMCorrespondenceBridge_Deliver','delivery_command_name_required');
         $wire=json_decode($commandParts[1],true,32,JSON_THROW_ON_ERROR);
+        manualCoreCheck(is_array($wire),'delivery_wire_object_required');
         $wireKeys=array_fill_keys(['protocol_version','document_id','operation_id','receipt_id','playthrough_id','scope_token','nonce','recipient','payer','title','renderer_key','attachments'],true);
-        manualCoreCheck($wire===array_intersect_key($operation,$wireKeys),'delivery_wire_must_preserve_saved_operation');
+        $expectedWire=array_intersect_key($operation,$wireKeys);$expectedKeys=array_keys($wireKeys);sort($expectedKeys,SORT_STRING);$wireFields=array_keys($wire);sort($wireFields,SORT_STRING);$operationFields=array_keys($expectedWire);sort($operationFields,SORT_STRING);$changed=[];
+        foreach($wireKeys as $key=>$_)if(!array_key_exists($key,$wire)||!array_key_exists($key,$expectedWire)||correspondenceCanonicalJson([$key=>$wire[$key]])!==correspondenceCanonicalJson([$key=>$expectedWire[$key]]))$changed[]=$key;
+        $wireMatches=$wireFields===$expectedKeys&&$operationFields===$expectedKeys&&correspondenceCanonicalJson($wire)===correspondenceCanonicalJson($expectedWire);
+        manualCoreCheck($wireMatches,'delivery_wire_mismatch:document='.$documentId.' operation='.$document['operation_id'].' changed='.implode(',',$changed).' wire_shape='.manualCoreShape($wire).' operation_shape='.manualCoreShape($expectedWire));
         manualCoreCheck(($wire['document_id']??null)===$documentId&&($wire['operation_id']??null)===$document['operation_id']&&($wire['attachments'][0]['quantity']??null)===500,'delivery_wire_must_preserve_document_operation_and_500_gold');
         $second=$run();
         manualCoreCheck($second['output']===''&&$second['claimed']===[],'actual_core_dequeue_must_be_once_only');
