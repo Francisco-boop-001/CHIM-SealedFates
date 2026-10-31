@@ -574,8 +574,12 @@ SealedFateschanges are current compatibility/install/release/verification docs, 
 - [x] Trace captured CHIM native command polling, Narrator routing, rendering and bridge receipts with no nearby NPC; compare supported alternatives and record exact feasibility boundaries.
 - [x] Design the smallest shared web/Department owner route using independent fresh native-game authority, keeping scope/restore/identity/receipts and same-document retry guards; coordinate the Department owner seam.
 - [x] Write causal failing owner tests, implement shared owner changes and run source-bound offline regressions; matching consumer work stays with Department.
-- [ ] Confirm exclusive test2 availability/isolation, exercise actual owner and Department routes against synthetic data, including zero-NPC success, stale/restore refusal and concurrent/repeated attempts; prove owned cleanup.
+- [x] Confirm exclusive test2 availability/isolation, exercise actual owner and Department routes against synthetic data, including zero-NPC success, stale/restore refusal and concurrent/repeated attempts; prove owned cleanup.
 - [x] Independently bughunt the owner source, fix cold initialization and idle writer contention, correct strict fixtures and rerun 19 cases.
-- [ ] Commit, build reproducible source-bound packages, verify compatible public releases/downloads and publish clear gameplay limits.
+- [x] Commit, build reproducible source-bound packages, verify compatible public releases/downloads and publish clear gameplay limits.
 
 Success: ordinary manual player letters and attachments no longer need nearby NPC presence; web and Department share the supported route. Browser activity cannot invent fresh native evidence. Old save/profile/identity, uncertain receipts and concurrent/replayed attempts cannot create duplicate transfers. Preserve optional web interface unless source-level feasibility is disproven after bounded alternatives; no premature removal. No live, installed-game, production configuration or provider access. Test2 only through an agreed exclusive owned fixture.
+
+### NPC-independent delivery review
+
+Sealed Fates dev.31 is public from e393bd5f9a1cd31a8d8d006a4356faddc9eb3212; Department prealpha.30 from 496f816356ce0af8d6b4fb67e720f90e9bba0ebe. Owner 19-case proof and separate Department 11-group/137-assertion proof pass; exact Git/staging/core/52-child bindings and owned test2 cleanup independently verified. All public assets match reproducible clean builds; prior releases/assets/tags retained. Current docs and portable publication/pairing records updated only; immutable runtime/tags/assets unchanged by this follow-up. No live/game/provider access. Physical Skyrim, installed HTTP/PRISMA, first Narrator initialization and save/co-save remain unverified; separate mouse fault unresolved. No further server tests planned without a new root warning.

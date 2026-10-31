@@ -34,3 +34,8 @@
 ## Tests during an active game session
 
 - Warn the user in this chat before each server test, including isolated test2. Keep live and the installed game untouched. If a test ever requires stopping live, wait for explicit confirmation; do not infer permission from general test authorization.
+
+## Preserve fixture protocol contracts
+
+- Keep reusable fixture schema identifiers independent of the product display version; validate the producer against the actual unchanged guard before entering test2.
+- Compare PostgreSQL network identities using `host(inet_..._addr())`; retain CIDR-formatted raw text as evidence rather than treating `/32` as a wrong host. Retain setup failures separately from executed product cases.

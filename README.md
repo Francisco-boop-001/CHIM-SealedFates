@@ -1,4 +1,4 @@
-**0.1.0-dev.31 — PRE-ALPHA.** Manual letters can use CHIM's player-backed **The Narrator** carrier with fresh active native polling; no nearby NPC or conversation is required. The web page remains available. A matching Department release is being verified separately; prealpha.29 supports dev.30 only. [Release notes and gameplay limits](docs/RELEASE.md).
+**0.1.0-dev.31 — PRE-ALPHA.** Manual letters can use CHIM's player-backed **The Narrator** carrier with fresh active native polling; no nearby NPC or conversation is required. The web page remains available. The matching optional interface is [Department prealpha.30](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.30); its focused API/database pairing passed on test2. [Release notes and gameplay limits](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -12,7 +12,7 @@ Sealed Fates adds physical letters and optional item or gold transfers to CHIM, 
 
 ## Pick your interface
 
-**Dev.31 interface status:** Department prealpha.29 pins Sealed Fates dev.30. Its guarded 21-pin dev.31 port and matching release are pending; do not bypass the version/hash checks. The Sealed Fates web page remains independent; Department stays a separate optional mod. [Compatibility details](docs/PRISMA-COMPATIBILITY.md).
+**Dev.31 Skyrim interface:** [Department prealpha.30](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.30) supports the exact dev.31 source and explains **Resume delivery** without an NPC conversation. After exiting Skyrim completely, update that optional mod with [its single MO2 ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.30/WorldOfDramaLlama-0.1.0-prealpha.30.zip). The existing Sealed Fates web page still works independently. Eleven focused test2 groups passed 137 assertions; physical Skyrim delivery and installed PRISMA behavior still need gameplay checks. Keep version/hash checks enabled. [Compatibility details](docs/PRISMA-COMPATIBILITY.md).
 
 **Historical dev.30 Skyrim interface:** [Department prealpha.28](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.28) supports Sealed Fates dev.30 and adds **Resume delivery** for an eligible saved queued letter. It also finds waiting letters after reopening the interface. If dev.30 is already installed, update only [Department's single MO2 ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.28/WorldOfDramaLlama-0.1.0-prealpha.28.zip) after exiting Skyrim completely; this update includes a new native DLL. Six focused test2 groups passed 83 assertions. Actual Skyrim UI and physical delivery still need gameplay checks. The web plugin page still works. [Recovery steps and exact limits](docs/PRISMA-COMPATIBILITY.md).
 

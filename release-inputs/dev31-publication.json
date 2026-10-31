@@ -1,0 +1,67 @@
+{
+  "schemaVersion": 1,
+  "kind": "immutable-dev31-owner-publication",
+  "status": "verified_public",
+  "sourceCommit": "e393bd5f9a1cd31a8d8d006a4356faddc9eb3212",
+  "tag": "correspondence-v0.1.0-dev.31",
+  "tagObject": "948e8efdfbae7f05c62934adb5512fb4d9395ed5",
+  "releaseId": 429571185,
+  "releaseUrl": "https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.31",
+  "publishedAt": "2026-10-30T23:09:48Z",
+  "assets": {
+    "CHIM-Sealed-Fates-0.1.0-dev.31.zip": {
+      "sha256": "0ceba2a0d2a07320afa5c18ed830561061a25f58c905de0c5ef540bf026f59fc",
+      "bytes": 1108614
+    },
+    "SHA256SUMS.txt": {
+      "sha256": "071479a84920f041a09a31e8973864691a8b30957f5b84a0d0cc3c429fb97d75",
+      "bytes": 289
+    },
+    "correspondence-0.1.0-dev.31.dwpkg": {
+      "sha256": "7d17ec6cefd21540d01194f719bd69c9961f6d48b5a1bb35d9f86a9ae76f0777",
+      "bytes": 1054285
+    },
+    "correspondence.tar.gz": {
+      "sha256": "22a5b1dac2428f384b8437e709840056a042bd7bd9c1ee400860740eddb06603",
+      "bytes": 601189
+    }
+  },
+  "reproducibleBuilds": 2,
+  "sourceClosureSha256": "4fa413b91e4ee12ab8c8c272b14afd2a8b4b0e04229ae61b3773519861daf9c7",
+  "releaseGate": "web-only",
+  "pairing": "matching Department compatibility verified separately; this owner release is not broader tested-paired certification",
+  "previousReleasesPreserved": 18,
+  "previousAssetsPreserved": 73,
+  "previousTagRefsPreserved": 18,
+  "nativeScriptPreservation": {
+    "Scripts/CHIMCorrespondenceBridge.pex": {
+      "sha256": "41ff0f569402e2567bb57732e648fd52732f40d3890fcfbb914e32c010067c5b",
+      "bytes": 19802,
+      "matchesImmutableDev30Manifest": true,
+      "dev30ManifestPath": "game/bridge-manifest.json",
+      "dev30ManifestSha256": "9112495303064e83c6060d2c71cb1cf1de0a4b2c04a7829c26a635c982fa713a"
+    },
+    "Scripts/CHIMCorrespondenceCompanion.pex": {
+      "sha256": "c7888997f647f35f86d1641a84cec165cd166ce8819bb101c0edd8eaf5b3e9ca",
+      "bytes": 12404,
+      "matchesImmutableDev30Manifest": true,
+      "dev30ManifestPath": "game/companion-manifest.json",
+      "dev30ManifestSha256": "7a76246071e1d94330c92a7659d96466e6e740c6a0d2defb83e291a37c522368"
+    }
+  },
+  "verificationHashes": {
+    "independent-final-green-verification.json": "21ee6be1e7b606c41f4aadca34bd0b6b10b51824ef8433e93ffe469ff45d8ebb",
+    "reproducible-release-build.json": "122b0b012cc63c60d6eaae8206b4911301601b99c467330c2d820bc791af6531",
+    "official-archive-check.json": "cf2b35c8e36a416f771c38205e97b1ad2ebba127b3ae647a25e2a93203de0640",
+    "release-python-results.json": "2d8bcd204c9f85975ce9017e8ce4dfb50f4ea8a7dd66fd232fe000cd46e7d6cc",
+    "draft-verification.json": "94222f55a500aaf924c20e484b506af083c5549df31ce57d2601fdd807930f82",
+    "public-release-verification.json": "416074381f89d6a9fe683bbc7cb794efaa457b5605d2946f59f1516a59e79b3f",
+    "main-and-tags-verification.json": "18d720678d4121c9ae7bd5f9302e4b78f09b1bae6e87b1ed922402d05233a923"
+  },
+  "limits": [
+    "No installation, live access or game changes during publication.",
+    "No Skyrim physical-delivery/inventory/PRISMA/save-co-save acceptance.",
+    "No provider calls.",
+    "A K-drive package-fixture90-second timeout preceded a successful same-source77-check run with the existing supported system-temp option; no runtime code changed."
+  ]
+}

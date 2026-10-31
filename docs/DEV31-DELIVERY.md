@@ -1,6 +1,6 @@
 # Dev.31 — letters without a nearby NPC
 
-Server/command-route verification complete; this remains PRE-ALPHA. The matching Department release is a separate gate.
+Server/command-route verification complete; this remains PRE-ALPHA. The separately verified matching interface is [Department prealpha.30](PRISMA-COMPATIBILITY.md), with 11 focused actual API/database groups and 137 assertions. Physical Skyrim delivery and installed interface behavior remain unverified.
 
 The post office previously wanted you to find someone to talk to before it would process a letter. I have been informed this is called going outside and rather defeats the point of correspondence.
 

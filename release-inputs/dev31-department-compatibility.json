@@ -1,0 +1,154 @@
+{
+  "schemaVersion": 1,
+  "kind": "focused-npc-independent-manual-delivery-pairing",
+  "status": "verified_public_focused_database_pair",
+  "owner": {
+    "sourceCommit": "e393bd5f9a1cd31a8d8d006a4356faddc9eb3212",
+    "tag": "correspondence-v0.1.0-dev.31",
+    "url": "https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.31",
+    "assets": {
+      "CHIM-Sealed-Fates-0.1.0-dev.31.zip": {
+        "sha256": "0ceba2a0d2a07320afa5c18ed830561061a25f58c905de0c5ef540bf026f59fc",
+        "bytes": 1108614
+      },
+      "SHA256SUMS.txt": {
+        "sha256": "071479a84920f041a09a31e8973864691a8b30957f5b84a0d0cc3c429fb97d75",
+        "bytes": 289
+      },
+      "correspondence-0.1.0-dev.31.dwpkg": {
+        "sha256": "7d17ec6cefd21540d01194f719bd69c9961f6d48b5a1bb35d9f86a9ae76f0777",
+        "bytes": 1054285
+      },
+      "correspondence.tar.gz": {
+        "sha256": "22a5b1dac2428f384b8437e709840056a042bd7bd9c1ee400860740eddb06603",
+        "bytes": 601189
+      }
+    },
+    "version": "0.1.0-dev.31"
+  },
+  "department": {
+    "status": "INDEPENDENT_ANONYMOUS_PUBLIC_PAIR_VERIFIED",
+    "releaseId": 429626711,
+    "url": "https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.30",
+    "publishedAt": "2026-10-31T00:55:07Z",
+    "tag": "v0.1.0-prealpha.30",
+    "sourceCommit": "496f816356ce0af8d6b4fb67e720f90e9bba0ebe",
+    "assets": {
+      "prealpha30-package-audit.json": {
+        "sha256": "6ae20e0bde6ebbf70d1f051e8cc138bd675f00a707f15f90d62d5827de60e3bf",
+        "bytes": 3890,
+        "assetId": 693924621
+      },
+      "SHA256SUMS.txt": {
+        "sha256": "3473dddda84513c5e9dcfd890cf2d741f91da812b4aad4890277d34669a913d0",
+        "bytes": 315,
+        "assetId": 693924627
+      },
+      "WorldOfDramaLlama-0.1.0-prealpha.30-source.zip": {
+        "sha256": "129df2ce477329961c47f27947387b2c8f6bb95097197aa036f9afeb2152126b",
+        "bytes": 1455848,
+        "assetId": 693924623
+      },
+      "WorldOfDramaLlama-0.1.0-prealpha.30.zip": {
+        "sha256": "d8ae8a87cea4f18e41f723a7ea404e5cc16fbb2d1fed5491bde3ffd9d90f0d47",
+        "bytes": 634948,
+        "assetId": 693924625
+      }
+    },
+    "sourceFilesGitExact": 297,
+    "unchangedRuntimePayloads": 20,
+    "preservedOlderOwnerMaps": 16,
+    "historicalReleasesPreserved": 28,
+    "historicalAssetsPreserved": 151,
+    "historicalTagRefsPreserved": 56,
+    "liveOrGameOrTest2Access": false,
+    "version": "0.1.0-prealpha.30"
+  },
+  "runtime": {
+    "status": "INDEPENDENT_DEPARTMENT_GREEN_VERIFIED",
+    "runId": "20261031T004858Z-6954a1bb",
+    "sourceCommit": "496f816356ce0af8d6b4fb67e720f90e9bba0ebe",
+    "ownerCommit": "e393bd5f9a1cd31a8d8d006a4356faddc9eb3212",
+    "cases": 11,
+    "assertions": 137,
+    "departmentFiles": 25,
+    "ownerPins": 21,
+    "baselineCoreFiles": 11,
+    "separatelyCapturedInteractionHelper": "0f85286f47da7f02b8527ba9099e3d93452185399a9c0f66918072b877ccb6de",
+    "childTraceOutputTriples": 52,
+    "activityOnlyNoNearbyNpc": true,
+    "queueGeneration": 7,
+    "actualExpirySeconds": 46,
+    "test2StoppedOwnedCleanupVerified": true,
+    "outerListenerBaselinePreserved": true,
+    "liveOrGameOrProviderAccess": false,
+    "proofLimits": {
+      "database": true,
+      "http": false,
+      "installedGame": false,
+      "live": false,
+      "native": false,
+      "provider": false,
+      "skyrim": false
+    },
+    "proofHashes": {
+      "actual-pg.json": "a3f5aabc42c4d7ebe1612e82269a6d1d81d15ba51af42057172f7e2497f2fbe8",
+      "source-load-trace.json": "dfef750b722e1c27317ee1e83cc14e40267b840d39e3aab09300fdc596bb98be",
+      "staged-run.json": "36509bd5fa7b64c9db555b609d90c2f070222c47ceb83a6e9156c3d6f33da4f2",
+      "shutdown.json": "ae8ba68f5d353b2e76cc61ec1ae5ae0c839d40154357184d59fcae7d4707ce29",
+      "windows-shutdown.json": "69612db40fa61a50047e34364dc02fcf903eb58175c23667df499128d834d098",
+      "lease.json": "af4f8476b9bfcc2c0c266b7d27836c89a32ed2b969f391a71d98afb127d853f2",
+      "network.json": "44c58465dbafdbe4c44d985495959fd83ef01cf701f898e3bad02f2a2b1e155c",
+      "host-listener-preflight.json": "d3176f655259958e4dfb8045b1ab020ccdd502f0093652e1846ed7efc9063898",
+      "host-listener-postflight.json": "234155693e04a36f001126e4dbd77ae4fe49d2f536470390c2c74d2fa4ecc321"
+    }
+  },
+  "ownerClosurePins": {
+    "lib/autonomy_host.php": "b0ce613ebc7d02d6b3dc539b003022981a07e808208070554a68a105f42fcf12",
+    "lib/autonomy_policy.php": "db83aa3f1bc85c80c12c57294262ee7d4c93dc4bfcbd9eef4de8ced31b6fba18",
+    "lib/autonomy_store.php": "c163243334c8a558c800fd946d27564acf2f49d8df51ddf914899d784809a795",
+    "lib/bootstrap.php": "efb6d191e876fe2d10043afe2bdf2dc5e7c931ee3fc60e24cb57cc0623b1ed66",
+    "lib/boundaries.php": "21034b79e36d208b30ed0ea5aa6892581ae6749c5a9190a3b4a422f4f74b7d0f",
+    "lib/companion.php": "ce3c2c0c40c10f23d60e1604dafc38901832be8ef528b53b515269d42ce82e32",
+    "lib/companion_host.php": "eb94e158b0c0e3bb1497d2efc68c483a01ffd371d1534187e0b054c102561403",
+    "lib/companion_policy.php": "b245767ef4764e82e4fd945f0ab0508993b4095b3bba6012ebeb3a1f09754be5",
+    "lib/offscreen.php": "26f9f9a31844bfb433d7d6bf2c996e8ad6e0c9f6c15c5a054d96cb3630e0f439",
+    "lib/offscreen_host.php": "7ae21d2db282d9de0f1d37ca27a43624343fefd5e371b671a5f543177e1a2155",
+    "lib/offscreen_policy.php": "23639437e41eafaebd98ec85ce81cf3815ac51365f036c9e33b373fc17504058",
+    "lib/runtime.php": "ffb9a97a4f2549bfd7251389d65fd916beb01a734f557ece794f81efbde45153",
+    "lib/store.php": "bcdfccc71c388c7bebaa57734a9a06820c5eed888f2a818f73930982148b8426",
+    "manifest.json": "5673071e13f3c9a3d11165567374d224de820194579a17b6633dbc1f4776399a",
+    "migrations/001_initial.sql": "b2052570036697147dacb5d041c0a692294af78a83f946e7819d83235e16dc99",
+    "migrations/002_autonomy.sql": "20e0ba2901f9ff352311e00a706c976c793e1e1185c224afcb599f426acb63d3",
+    "migrations/003_offscreen.sql": "245ae41800da5d9d291cf25df9e4766059677710241a086c15ca6999d7500855",
+    "migrations/004_restore_state.sql": "d6a13622ece3af538996558d892852c5126581d99b4964eec0203a5b5b1a559e",
+    "migrations/005_companion.sql": "b5b65588aea68eacd97907b1c548ba0c8d2c00b064b8d2c405a5aba5239a9cee",
+    "migrations/006_history_indexes.sql": "9691b8ae97f60981e4baca883aecd8d2d615ddbb77c0b90ea1f6efd6c1f58a66",
+    "preprocessing.php": "31fc70b865da5f5db27c5f8187c3b614df4de6b3b1a9ac04578470dfe7ddea1e"
+  },
+  "safeguardsPreserved": [
+    "native freshness and counter replay",
+    "current restore scope and floor",
+    "current Interaction generation",
+    "same saved document/request/attachments",
+    "uncertain receipt no-resend",
+    "concurrent duplicate-send fence",
+    "all older source pins"
+  ],
+  "ownerOriginalGate": "web-only; immutable original tag/assets unchanged",
+  "broaderTestedPairedGateClaimed": false,
+  "gameplayUnverified": [
+    "first-time Narrator initialization",
+    "physical letters and inventory transfers",
+    "installed PRISMA rendering and input",
+    "unloaded actors",
+    "native crash recovery",
+    "save/co-save"
+  ],
+  "otherLimits": [
+    "installed HTTP and provider/model acceptance not run",
+    "separate Department mouse fault unresolved",
+    "captured Interaction helper has no independently mapped upstream Git revision"
+  ],
+  "installation": "Each mod has its own single MO2 ZIP; exit Skyrim before updating. Publication installs nothing."
+}

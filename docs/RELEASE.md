@@ -16,7 +16,7 @@ For an earlier queued letter, select that saved letter and use **Dispatch** in t
 
 ## Interface compatibility
 
-**The Skyrim interface is optional; the web plugin page still works independently.** Department prealpha.29 supports exact Sealed Fates dev.30. A matching dev.31 interface release is being verified separately; do not bypass its version/hash guards. Each owner mod still has its own single MO2 ZIP. This owner update introduces no DLL, Papyrus binary, Quest, timer or migration. [Current pairing status](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/PRISMA-COMPATIBILITY.md).
+**The Skyrim interface is optional; the web plugin page still works independently.** [Department prealpha.30](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.30) now supplies the matching dev.31 interface, including guidance for **Resume delivery** without an NPC conversation. Its separate focused actual-API/PostgreSQL test passes 11 groups and 137 assertions; do not bypass version/hash guards. Each owner mod still has its own single MO2 ZIP. This owner update introduces no DLL, Papyrus binary, Quest, timer or migration. [Current pairing status](https://github.com/Francisco-boop-001/CHIM-SealedFates/blob/main/docs/PRISMA-COMPATIBILITY.md).
 
 ## What was verified
 
