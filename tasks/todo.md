@@ -595,6 +595,14 @@ Release approach: clean worktree from public main d1896fc5d4b2c2233a2455da4cb3ce
 - [x] Run existing bounded offline regression, syntax and package/preflight checks; recheck exact public asset/runtime bindings. Preserve failures and investigate before changing code.
 - [x] Update README and add the user-supplied RANGROO answer with exact source/date limits, current reading/evaluation/persistence mechanism and unavailable native BGL bridge.
 - [x] Audit changes and links; rerun affected checks. Document source/package/service versus actual installed-game proof.
-- [ ] Commit only intended files, push without force, publish the verified dated clarification, and read back public source/release and unchanged asset hashes.
+- [x] Commit only intended files, push without force, publish the verified dated clarification, and read back public source/release and unchanged asset hashes.
 
-Review: all 37 existing PHP suites, 77 Python package/preflight tests and 21 server PHP lints pass; four rebuilt assets equal fresh public downloads. Only two test path expectations changed; runtime and compatibility pins are unchanged. Initial fixture failures are preserved. BGL bridge abandoned and prototype preserved without merging. Documentation/link/final-diff review and publication remain. No live/game/WSL/provider access or installation occurred.
+Review: complete. All 37 existing PHP suites, 77 Python package/preflight tests and 21 server PHP lints pass. Two test-only Windows expected paths were fixed and the private runner's mbstring prerequisite corrected; no production bug was reproduced or runtime change required. All four rebuilt assets equal fresh public downloads. Sixty-nine local documentation file links resolve. Initial fixture failures remain preserved.
+
+### Publication review
+
+Committed and pushed the six intended documentation/test/checklist files as 2eec5c4682bd35b4cbc3155c6a9cb426b7f188ff. The public README and maintainer record match local bytes. A dated clarification was appended to the existing dev.31 release; the original body remains exact. Tag object948e8efdfbae7f05c62934adb5512fb4d9395ed5, all four asset IDs/digests/bytes, version, native scripts and Department prealpha.30 pins are unchanged. No new download or migration is required.
+
+The abandoned prototype branch and its three dirty authored files remain byte-identical and unmerged; no hook, adapter or migration007 entered the current release source. Public evidence and scope checks are saved under artifacts/sealed-fates-current-status-20261101. Release: https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/tag/correspondence-v0.1.0-dev.31
+
+This task performed Windows-local source/package checks and bounded GitHub publication only. No live/installed-game/WSL/test2/provider operation or installation occurred. Existing exact-source database evidence remains historical; installed HTTP/PRISMA, physical notes/items/gold, native recovery and save/co-save behavior retain their documented PRE-ALPHA gameplay limits. Further BGL bridge work is abandoned.
