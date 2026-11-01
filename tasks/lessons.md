@@ -39,3 +39,10 @@
 
 - Keep reusable fixture schema identifiers independent of the product display version; validate the producer against the actual unchanged guard before entering test2.
 - Compare PostgreSQL network identities using `host(inet_..._addr())`; retain CIDR-formatted raw text as evidence rather than treating `/32` as a wrong host. Retain setup failures separately from executed product cases.
+
+
+## Verify current behavior separately from a proposed host feature
+
+- A missing native BGL API blocks the proposed reading bridge, not existing Sealed Fates delivery, dialogue exposure, social consumers or correspondence workers. Do not merge an abandoned prototype into a current-product verification release.
+- State the unsupported feature and actual maintainer response before further design or model calls. Prototype tests do not establish a supported CHIM interface or installed gameplay.
+- Give offline fixtures their existing extension prerequisites. Use DIRECTORY_SEPARATOR in exact filesystem-path expectations; do not relax production path or restore checks to hide a platform-only test failure.

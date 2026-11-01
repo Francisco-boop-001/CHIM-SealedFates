@@ -1,5 +1,15 @@
 # Sealed Fates dev.31 — PRE-ALPHA: the courier can work alone
 
+## Documentation clarification - 2026-11-01
+
+Existing Sealed Fates dev.31 does not require a new CHIM BGL hook. Confirmed manual delivery, recipient dialogue-time written context, existing autonomous correspondence and compatible social-plugin evaluation remain separate stages. Committed relationship/ledger effects persist independently of the letter remaining in a prompt; a thank-you alone proves no saved change.
+
+The proposed addition was direct reading of incoming Sealed Fates letters inside native BGL thought/action cycles while the player is elsewhere. RANGROO reports no known current API and says the request will join the BGL revamp list. The user has abandoned this bridge effort. No prototype core patch, adapter or migration is shipped, and no further bridge work is planned. [Full mechanism and maintainer record](BGL-STATUS.md).
+
+Fresh current-source checks pass all 37 offline PHP suites, 77 Python package/preflight tests and 21 server PHP syntax checks. Two test-only path expectations were corrected for Windows; runtime guards were unchanged. All four reconstructed assets equal fresh public downloads byte-for-byte. No new server, provider or gameplay test is claimed.
+
+This is a documentation clarification. The dev.31 version, immutable tag, four published assets and Department prealpha.30 pins remain unchanged. Existing users need no new download or migration for this clarification. All original PRE-ALPHA gameplay limits below still apply.
+
 The post office wanted you to find someone to talk to before it would process a letter. I have been informed this is called going outside and rather defeats the point of correspondence.
 
 ## Install one file

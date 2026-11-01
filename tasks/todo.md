@@ -583,3 +583,18 @@ Success: ordinary manual player letters and attachments no longer need nearby NP
 ### NPC-independent delivery review
 
 Sealed Fates dev.31 is public from e393bd5f9a1cd31a8d8d006a4356faddc9eb3212; Department prealpha.30 from 496f816356ce0af8d6b4fb67e720f90e9bba0ebe. Owner 19-case proof and separate Department 11-group/137-assertion proof pass; exact Git/staging/core/52-child bindings and owned test2 cleanup independently verified. All public assets match reproducible clean builds; prior releases/assets/tags retained. Current docs and portable publication/pairing records updated only; immutable runtime/tags/assets unchanged by this follow-up. No live/game/provider access. Physical Skyrim, installed HTTP/PRISMA, first Narrator initialization and save/co-save remain unverified; separate mouse fault unresolved. No further server tests planned without a new root warning.
+
+
+## Current Sealed Fates verification and BGL abandonment - 2026-11-01
+
+Goal: document the maintainer answer and current supported mechanism, abandon the unreleased BGL reading bridge, verify the existing dev.31 product, fix confirmed defects if found, then commit/push/publish the verified result. Live, installed game, WSL/test2 and providers remain excluded from this Windows-local verification phase.
+
+Release approach: clean worktree from public main d1896fc5d4b2c2233a2455da4cb3ce18cddbbb4d. Preserve the abandoned branch and all test evidence without merging its runtime, migration007 or proposed CHIM core hooks. If runtime stays unchanged, publish documentation and a dated dev.31 release-note clarification without changing its tag/assets/version or Department pins.
+
+- [x] Verify public main/release and isolate current product from abandoned prototype; preserve dirty files and record abandonment.
+- [x] Run existing bounded offline regression, syntax and package/preflight checks; recheck exact public asset/runtime bindings. Preserve failures and investigate before changing code.
+- [x] Update README and add the user-supplied RANGROO answer with exact source/date limits, current reading/evaluation/persistence mechanism and unavailable native BGL bridge.
+- [x] Audit changes and links; rerun affected checks. Document source/package/service versus actual installed-game proof.
+- [ ] Commit only intended files, push without force, publish the verified dated clarification, and read back public source/release and unchanged asset hashes.
+
+Review: all 37 existing PHP suites, 77 Python package/preflight tests and 21 server PHP lints pass; four rebuilt assets equal fresh public downloads. Only two test path expectations changed; runtime and compatibility pins are unchanged. Initial fixture failures are preserved. BGL bridge abandoned and prototype preserved without merging. Documentation/link/final-diff review and publication remain. No live/game/WSL/provider access or installation occurred.

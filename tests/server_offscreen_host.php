@@ -130,8 +130,8 @@ $quotedMarker = ['inputtext', '1700000015', '833348', 'I saw written_evidence_v1
 [, $engine, $runtimeCalls, $resumeCalls] = offscreenHostRun($quotedMarker);
 offscreenHostCheck($runtimeCalls === 1 && $engine->observed === [$quotedMarker] && $resumeCalls === 0, 'reserved protocol names in ordinary dialogue text must not suppress a valid clock or trigger a cold worker');
 
-offscreenHostCheck(correspondenceOffscreenPluginFile('offscreen-worker.php') === $root.'/server/offscreen-worker.php', 'development plugin layout resolves the bounded worker');
-offscreenHostCheck(correspondenceOffscreenPluginFile('offscreen-service.php') === $root.'/server/offscreen-service.php', 'development plugin layout resolves the detached supervisor');
+offscreenHostCheck(correspondenceOffscreenPluginFile('offscreen-worker.php') === $root.DIRECTORY_SEPARATOR.'server'.DIRECTORY_SEPARATOR.'offscreen-worker.php', 'development plugin layout resolves the bounded worker');
+offscreenHostCheck(correspondenceOffscreenPluginFile('offscreen-service.php') === $root.DIRECTORY_SEPARATOR.'server'.DIRECTORY_SEPARATOR.'offscreen-service.php', 'development plugin layout resolves the detached supervisor');
 if (PHP_OS_FAMILY === 'Linux') {
     offscreenHostCheck(correspondenceOffscreenCliPhpBinary() === '/usr/bin/php', 'detached service and bounded children must select the fixed Linux CLI PHP executable');
 }
