@@ -1,4 +1,4 @@
-**0.1.0-dev.31 — PRE-ALPHA.** Manual letters can use CHIM's player-backed **The Narrator** carrier with fresh active native polling; no nearby NPC or conversation is required. The web page remains available. The matching optional interface is [Department prealpha.30](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.30); its focused API/database pairing passed on test2. [Release notes and gameplay limits](docs/RELEASE.md).
+**0.1.0-dev.32 — PRE-ALPHA.** The web page now tells you whether **Check outcome** queued a request. Optional [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) accepts the exact dev.32 package in offline checks. [Release notes and Skyrim testing limits](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -14,7 +14,7 @@ Sealed Fates is Skyrim correspondence with consequences: addressed letters, opti
 
 ## Pick your interface
 
-**Dev.31 Skyrim interface:** [Department prealpha.30](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.30) supports the exact dev.31 source and explains **Resume delivery** without an NPC conversation. After exiting Skyrim completely, update that optional mod with [its single MO2 ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.30/WorldOfDramaLlama-0.1.0-prealpha.30.zip). The existing Sealed Fates web page still works independently. Eleven focused test2 groups passed 137 assertions; physical Skyrim delivery and installed PRISMA behavior still need gameplay checks. Keep version/hash checks enabled. [Compatibility details](docs/PRISMA-COMPATIBILITY.md).
+**Dev.32 Skyrim interface:** [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) is the optional companion for dev.32 and retains dev.31 support. Update Department with its own MO2 ZIP after closing Skyrim. The Sealed Fates web page works independently. The pairing passed offline package and adapter checks. [Compatibility details and gameplay limits](docs/PRISMA-COMPATIBILITY.md).
 
 **Historical dev.30 Skyrim interface:** [Department prealpha.28](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.28) supports Sealed Fates dev.30 and adds **Resume delivery** for an eligible saved queued letter. It also finds waiting letters after reopening the interface. If dev.30 is already installed, update only [Department's single MO2 ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.28/WorldOfDramaLlama-0.1.0-prealpha.28.zip) after exiting Skyrim completely; this update includes a new native DLL. Six focused test2 groups passed 83 assertions. Actual Skyrim UI and physical delivery still need gameplay checks. The web plugin page still works. [Recovery steps and exact limits](docs/PRISMA-COMPATIBILITY.md).
 
@@ -24,9 +24,9 @@ The interface is separate from the **matching Sealed Fates Papyrus bridge**, whi
 
 ## Download
 
-Download **[CHIM-Sealed-Fates-0.1.0-dev.31.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.31/CHIM-Sealed-Fates-0.1.0-dev.31.zip)**. After ending your game session, update your single Sealed Fates MO2 mod with this ZIP. It includes both matching Papyrus scripts and the server package. Keep one version enabled. [Installation and testing limits](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
+Download **[CHIM-Sealed-Fates-0.1.0-dev.32.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.32/CHIM-Sealed-Fates-0.1.0-dev.32.zip)**. Close Skyrim, replace your existing Sealed Fates mod in MO2, then launch normally so CHIM can sync the update. This single ZIP includes the standard Papyrus scripts and server package. [Installation](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
 
-The server-only DWPkg and maintenance tar are administrator alternatives. The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.31.dwpkg`; CHIM requires that version-only filename. Earlier releases remain available as historical downloads.
+The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.32.dwpkg`, the version-only filename CHIM expects. Earlier releases remain available as historical downloads.
 
 ## The web page
 

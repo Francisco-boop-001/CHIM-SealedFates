@@ -1,3 +1,9 @@
+# Sealed Fates dev.32 / Department prealpha.34
+
+Use [Sealed Fates dev.32](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.32/CHIM-Sealed-Fates-0.1.0-dev.32.zip) and [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) as separate MO2 mods. Each has one normal install ZIP. Sealed Fates works through its web page without Department.
+
+Offline checks of the exact packaged adapter accepted dev.31 and dev.32, rejected altered or unsupported owner source, and preserved all five capability gates. The owner exercised read, commit and resume fixtures with fake SQL results. Captured CHIM archive validation accepted both packages. Installed HTTP, PRISMA behavior in Skyrim, physical delivery and save/co-save recovery remain unverified.
+
 # Sealed Fates dev.31 / Department prealpha.30
 
 [Department prealpha.30](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.30) is the optional Skyrim interface for exact Sealed Fates dev.31. **The existing web plugin page still works independently.** No nearby managed NPC, conversation or BGL opt-in is needed for manual delivery. Skyrim and CHIM must be normally initialized, active and polling; browser/interface activity cannot create the native freshness evidence.

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.0-dev.32 — PRE-ALPHA
+
+- Report whether the web outcome check actually queued. A refused check explains how to retry the status request on the same saved letter.
+- Keep the normal game scripts and delivery safeguards from dev.31. The single MO2 ZIP upgrades the server package with its version-only filename.
+- Verify [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) compatibility offline, including retained dev.31 support. Physical transfer, installed UI and save/co-save behavior remain unverified.
+
 ## 0.1.0-dev.31 — PRE-ALPHA
 
 - Add manual Dispatch/Resume through the existing player-backed **The Narrator** when a fresh active native request is available (45-second freshness window); no nearby NPC, NPC interaction or Background Life opt-in is needed.

@@ -26,7 +26,13 @@ try{
             elseif($request['action']==='retry')$result=$service->retry($request['document_id']);
             elseif($request['action']==='close')$result=$service->close($request['document_id']);
             else $result=$service->dispatch($request['document_id'],$request['action']==='reconcile');
-            $message=match($result['state']){'queued'=>'Letter queued; keep Skyrim running with CHIM Interaction enabled, then try this saved letter again.','dispatched'=>'Letter dispatched; physical receipt is pending.','read'=>'Letter opened in the operator view; no NPC exposure was created.','delivered'=>'Physical delivery confirmed.','exposed'=>'Recipient context has received this letter.','unknown'=>'Outcome unknown. Use the read-only check; do not send another copy.','failed'=>'Delivery failed; no social result has been claimed.',default=>'Request recorded.'};
+            if (($result['reason']??null)==='executor_unavailable') {
+                $message=$request['action']==='reconcile'
+                    ? 'Outcome check was not queued because a current game connection is unavailable. Return to unpaused Skyrim with CHIM Interaction enabled, then check this same letter again. Delivery remains unconfirmed.'
+                    : 'Letter saved; delivery was not queued because a current game connection is unavailable. Return to unpaused Skyrim with CHIM Interaction enabled, then dispatch this saved letter.';
+            } elseif ($request['action']==='reconcile') {
+                $message='Outcome check queued. Return to unpaused Skyrim so CHIM can process it, then refresh this page. This check does not resend the letter or its attachments.';
+            } else $message=match($result['state']){'queued'=>'Letter queued; keep Skyrim running with CHIM Interaction enabled, then try this saved letter again.','dispatched'=>'Letter dispatched; physical receipt is pending.','read'=>'Letter opened in the operator view; no NPC exposure was created.','delivered'=>'Physical delivery confirmed.','exposed'=>'Recipient context has received this letter.','unknown'=>'Outcome unknown. Use the read-only check; do not send another copy.','failed'=>'Delivery failed; no social result has been claimed.',default=>'Request recorded.'};
             if(($result['operator_closed']??false)===true)$message='Closed by operator. The delivery outcome is unchanged; nothing was resent or refunded. Read-only checks remain available for pending or unknown delivery.';
         }
     }

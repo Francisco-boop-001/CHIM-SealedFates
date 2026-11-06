@@ -1,5 +1,13 @@
 # Sealed Fates dev.31 — PRE-ALPHA: the courier can work alone
 
+## Dev.32 — Check outcome tells you whether it queued
+
+The web page used to repeat the old **Dispatched** banner even when it couldn't queue a new status request. It now distinguishes a queued check from a refusal and tells you how to check the same saved letter. Your courier has learned to say whether he's actually left the counter.
+
+Install [CHIM-Sealed-Fates-0.1.0-dev.32.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.32/CHIM-Sealed-Fates-0.1.0-dev.32.zip) as the replacement for your current Sealed Fates mod in MO2 with Skyrim closed. This is the single Sealed Fates installer. It carries the normal dev.31 game scripts and unchanged migrations. If you use the optional in-game interface, install [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) as its separate mod.
+
+Offline tests exercised the acknowledgement, original-operation recovery, duplicate protection and package upgrade. The exact Department ZIP accepted both Sealed Fates versions and rejected altered source. Captured CHIM archive validation accepted both packages. The installer upgrade fixture used a stub migration callback. This release has no new Skyrim, installed HTTP, PostgreSQL, provider, physical transfer or save/co-save verification. An older missing receipt remains unresolved. Check the saved letter without resending its attachments.
+
 ## Documentation clarification - 2026-11-01
 
 Existing Sealed Fates dev.31 does not require a new CHIM BGL hook. Confirmed manual delivery, recipient dialogue-time written context, existing autonomous correspondence and compatible social-plugin evaluation remain separate stages. Committed relationship/ledger effects persist independently of the letter remaining in a prompt; a thank-you alone proves no saved change.

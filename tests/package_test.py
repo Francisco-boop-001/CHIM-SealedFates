@@ -95,14 +95,14 @@ class PackageTest(unittest.TestCase):
                 self.assertEqual(archive.extractfile('correspondence/' + name).read(), (ROOT / name).read_bytes())
 
     def test_unlisted_release_requires_explicit_archive_timestamp(self):
-        (self.root / 'server/manifest.json').write_text(json.dumps({'name':'correspondence','version':'0.1.0-dev.32'}))
+        (self.root / 'server/manifest.json').write_text(json.dumps({'name':'correspondence','version':'0.1.0-dev.33'}))
         with self.assertRaisesRegex(ValueError, 'release timestamp'):
             pkg.build(self.root, self.pex, self.root / 'out')
 
-    def test_dev31_package_sorts_after_dev30_without_changing_prior_dates(self):
+    def test_dev32_package_sorts_after_dev31_without_changing_prior_dates(self):
         manifest = self.root / 'server/manifest.json'
         dates = []
-        for version in ('0.1.0-dev.29', '0.1.0-dev.30', '0.1.0-dev.31'):
+        for version in ('0.1.0-dev.29', '0.1.0-dev.30', '0.1.0-dev.31', '0.1.0-dev.32'):
             manifest.write_text(json.dumps({'name':'correspondence','version':version}))
             built = pkg.build(self.root, self.pex, self.root / version)
             with ZipFile(built['server']) as archive:
@@ -115,6 +115,7 @@ class PackageTest(unittest.TestCase):
             (2026, 10, 28, 0, 0, 0),
             (2026, 10, 28, 1, 0, 0),
             (2026, 10, 30, 0, 0, 0),
+            (2026, 11, 6, 0, 0, 0),
         ])
 
     def test_history_duplicate_index_ships_with_store(self):
@@ -498,9 +499,9 @@ class PackageTest(unittest.TestCase):
     def test_dev30_release(self):
         self.assert_current_release('0.1.0-dev.30')
 
-    def test_dev31_release_uses_explicit_web_only_preflight(self):
+    def test_dev32_release_uses_explicit_web_only_preflight(self):
         manifest = self.root / 'server/manifest.json'
-        manifest.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.31'}), encoding='utf-8')
+        manifest.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.32'}), encoding='utf-8')
         original_root = release.ROOT
         release.ROOT = self.root
         output = io.StringIO()
@@ -512,16 +513,16 @@ class PackageTest(unittest.TestCase):
 
         result = json.loads(output.getvalue())
         self.assertEqual(result['compatibility']['departmentInterface'], 'web-only')
-        self.assertEqual(result['compatibility']['owner']['version'], '0.1.0-dev.31')
+        self.assertEqual(result['compatibility']['owner']['version'], '0.1.0-dev.32')
         out = self.root / 'dist'
         self.assertEqual({path.name for path in out.iterdir()}, {
-            'correspondence-0.1.0-dev.31.dwpkg',
-            'CHIM-Sealed-Fates-0.1.0-dev.31.zip',
+            'correspondence-0.1.0-dev.32.dwpkg',
+            'CHIM-Sealed-Fates-0.1.0-dev.32.zip',
             'correspondence.tar.gz',
             'SHA256SUMS.txt',
         })
-        with ZipFile(out / 'correspondence-0.1.0-dev.31.dwpkg') as archive:
-            self.assertEqual(archive.getinfo('server/manifest.json').date_time, (2026, 10, 30, 0, 0, 0))
+        with ZipFile(out / 'correspondence-0.1.0-dev.32.dwpkg') as archive:
+            self.assertEqual(archive.getinfo('server/manifest.json').date_time, (2026, 11, 6, 0, 0, 0))
 
     def test_dev28_release_has_only_current_four_assets_deterministically(self):
         self.assert_current_release('0.1.0-dev.28')
@@ -529,7 +530,7 @@ class PackageTest(unittest.TestCase):
     def test_release_refuses_source_changed_after_gate_before_snapshot(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.31'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.32'}), encoding='utf-8')
         target = self.root / 'server/lib/store.php'
         original_root = release.ROOT
         release.ROOT = self.root
@@ -552,7 +553,7 @@ class PackageTest(unittest.TestCase):
     def test_release_refuses_package_changed_after_snapshot_before_real_reads(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.31'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.32'}), encoding='utf-8')
         target = self.root / 'server/lib/store.php'
         original_root = release.ROOT
         release.ROOT = self.root
@@ -574,7 +575,7 @@ class PackageTest(unittest.TestCase):
     def test_release_assets_use_one_snapshot_when_source_changes_after_package_build(self):
         self.assertNotEqual(self.root.resolve(), ROOT.resolve())
         manifest_path = self.root / 'server/manifest.json'
-        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.31'}), encoding='utf-8')
+        manifest_path.write_text(json.dumps({'name': 'correspondence', 'version': '0.1.0-dev.32'}), encoding='utf-8')
         expected_files = {
             name: (self.root / 'server' / name).read_bytes()
             for name in pkg.SERVER_FILES
@@ -597,13 +598,13 @@ class PackageTest(unittest.TestCase):
             release.ROOT = original_root
 
         out = self.root / 'dist'
-        server_name = 'correspondence-0.1.0-dev.31.dwpkg'
+        server_name = 'correspondence-0.1.0-dev.32.dwpkg'
         with ZipFile(out / server_name) as server_archive:
             for name, data in expected_files.items():
                 self.assertEqual(server_archive.read('server/' + name), data)
             server_bytes = (out / server_name).read_bytes()
-        with ZipFile(out / 'CHIM-Sealed-Fates-0.1.0-dev.31.zip') as bundle:
-            nested = bundle.read('CHIM/server-plugins/correspondence/0.1.0-dev.31.dwpkg')
+        with ZipFile(out / 'CHIM-Sealed-Fates-0.1.0-dev.32.zip') as bundle:
+            nested = bundle.read('CHIM/server-plugins/correspondence/0.1.0-dev.32.dwpkg')
         self.assertEqual(nested, server_bytes)
         with tarfile.open(out / 'correspondence.tar.gz', 'r:gz') as archive:
             for name, data in expected_files.items():
@@ -675,7 +676,7 @@ class PackageTest(unittest.TestCase):
     def test_release_rejects_unsupported_version(self):
         manifest_path = self.root / 'server/manifest.json'
         manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        manifest['version'] = '0.1.0-dev.31'
+        manifest['version'] = '0.1.0-dev.32'
         manifest_path.write_text(json.dumps(manifest), encoding='utf-8')
         original_root = release.ROOT
         release.ROOT = self.root
