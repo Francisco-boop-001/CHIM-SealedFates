@@ -1,4 +1,24 @@
-# Sealed Fates dev.31 — PRE-ALPHA: the courier can work alone
+# Sealed Fates — PRE-ALPHA
+
+## Dev.33 — the courier gets through the dependency check
+
+Both Papyrus entry points incorrectly required JContainers API3/feature3. Skyrim SE JContainers 4.1.13 returns API4/feature1. The corrected guards accept those supported values and continue refusing unsupported APIs. Both standard scripts were recompiled with Caprica and checked against their source and build receipts.
+
+Install [CHIM-Sealed-Fates-0.1.0-dev.33.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.33/CHIM-Sealed-Fates-0.1.0-dev.33.zip) as the replacement for your current Sealed Fates MO2 mod with Skyrim closed. This is the one complete Sealed Fates installer. It includes both matching scripts and the server package. The existing migrations and original letter records are retained.
+
+**The Skyrim interface is optional. The existing web plugin page still works.** Its optional companion is [Department prealpha.36](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.36), supplied as its own mod. Its mailbox repair is maintained by Department. The interface's **Check Skyrim receipt** queries the saved delivery operation and **Refresh saved status** reads the server record.
+
+### What was observed in Skyrim
+
+On November 9 the player sent one new text-only letter from Hawke to Jarl Balgruuf. The local game log recorded the delivery command, CHIM logged an incoming receipt event, and Sealed Fates' web outbox displayed **delivered**. Department prealpha.35 failed to display the mailbox result during that same session. That interface defect prompted the coordinated prealpha.36 repair.
+
+The older Jarl letter with two Flawless Amethysts remains **unknown**. Alice's older 500-septim letter remains queued and operator-closed. Updating the mods does not resend either letter, return attachments or establish their whereabouts. Receipt recovery retains the original operation and asks for its native journal entry. An uncertain journal outcome stays uncertain.
+
+### Verification limits
+
+Offline regressions exercise supported and refused dependency versions, receipt replay, duplicate protection, freshness, restore guards and package integrity. Packaged bytecode is also checked with synthetic native calls. The focused Department review checks its exact Sealed Fates source pins and interface contracts.
+
+The one observed text-only delivery does not establish physical item/gold transfer, every native failure branch, save/co-save restoration or model/social outcomes. The current release work uses offline fixtures. It includes no new live, TEST2, provider or installed-game test. The BGL reading bridge remains abandoned.
 
 ## Dev.32 — Check outcome tells you whether it queued
 

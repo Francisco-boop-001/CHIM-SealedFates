@@ -75,7 +75,7 @@ def parse_object(raw):
     except (TypeError,ValueError):
         return 0
 v.JValue.objectFromPrototype=parse_object
-journal={}; logs=[]; forms={}; renderer=[True]; extender=[PList([5,10,0])]; api_version=[3]; feature_version=[3]; debug_messages=[]
+journal={}; logs=[]; forms={}; renderer=[True]; extender=[PList([5,10,0])]; api_version=[4]; feature_version=[1]; debug_messages=[]
 def claim(root,path,candidate,comparand,create,error):
     if path in root: return root[path]
     root[path]=candidate; return 0
@@ -92,7 +92,7 @@ for name in ('Resolve','JournalPath','ReceiptJSON','UUIDCaseEqual','TraceReconci
 checks=[]
 def check(name, condition): assert condition,name; checks.append(name)
 def reset():
-    journal.clear(); logs.clear(); forms.clear(); debug_messages.clear(); renderer[0]=True; extender[0]=PList([5,10,0]); api_version[0]=3; feature_version[0]=3
+    journal.clear(); logs.clear(); forms.clear(); debug_messages.clear(); renderer[0]=True; extender[0]=PList([5,10,0]); api_version[0]=4; feature_version[0]=1
     payer=Actor(21); recipient=Actor(20); item=Form(15,'Gold')
     forms.update({('skyrim.esm',20):recipient,('skyrim.esm',21):payer,('skyrim.esm',15):item,
                   ('aiagent.esp',0x22D30):Form(0x123,'Generic Note')})
@@ -102,6 +102,7 @@ def reset():
 
 def dispatch(request, action='Deliver'):
     v.namespace['DispatchExternalCommand']('managed-executor','ExtCmdCHIMCorrespondenceBridge_'+action,json.dumps(request,separators=(',',':')))
+    assert logs, 'supported JContainers API4/feature1 must reach the receipt path'
     return logs[-1]
 
 request,payer,recipient,item=reset(); forms.pop(('aiagent.esp',0x21D0B),None); receipt=dispatch(request)
@@ -201,9 +202,11 @@ check('uppercase_wire_replays_without_second_transfer',dispatch(request)==receip
 
 for label,api,feature,payload,reason in (
     ('unsupported_jcontainers',2,3,json.dumps(request,separators=(',',':')),'unsupported_jcontainers'),
-    ('unsupported_jcontainers_feature',3,2,json.dumps(request,separators=(',',':')),'unsupported_jcontainers'),
-    ('oversize_payload',3,3,'x'*16001,'payload_too_large'),
-    ('malformed_json',3,3,'{bad json','malformed_payload'),
+    ('legacy_jcontainers',3,3,json.dumps(request,separators=(',',':')),'unsupported_jcontainers'),
+    ('unsupported_jcontainers_feature',4,0,json.dumps(request,separators=(',',':')),'unsupported_jcontainers'),
+    ('unknown_jcontainers_api',5,1,json.dumps(request,separators=(',',':')),'unsupported_jcontainers'),
+    ('oversize_payload',4,1,'x'*16001,'payload_too_large'),
+    ('malformed_json',4,1,'{bad json','malformed_payload'),
 ):
     request,payer,recipient,item=reset(); api_version[0]=api; feature_version[0]=feature
     v.namespace['DispatchExternalCommand']('managed-executor','ExtCmdCHIMCorrespondenceBridge_Deliver',payload)

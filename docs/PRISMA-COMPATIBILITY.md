@@ -1,4 +1,14 @@
-# Sealed Fates dev.32 / Department prealpha.34
+# Sealed Fates dev.33 / Department prealpha.36
+
+Use the single Sealed Fates dev.33 ZIP and Department's separate prealpha.36 ZIP. The corrected Department mailbox path must display populated and empty results and retain request errors. The existing Sealed Fates web page works independently of Department.
+
+The November 9 player test confirmed one new text-only letter delivered in Skyrim and recorded by the Sealed Fates web outbox. Department prealpha.35 left the mailbox view unchanged, motivating the prealpha.36 repair. The older Jarl amethyst letter remains unknown and Alice's queued letter is operator-closed.
+
+**Check Skyrim receipt** queues reconciliation of the original delivery operation through the existing freshness and restore checks. **Refresh saved status** reads the server record. A missing native journal remains uncertain. The interface continues to preserve full NPC profiles, revisions and transfer safety checks.
+
+The current repair is verified with offline synthetic fixtures and exact owner source pins. The observed text-only delivery does not establish item/gold transfer, save/co-save restoration or all five plugins' installed gameplay. The broader runtime pairing certification remains unclaimed.
+
+# Sealed Fates dev.32 / Department prealpha.34 (published historical pair)
 
 Use [Sealed Fates dev.32](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.32/CHIM-Sealed-Fates-0.1.0-dev.32.zip) and [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) as separate MO2 mods. Each has one normal install ZIP. Sealed Fates works through its web page without Department.
 

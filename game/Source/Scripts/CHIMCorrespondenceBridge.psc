@@ -2,7 +2,7 @@ Scriptname CHIMCorrespondenceBridge Hidden
 
 ; Physical receipts only. Recipient exposure belongs to the scoped server render/read path.
 Function DispatchExternalCommand(String executorName, String command, String parameter) global
-    If JContainers.APIVersion() != 3 || JContainers.featureVersion() < 3
+    If JContainers.APIVersion() != 4 || JContainers.featureVersion() < 1
         TraceReconcileDiagnostic("unsupported_jcontainers")
         Return
     EndIf

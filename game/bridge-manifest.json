@@ -2,7 +2,7 @@
   "schema_version": 1,
   "build_evidence_root": ".",
   "product": "CHIM Correspondence bridge",
-  "candidate": "0.1.0-dev.29",
+  "candidate": "0.1.0-dev.33",
   "script": "CHIMCorrespondenceBridge",
   "actions": [
     "ExtCmdCHIMCorrespondenceBridge_Deliver",
@@ -34,7 +34,7 @@
     },
     {
       "name": "JContainers",
-      "version": "APIVersion=3 and featureVersion>=3 required",
+      "version": "Skyrim SE 4.1.13; APIVersion=4 and featureVersion>=1 required",
       "required": [
         "JAtomic.compareExchangeObj",
         "JDB.root/solveObj",
@@ -56,21 +56,28 @@
   ],
   "compiler": {
     "version": "Caprica v0.3.0, local patched build",
-    "sha256": "c8013baf3350bf9b313a633f74997ce6a9a47c343e489f886bcde359369126f0"
+    "sha256": "c8013baf3350bf9b313a633f74997ce6a9a47c343e489f886bcde359369126f0",
+    "path": "provenance/compiler/Caprica.exe"
   },
   "pex": {
-    "path": "bridge/20261028T205358195Z/Data/Scripts/CHIMCorrespondenceBridge.pex",
-    "sha256": "41ff0f569402e2567bb57732e648fd52732f40d3890fcfbb914e32c010067c5b",
-    "bytes": 19802
+    "path": "bridge/jcontainers-20261107T225341881078Z/CHIMCorrespondenceBridge/Data/Scripts/CHIMCorrespondenceBridge.pex",
+    "sha256": "759c51bb8082e6efe20b76f7af1348f9e60f77218191aac59db087cc74f942f4",
+    "bytes": 19802,
+    "body_sha256": "f1c1c326dc7f694a2b2e7b4e8e7c4c2979bee9f02babf1891fc3c6ee1dc52565",
+    "header": {
+      "source": "CHIMCorrespondenceBridge.psc",
+      "user": "anonymous",
+      "computer": "anonymous"
+    }
   },
-  "build_receipt": "bridge/20261028T205358195Z/build-receipt.json",
+  "build_receipt": "bridge/jcontainers-20261107T225341881078Z/CHIMCorrespondenceBridge/build-receipt.json",
   "evidence": {
     "host_parser_checks": 60,
     "native_concurrency": "NOT RUN",
     "native_gameplay": "NOT RUN",
     "co_save_restore": "NOT RUN",
     "static_checks": "NOT RUN",
-    "host_state_checks": 45,
+    "host_state_checks": 47,
     "actual_server_wire_checks": 8
   },
   "package_allowlist": [
@@ -92,7 +99,7 @@
   ],
   "source": {
     "path": "game/Source/Scripts/CHIMCorrespondenceBridge.psc",
-    "sha256": "7bda80f69474c1fdc2633d064f0fd569a078090821ca6fcb7df87aa98d82f286"
+    "sha256": "54f7cf56b1a135350e56c12a51255af08e6f3236aae977293e1974021316f147"
   },
-  "build_receipt_sha256": "8b5c2347817f4beb4e7451ef9042e1fe448055e052fdcd20a8021ba23f591569"
+  "build_receipt_sha256": "7027933e0f90df021dce4c3e754462fbc28ca0e4d91136396517f22ac7cbd335"
 }

@@ -1,4 +1,8 @@
-**0.1.0-dev.32 — PRE-ALPHA.** The web page now tells you whether **Check outcome** queued a request. Optional [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) accepts the exact dev.32 package in offline checks. [Release notes and Skyrim testing limits](docs/RELEASE.md).
+**0.1.0-dev.33 — PRE-ALPHA.** Both game scripts now accept the supported Skyrim SE JContainers 4.1.13 API. Previously they rejected it before delivery or receipt recovery could run. The courier was being refused entry to his own post office. Install [the single Sealed Fates dev.33 ZIP](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.33/CHIM-Sealed-Fates-0.1.0-dev.33.zip). [Release notes and testing limits](docs/RELEASE.md).
+
+**The Skyrim interface is optional. The existing CHIM web plugin page works independently.** For the corrected mailbox display, use the separate [Department prealpha.36](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.36). Its **Check Skyrim receipt** control asks for the saved operation's result. **Refresh saved status** reads the server record. Keep the original pending letter and attachments when checking an uncertain delivery.
+
+The November 9 player test confirmed one new text-only letter delivered through Skyrim and recorded in the web outbox. The old amethyst letter remains uncertain. This observation establishes neither item/gold transfer nor save/co-save recovery. Opening a mailbox is separate from the recipient learning about a letter.
 
 # CHIM Sealed Fates
 
@@ -14,7 +18,7 @@ Sealed Fates is Skyrim correspondence with consequences: addressed letters, opti
 
 ## Pick your interface
 
-**Dev.32 Skyrim interface:** [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) is the optional companion for dev.32 and retains dev.31 support. Update Department with its own MO2 ZIP after closing Skyrim. The Sealed Fates web page works independently. The pairing passed offline package and adapter checks. [Compatibility details and gameplay limits](docs/PRISMA-COMPATIBILITY.md).
+**Historical dev.32 Skyrim interface:** [Department prealpha.34](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.34) is the optional companion for dev.32 and retains dev.31 support. Update Department with its own MO2 ZIP after closing Skyrim. The Sealed Fates web page works independently. The pairing passed offline package and adapter checks. [Compatibility details and gameplay limits](docs/PRISMA-COMPATIBILITY.md).
 
 **Historical dev.30 Skyrim interface:** [Department prealpha.28](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.28) supports Sealed Fates dev.30 and adds **Resume delivery** for an eligible saved queued letter. It also finds waiting letters after reopening the interface. If dev.30 is already installed, update only [Department's single MO2 ZIP](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/download/v0.1.0-prealpha.28/WorldOfDramaLlama-0.1.0-prealpha.28.zip) after exiting Skyrim completely; this update includes a new native DLL. Six focused test2 groups passed 83 assertions. Actual Skyrim UI and physical delivery still need gameplay checks. The web plugin page still works. [Recovery steps and exact limits](docs/PRISMA-COMPATIBILITY.md).
 
@@ -24,9 +28,9 @@ The interface is separate from the **matching Sealed Fates Papyrus bridge**, whi
 
 ## Download
 
-Download **[CHIM-Sealed-Fates-0.1.0-dev.32.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.32/CHIM-Sealed-Fates-0.1.0-dev.32.zip)**. Close Skyrim, replace your existing Sealed Fates mod in MO2, then launch normally so CHIM can sync the update. This single ZIP includes the standard Papyrus scripts and server package. [Installation](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
+Download **[CHIM-Sealed-Fates-0.1.0-dev.33.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.33/CHIM-Sealed-Fates-0.1.0-dev.33.zip)**. Close Skyrim, replace your existing Sealed Fates mod in MO2, then launch normally so CHIM can sync the update. This single ZIP includes the standard Papyrus scripts and server package. [Installation](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
 
-The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.32.dwpkg`, the version-only filename CHIM expects. Earlier releases remain available as historical downloads.
+The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.33.dwpkg`, the version-only filename CHIM expects. Earlier releases remain available as historical downloads.
 
 ## The web page
 

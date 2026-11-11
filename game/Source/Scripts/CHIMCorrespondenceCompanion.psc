@@ -4,7 +4,7 @@ Function DispatchExternalCommand(String executorName, String command, String par
     If command != "ExtCmdCHIMCorrespondenceCompanion_Observe"
         Return
     EndIf
-    If JContainers.APIVersion() != 3 || JContainers.featureVersion() < 3 || StringUtil.GetLength(parameter) > 16000
+    If JContainers.APIVersion() != 4 || JContainers.featureVersion() < 1 || StringUtil.GetLength(parameter) > 16000
         Return
     EndIf
     Int request = JValue.objectFromPrototype(parameter)

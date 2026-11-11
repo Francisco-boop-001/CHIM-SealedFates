@@ -1,3 +1,9 @@
+## Dev.33 and the Department mailbox repair
+
+The November 9 player test confirmed one new text-only letter delivered to Jarl Balgruuf through Skyrim. The game log recorded the delivery command, CHIM logged an incoming receipt event, and the independent web outbox displayed delivered. The Department prealpha.35 mailbox did not show the result. The prealpha.36 interface repair is reviewed separately using offline fixtures and exact Sealed Fates pins.
+
+The original Jarl letter with two amethysts remains unknown. Alice's older queued letter is operator-closed. The observed fresh delivery establishes no recovery of those transfers. Current item/gold transfer, native concurrency, save/co-save restoration and social/model outcomes remain outside this observation. Release verification uses local synthetic tests and makes no new live, TEST2, provider or installed-game calls.
+
 ## Dev.31: NPC-independent manual delivery
 
 The exact owner runtime and 19-case matrix at `5cf96facf30f128830c38ea2b9422f47bf1d8611` pass on disposable test2. Root independently matched 138 input hashes to Git, raw output/empty stderr, actual core-child database identity and all isolation/cleanup receipts. Cases cover fresh zero-nearby 500-gold sends; repeated/concurrent operation identity; passive/InteractionOff, replay/expiry, profile/restore/floor/anchor refusal; independent presence merging; a read-only no-op under an ordinary eventlog writer; and cold web processes using the captured Interaction helper. Captured core dequeue/request-response code emits two expected commands once. The wire check preserves exact projected keys, JSON values, PHP type shapes and list order.

@@ -174,6 +174,21 @@ check('canonical_positive_decimal_actor_ids', all(namespace['ActorIdValid'](valu
 for value in ('', '0', '00', '01', '-1', '+1', '1.0', '1e3', '9223372036854775808', '10000000000000000000'):
     check('reject_actor_id_' + (value or 'empty'), not namespace['ActorIdValid'](value))
 check('safe_playthrough_scope', all(namespace['ScopeValid'](value) for value in ('1', 'unprofiled', 'playthrough_A-2')))
+translate('DispatchExternalCommand')
+companion_calls = []
+namespace.update(
+    JContainers=SimpleNamespace(APIVersion=lambda: 4, featureVersion=lambda: 1),
+    Observe=lambda value: companion_calls.append(value) or 'observation',
+    AIAgentFunctions=SimpleNamespace(logMessage=lambda value, event: companion_calls.append(event)),
+)
+JValue.objectFromPrototype = json.loads
+namespace['DispatchExternalCommand']('executor', 'ExtCmdCHIMCorrespondenceCompanion_Observe', json.dumps(request()))
+check('supported_jcontainers_4_1_13_reaches_observation', len(companion_calls) == 2 and companion_calls[-1] == 'correspondence_companion')
+for api, feature in ((2, 3), (3, 3), (4, 0), (5, 1)):
+    companion_calls.clear()
+    namespace['JContainers'] = SimpleNamespace(APIVersion=lambda: api, featureVersion=lambda: feature)
+    namespace['DispatchExternalCommand']('executor', 'ExtCmdCHIMCorrespondenceCompanion_Observe', json.dumps(request()))
+    check('unsupported_dependency_has_no_observation_' + str((api, feature)), companion_calls == [])
 for value in ('', '.', '..', '1/2', 'a:b', 'has space', 'x' * 65):
     check('reject_scope_' + (value or 'empty'), not namespace['ScopeValid'](value))
 

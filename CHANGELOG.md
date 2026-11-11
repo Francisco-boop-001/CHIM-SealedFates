@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.0-dev.33 — PRE-ALPHA
+
+- Correct both JContainers dependency guards to API4/feature1, the actual Skyrim SE 4.1.13 interface. Recompile and bind both standard Papyrus binaries.
+- Exercise supported dependency values and unsupported-version refusals. Preserve original-operation replay, restore and duplicate-transfer safeguards.
+- Coordinate Department prealpha.36 for mailbox display, native receipt checks, full-profile compatibility and private diagnostics.
+- Record the November 9 confirmed fresh text-only Skyrim delivery. Original attachment outcomes, new item/gold transfers and save/co-save recovery remain unverified.
+
 ## 0.1.0-dev.32 — PRE-ALPHA
 
 - Report whether the web outcome check actually queued. A refused check explains how to retry the status request on the same saved letter.

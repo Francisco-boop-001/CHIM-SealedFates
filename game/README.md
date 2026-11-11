@@ -2,9 +2,11 @@
 
 `Source/Scripts/CHIMCorrespondenceBridge.psc` is a separate global Papyrus extension. Install the matching `Scripts/CHIMCorrespondenceBridge.pex`; it does not replace a CHIM built-in. The single MO2 ZIP also includes `Scripts/CHIMCorrespondenceCompanion.pex`, described below.
 
-The repository retains the anonymous dev.14 bridge and includes the dev.29 recipient-owned bridge bound by the current manifest. [The bridge manifest](bridge-manifest.json) binds the script, compiler and PEX hashes. The portable receipt under `bridge/` at the repository root is a projection of the actual new compilation: it retains hashes and compilation facts, uses portable input labels, and records the original private receipt hash. Raw compiler output and logs are preserved privately, outside the distributable source. The sanitized header is anonymous and its compiled code/debug body is byte-identical to the raw output.
+The repository retains historical binaries and includes the corrected dev.33 bridge and companion bound by the current manifests. Both require JContainers API4 with feature version at least 1, matching Skyrim SE JContainers 4.1.13. The previous API3/feature3 guard rejected that supported dependency before parsing any command. [The bridge manifest](bridge-manifest.json) and [companion manifest](companion-manifest.json) bind the corrected source, compiler and PEX hashes. Portable receipts under `bridge/` record actual compilations. Raw compiler output and logs are preserved privately, outside the distributable source. Sanitized headers are anonymous and each compiled code/debug body is byte-identical to its raw output.
 
 ## Wire and receipts
+
+Dependency values come from the [pinned JContainers 4.1.13 constants](https://github.com/ryobg/JContainers/blob/c783cb0aabd9b0abfe935667c35515f9a1ba188d/src/JContainers/src/jcontainers_constants.h), not the old test fixture defaults. Both entry points are tested with API4/feature1 and unsupported-version controls. These tests do not replace Skyrim acceptance.
 
 A currently managed CHIM actor transports `ExtCmdCHIMCorrespondenceBridge_Deliver` or `ExtCmdCHIMCorrespondenceBridge_Reconcile` with JSON. Inventory owners are explicit stable plugin/local identities checked against signed runtime FormIDs. Body text and hidden author/payer provenance do not enter receipt JSON. Reconcile requires the original dispatch JSON unchanged.
 
