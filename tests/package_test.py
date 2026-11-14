@@ -95,7 +95,7 @@ class PackageTest(unittest.TestCase):
                 self.assertEqual(archive.extractfile('correspondence/' + name).read(), (ROOT / name).read_bytes())
 
     def test_unlisted_release_requires_explicit_archive_timestamp(self):
-        (self.root / 'server/manifest.json').write_text(json.dumps({'name':'correspondence','version':'0.1.0-dev.34'}))
+        (self.root / 'server/manifest.json').write_text(json.dumps({'name':'correspondence','version':'0.1.0-dev.9999'}))
         with self.assertRaisesRegex(ValueError, 'release timestamp'):
             pkg.build(self.root, self.pex, self.root / 'out')
 
@@ -311,9 +311,9 @@ class PackageTest(unittest.TestCase):
         self.assertEqual(Path(member).parent.name, manifest['name'])
         self.assertEqual(raw, Path(result['server']).read_bytes())
 
-    def test_art_and_style_are_packaged_byte_for_byte(self):
+    def test_composer_assets_are_packaged_byte_for_byte(self):
         expected = {}
-        for name in ('dashboard-art.webp', 'assets/style.css'):
+        for name in ('dashboard-art.webp', 'assets/style.css', 'assets/compose-search.js'):
             data = (ROOT / 'server' / name).read_bytes()
             expected['server/' + name] = data
             (self.root / 'server' / name).write_bytes(data)

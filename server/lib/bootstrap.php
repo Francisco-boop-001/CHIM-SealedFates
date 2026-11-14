@@ -147,6 +147,15 @@ function correspondenceProduction():array
         throw $error;
     }
 }
+/** Public capability used by Mind Poisoning inside its own write transaction. */
+function correspondenceConfirmedPlayerGiftInTransaction($pgConnection,int $eventId,int $recipientId,?string $expectedToken=null):?string
+{
+    $root=$GLOBALS['ENGINE_PATH']??dirname(__DIR__,3);
+    if (!is_string($root)||$root==='') throw new DomainException('core_connection_helper_unavailable');
+    $store=new CorrespondencePgStore($pgConnection,static fn()=>null,static fn()=>false,rtrim($root,'/\\').'/log/playthrough_runtime/correspondence.restore.json');
+    $request=$GLOBALS['gameRequest']??null;
+    return $store->verifyGiftInBorrowedTransaction($eventId,$recipientId,$expectedToken,is_array($request)?$request:[]);
+}
 function correspondenceAutonomyProduction():array
 {
     static $autonomy=null;$runtime=correspondenceProduction();

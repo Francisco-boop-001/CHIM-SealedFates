@@ -57,7 +57,13 @@ function correspondencePost(array $post,string $csrf,array $choices):array
         return ['action'=>'autonomy','enabled'=>$post['enabled']==='1'];
     }
     if($action!=='compose')throw new DomainException('invalid_action');
-    correspondenceKeys($post,['csrf','action','request_id','author','payer','recipient','claimed_sender','body','item','quantity']);
+    $keys=['csrf','action','request_id','author','payer','recipient','claimed_sender','body','item','quantity'];
+    $gift=array_key_exists('gift',$post);
+    if ($gift) {
+        if ($post['gift']!=='1') throw new InvalidArgumentException('invalid_gift_declaration');
+        $keys[]='gift';
+    }
+    correspondenceKeys($post,$keys);
     if(!is_array($post['item'])||!array_is_list($post['item'])||!is_array($post['quantity'])||!array_is_list($post['quantity'])||count($post['item'])!==count($post['quantity'])||count($post['item'])>8)throw new InvalidArgumentException('invalid_attachments');
     $items=[];
     foreach($post['item'] as $i=>$key){
@@ -67,6 +73,13 @@ function correspondencePost(array $post,string $csrf,array $choices):array
         $items[]=['kind'=>$matches[0]['kind'],'form_id'=>$key,'quantity'=>(int)$quantity];
     }
     $input=array_intersect_key($post,array_flip(['request_id','author','payer','recipient','claimed_sender','body']));$input['attachments']=$items;
+    if ($gift) {
+        if ($input['author']!=='player' || $input['payer']!=='player' || $input['claimed_sender']!=='player'
+            || !is_string($input['recipient']) || preg_match('/\Anpc:[1-9][0-9]*\z/D',$input['recipient'])!==1 || $items===[]) {
+            throw new InvalidArgumentException('invalid_gift_declaration');
+        }
+        $input['gift']=true;
+    }
     return ['action'=>'compose','input'=>$input];
 }
 function correspondenceOperatorRead(array $letters,string $id):array
@@ -105,12 +118,21 @@ function correspondenceAutonomyRowsHtml(array $rows):string
     }
     return $html;
 }
+function correspondenceComposeSearch(string $field,string $noun):string
+{
+    $h='correspondenceHtml';
+    return '<div data-compose-search="'.$h($field).'" data-search-noun="'.$h($noun).'" hidden><label>Search '.$h($noun).'<input type="search" autocomplete="off"></label><small role="status"></small></div>';
+}
 function correspondencePage(array $actors,array $choices,array $letters,string $csrf,string $message='',?array $opened=null,array $autonomySettings=[],array $autonomyRows=[],array $managedChildren=[],array $companionDocuments=[]):string
 {
     $h='correspondenceHtml';
     $token=$h($csrf);
     $options='';
     foreach($actors as $actor)$options.='<option value="'.$h($actor['key']).'">'.$h($actor['name']).' ('.$h($actor['key']).')</option>';
+    $identityInputs='';
+    foreach (['recipient'=>['Recipient','recipients'],'claimed_sender'=>['Claimed sender (signature)','signatures'],'author'=>['Actual author (private)','authors'],'payer'=>['Attachment payer (private)','payers']] as $field=>[$label,$noun]) {
+        $identityInputs.='<div>'.correspondenceComposeSearch($field,$noun).'<label>'.$h($label).'<select name="'.$h($field).'">'.$options.'</select></label></div>';
+    }
     $items='<option value="">No attachment</option>';
     foreach($choices as $item)$items.='<option value="'.$h($item['form_id']).'">'.$h($item['name']).' — '.$h($item['form_id']).'</option>';
 
@@ -151,7 +173,7 @@ function correspondencePage(array $actors,array $choices,array $letters,string $
     if($autonomyRowsHtml==='')$autonomyRowsHtml='<tr><td colspan="6" class="empty-state">No automated outcomes yet.</td></tr>';
     $autonomy='<section aria-labelledby="autonomy-title"><h2 id="autonomy-title">Autonomous correspondence</h2><p>State: '.$h($autonomyStatus).'. NPCs with Background Life and Letters enabled can initiate and answer offscreen text mail while fresh game-clock observations arrive. Physical letters keep their confirmed delivery path. Browser viewing does not create NPC exposure.</p><form method="post" class="button-row"><input type="hidden" name="csrf" value="'.$token.'"><input type="hidden" name="action" value="autonomy"><button name="enabled" value="1">Enable</button><button name="enabled" value="0">Pause</button></form><h3 id="autonomy-outcomes-title">Automated outcomes</h3><div class="table-wrap" tabindex="0" role="region" aria-labelledby="autonomy-outcomes-title"><table aria-labelledby="autonomy-outcomes-title"><thead><tr><th scope="col">Source document</th><th scope="col">Child document</th><th scope="col">Outcome</th><th scope="col">Action</th><th scope="col">Delivery timing</th><th scope="col">Reason</th></tr></thead><tbody>'.$autonomyRowsHtml.'</tbody></table></div></section>';
 
-    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sealed Fates</title><link rel="stylesheet" href="assets/style.css"></head><body><a class="skip-link" href="#main-content">Skip to main content</a><main class="page" id="main-content"><header class="hero"><div class="hero-copy"><h1>Sealed Fates</h1><p class="subtitle">Part of the World of Drama-Llama</p><p class="hero-note">The new Skyrim interface is optional; this web page still works. The courier is required to cope.</p><p class="lede">Write a letter as any discovered sender. Actual author and attachment payer are private operator choices. The signature is a claim; attachments come from the payer’s real inventory.</p></div><figure class="hero-art"><img src="dashboard-art.webp" alt="Nordic woodcut scene with a courier carrying letters, an affectionate woman and an outraged man below an emo llama over a doorway." width="1536" height="1024"></figure></header><p class="status-message" role="status">'.$h($message).'</p>'.$autonomy.$read.'<section aria-labelledby="mailbox-title"><h2 id="mailbox-title">Inbox and outbox</h2><div class="table-wrap" tabindex="0" role="region" aria-labelledby="mailbox-title"><table aria-labelledby="mailbox-title"><thead><tr><th scope="col">Claimed sender</th><th scope="col">Recipient</th><th scope="col">Outcome</th><th scope="col">Social interpretation</th><th scope="col">Action</th></tr></thead><tbody>'.$rows.'</tbody></table></div></section><section aria-labelledby="compose-title"><h2 id="compose-title">Compose a letter</h2><form method="post"><input type="hidden" name="csrf" value="'.$token.'"><input type="hidden" name="action" value="compose"><input type="hidden" name="request_id" value="'.$h(correspondenceUuid()).'"><div class="identities"><label>Recipient<select name="recipient">'.$options.'</select></label><label>Claimed sender (signature)<select name="claimed_sender">'.$options.'</select></label><label>Actual author (private)<select name="author">'.$options.'</select></label><label>Attachment payer (private)<select name="payer">'.$options.'</select></label></div><label>Original letter text<textarea name="body" maxlength="2000" required></textarea></label><small>Up to 2000 characters. Preserve any terms or promises in the original wording.</small><fieldset><legend>Optional attachments</legend><p>Items listed below were observed by CHIM. Availability and protected items are checked in game before transfer.</p><div class="attachment-grid">'.$attachmentInputs.'</div></fieldset><button type="submit">Send letter</button></form><p><small>Possession, context exposure, and social interpretation are separate outcomes. Pending or unknown outcomes are never automatically sent again.</small></p></section></main></body></html>';
+    return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sealed Fates</title><link rel="stylesheet" href="assets/style.css"><script src="assets/compose-search.js" defer></script></head><body><a class="skip-link" href="#main-content">Skip to main content</a><main class="page" id="main-content"><header class="hero"><div class="hero-copy"><h1>Sealed Fates</h1><p class="subtitle">Part of the World of Drama-Llama</p><p class="hero-note">The new Skyrim interface is optional; this web page still works. The courier is required to cope.</p><p class="lede">Write a letter as any discovered sender. Actual author and attachment payer are private operator choices. The signature is a claim; attachments come from the payer’s real inventory.</p></div><figure class="hero-art"><img src="dashboard-art.webp" alt="Nordic woodcut scene with a courier carrying letters, an affectionate woman and an outraged man below an emo llama over a doorway." width="1536" height="1024"></figure></header><p class="status-message" role="status">'.$h($message).'</p>'.$autonomy.$read.'<section aria-labelledby="mailbox-title"><h2 id="mailbox-title">Inbox and outbox</h2><div class="table-wrap" tabindex="0" role="region" aria-labelledby="mailbox-title"><table aria-labelledby="mailbox-title"><thead><tr><th scope="col">Claimed sender</th><th scope="col">Recipient</th><th scope="col">Outcome</th><th scope="col">Social interpretation</th><th scope="col">Action</th></tr></thead><tbody>'.$rows.'</tbody></table></div></section><section aria-labelledby="compose-title"><h2 id="compose-title">Compose a letter</h2><form method="post"><input type="hidden" name="csrf" value="'.$token.'"><input type="hidden" name="action" value="compose"><input type="hidden" name="request_id" value="'.$h(correspondenceUuid()).'"><div class="identities">'.$identityInputs.'</div><label>Original letter text<textarea name="body" maxlength="2000" required></textarea></label><small>Up to 2000 characters. Preserve any terms or promises in the original wording.</small><fieldset><legend>Optional attachments</legend><p>Items listed below were observed by CHIM. Availability and protected items are checked in game before transfer.</p>'.correspondenceComposeSearch('item[]','attachments').'<div class="attachment-grid">'.$attachmentInputs.'</div><label class="gift-declaration"><input type="checkbox" name="gift" value="1"> These attachments are a personal gift. Choose yourself as signer, author, and payer, and an NPC as recipient.</label></fieldset><button type="submit">Send letter</button></form><p><small>Possession, context exposure, and social interpretation are separate outcomes. Pending or unknown outcomes are never automatically sent again.</small></p></section></main></body></html>';
 }
 function correspondenceAccessDeniedPage(array $server):string
 {

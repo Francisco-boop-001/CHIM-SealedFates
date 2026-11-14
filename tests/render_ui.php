@@ -5,7 +5,7 @@ require_once dirname(__DIR__).'/server/lib/offscreen_host.php';
 
 $isCli=PHP_SAPI==='cli';
 $fixture=$isCli?($argv[1]??'populated'):($_GET['fixture']??'populated');
-$fixtures=['populated','empty','opened','error','access-denied','long-unicode'];
+$fixtures=['populated','empty','opened','error','access-denied','long-unicode','search'];
 if(!is_string($fixture)||!in_array($fixture,$fixtures,true)){
     if($isCli){fwrite(STDERR,'Unknown UI fixture. Available: '.implode(', ',$fixtures).PHP_EOL);exit(2);}
     http_response_code(400);
@@ -37,6 +37,12 @@ if($fixture==='empty'){
     $enabled=false;
 }elseif($fixture==='opened'){
     $opened=['document_id'=>$sourceId,'state'=>'exposed','recipient'=>['kind'=>'npc','name'=>'Camilla'],'claimed_sender'=>['kind'=>'player','name'=>'Dragonborn'],'body'=>'Operator-only text with hostile markup: <script>alert("fixture")</script> & Unicode 🦙 — opening does not create NPC exposure.','attachments'=>[['quantity'=>3,'form_id'=>'Skyrim.esm|0000000F']]];
+}elseif($fixture==='search'){
+    $actors[]=['key'=>'npc:11','name'=>'Alice Altenborough'];
+    $actors[]=['key'=>'npc:12','name'=>'Alice Altenborough'];
+    $actors[]=['key'=>'npc:13','name'=>'Élodie'];
+    $choices[]=['form_id'=>'Skyrim.esm|0003133C','name'=>'Wine','kind'=>'item'];
+    $choices[]=['form_id'=>'Other.esp|00000042','name'=>'Wine','kind'=>'item'];
 }elseif($fixture==='long-unicode'){
     $longName=str_repeat('Э',96).' 🦙 '.str_repeat('文',24);
     $actors[1]['name']=$longName;
@@ -54,7 +60,7 @@ if($fixture==='error'){
 }
 
 if(!$isCli){
-    $html=str_replace(['href="assets/style.css"','src="dashboard-art.webp"'],['href="../server/assets/style.css"','src="../server/dashboard-art.webp"'],$html);
+    $html=str_replace(['href="assets/style.css"','src="dashboard-art.webp"','src="assets/compose-search.js"'],['href="../server/assets/style.css"','src="../server/dashboard-art.webp"','src="../server/assets/compose-search.js"'],$html);
     header('Content-Type: text/html; charset=UTF-8');
 }
 echo $html;

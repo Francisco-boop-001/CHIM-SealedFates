@@ -1,8 +1,4 @@
-**0.1.0-dev.33 — PRE-ALPHA.** Both game scripts now accept the supported Skyrim SE JContainers 4.1.13 API. Previously they rejected it before delivery or receipt recovery could run. The courier was being refused entry to his own post office. Install [the single Sealed Fates dev.33 ZIP](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.33/CHIM-Sealed-Fates-0.1.0-dev.33.zip). [Release notes and testing limits](docs/RELEASE.md).
-
-**The Skyrim interface is optional. The existing CHIM web plugin page works independently.** For the corrected mailbox display, use the separate [Department prealpha.36](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.36). Its **Check Skyrim receipt** control asks for the saved operation's result. **Refresh saved status** reads the server record. Keep the original pending letter and attachments when checking an uncertain delivery.
-
-The November 9 player test confirmed one new text-only letter delivered through Skyrim and recorded in the web outbox. The old amethyst letter remains uncertain. This observation establishes neither item/gold transfer nor save/co-save recovery. Opening a mailbox is separate from the recipient learning about a letter.
+**0.1.0-dev.34 — PRE-ALPHA.** The web composer can search actors and attachments and mark personal gifts. The optional [Department prealpha.38](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.38) adds recipient and inventory search in Skyrim and can display dev.34 gift letters. **To mark a gift, use the Sealed Fates web composer.** The web page works without Department. [Release notes and testing limits](docs/RELEASE.md).
 
 # CHIM Sealed Fates
 
@@ -28,9 +24,9 @@ The interface is separate from the **matching Sealed Fates Papyrus bridge**, whi
 
 ## Download
 
-Download **[CHIM-Sealed-Fates-0.1.0-dev.33.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.33/CHIM-Sealed-Fates-0.1.0-dev.33.zip)**. Close Skyrim, replace your existing Sealed Fates mod in MO2, then launch normally so CHIM can sync the update. This single ZIP includes the standard Papyrus scripts and server package. [Installation](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
+Download **[CHIM-Sealed-Fates-0.1.0-dev.34.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.34/CHIM-Sealed-Fates-0.1.0-dev.34.zip)**. Close Skyrim, replace your existing Sealed Fates mod in MO2, then launch normally so CHIM can sync the update. This single ZIP includes the standard Papyrus scripts and server package. [Installation](docs/INSTALL.md) · [Release notes](docs/RELEASE.md).
 
-The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.33.dwpkg`, the version-only filename CHIM expects. Earlier releases remain available as historical downloads.
+The MO2 ZIP carries `CHIM/server-plugins/correspondence/0.1.0-dev.34.dwpkg`, the version-only filename CHIM expects. Earlier releases remain available as historical downloads.
 
 ## The web page
 
@@ -48,7 +44,9 @@ Claimed sender, actual author, and inventory payer are separate values. The prin
 
 Compatible **Mind Poisoning** or **Sworn & Scorned** integrations receive the exposed letter's written-evidence reference when installed and enabled. Each integration is independent. Mind Poisoning drains eligible written-evidence work after the CHIM request; S&S evaluates supported issues through its background worker. Neither is guaranteed to finish before the NPC's first reply. Settings, cast selection, locks, model readiness and restore checks can defer or refuse evaluation.
 
-**Successfully committed consequences survive the letter leaving the prompt.** Relationship effects are saved in CHIM's NPC relationship data; supported grievances/promises and their evidence are saved in S&S's ledger. Later interactions, issue resolution and normal restore/playthrough rules still apply. Source/replay records prevent reapplying the same evidence on every conversation. A spoken thank-you does not prove a saved affinity change or a permanent gratitude entry; there is no fixed gift bonus, automatic debt or guaranteed non-neutral result.
+**Successfully committed consequences survive the letter leaving the prompt.** Relationship effects are saved in CHIM's NPC relationship data; supported grievances/promises and their evidence are saved in S&S's ledger. Later interactions, issue resolution and normal restore/playthrough rules still apply. Source/replay records prevent reapplying the same evidence on every conversation. A spoken thank-you is separate from a saved affinity change or a Sworn & Scorned entry.
+
+**Personal gifts are web-only.** In the web composer, search actors by name or key and attachments by name or FormID. Mark **These attachments are a personal gift** when the player writes, signs and pays for a letter to an NPC. Compatible Mind Poisoning can apply a point of affinity toward the player after a matching Skyrim receipt and recipient exposure. The same receipt cannot earn another point. Unverified attachment attribution blocks positive affinity and relationship-type changes for the claimed sender. Existing text-only judgments still apply. Sworn & Scorned continues to track supported promises and grievances. Gift affinity requires the matching Mind Poisoning update.
 
 **What this does not yet do:** automatically insert an incoming ordinary Sealed Fates letter into the recipient's native BGL thought/action cycle while you are elsewhere. BGL-enabled NPCs are not excluded from existing correspondence. Manual delivery needs no BGL opt-in; autonomous features retain their own BGL/Letters eligibility. Sealed Fates' offscreen correspondence workers below are a separate route and do not establish that native BGL has read an incoming player letter. The proposed reading bridge would have connected those model boundaries; it is abandoned. [Details and RANGROO's answer](docs/BGL-STATUS.md).
 

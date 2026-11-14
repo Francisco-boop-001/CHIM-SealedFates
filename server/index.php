@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once __DIR__.'/lib/view.php';
 require_once __DIR__.'/lib/bootstrap.php';
 require_once __DIR__.'/lib/consumers.php';
-header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');header('Referrer-Policy: same-origin');header("Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; form-action 'self'; frame-ancestors 'self'");
+header('Cache-Control: no-store');header('X-Content-Type-Options: nosniff');header('Referrer-Policy: same-origin');header("Content-Security-Policy: default-src 'none'; img-src 'self'; style-src 'self'; script-src 'self'; form-action 'self'; frame-ancestors 'self'");
 if(!correspondenceAccess($_SERVER)){http_response_code(403);header('Content-Type: text/html; charset=UTF-8');echo correspondenceAccessDeniedPage($_SERVER);exit;}
 if(!in_array($_SERVER['REQUEST_METHOD']??'GET',['GET','POST'],true)){http_response_code(405);exit;}
 if(($_SERVER['REQUEST_METHOD']??'GET')==='POST'&&!correspondencePostOriginAllowed($_SERVER)){http_response_code(403);header('Content-Type: text/plain; charset=UTF-8');echo 'Operator origin required.';exit;}
@@ -46,7 +46,9 @@ try{
 }catch(DomainException|InvalidArgumentException $e){
     correspondenceDiagnostic('ui_rejected');http_response_code(400);header('Content-Type: text/html; charset=UTF-8');
     $known=['csrf_failed','invalid_body','invalid_attachments','invalid_quantity','invalid_enabled','item_unavailable','renderer_content_overflow','renderer_dependency_unavailable','document_unavailable','delivery_unconfirmed','scope_unavailable','actor_unavailable','autonomous_dispatch_owned','companion_scheduler_owned','autonomy_status_unavailable','operator_closed','closure_unavailable'];
-    $message=in_array($e->getMessage(),$known,true)?str_replace('_',' ',$e->getMessage()):'The request could not be accepted.';
+    $message=$e->getMessage()==='invalid_gift_declaration'
+        ?'A personal gift needs an attachment and an NPC recipient. Choose yourself as signer, author, and payer, or uncheck the gift box.'
+        :(in_array($e->getMessage(),$known,true)?str_replace('_',' ',$e->getMessage()):'The request could not be accepted.');
     echo correspondenceErrorPage($message);
 }catch(Throwable){correspondenceDiagnostic('runtime_unavailable');http_response_code(503);header('Content-Type: text/html; charset=UTF-8');echo correspondenceErrorPage('Sealed Fates is unavailable. Check installation, migrations and core compatibility.');}
 

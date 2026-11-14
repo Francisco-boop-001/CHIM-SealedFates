@@ -397,6 +397,53 @@ final class CorrespondencePgStore implements CorrespondenceStore
     {
         return $this->readTransactionInternal($work,true);
     }
+    /** Checks private gift evidence while MP owns the open transaction and its lifetime. */
+    public function verifyGiftInBorrowedTransaction(int $eventId,int $recipientId,?string $expectedRestoreToken,array $request):?string
+    {
+        if ($this->active || !function_exists('pg_transaction_status')
+            || pg_transaction_status($this->connection)!==PGSQL_TRANSACTION_INTRANS) {
+            throw new LogicException('gift_verification_transaction_required');
+        }
+        if ($eventId<1 || $recipientId<1) throw new InvalidArgumentException('invalid_source_identity');
+        $this->active=true;
+        try {
+            $service=new CorrespondenceService($this);
+            if (!$service->declaredPlayerGiftSource($eventId)) {
+                if ($expectedRestoreToken!==null) throw new DomainException('gift_source_changed');
+                return null;
+            }
+            $locked=$this->queryRaw('SELECT pg_try_advisory_xact_lock_shared(18459814,1) AS locked');
+            if (($locked[0]['locked']??null)!=='t') throw new DomainException('gift_restore_fence_busy');
+            $clock=correspondenceRequestClock($request);
+            $token=$GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_TOKEN']??null;
+            if (empty($GLOBALS['CORRESPONDENCE_REQUEST_RESTORE_CAPTURED']) || !is_string($token)
+                || ($GLOBALS['CORRESPONDENCE_REQUEST_NATIVE_TS']??null)!==$clock['ts']) {
+                throw new DomainException('gift_request_ingress_missing');
+            }
+            $this->restoreStateReady=true;
+            $this->requestClock=$clock;
+            $this->requestRestoreToken=$token;
+            $this->requestNativeTs=$clock['ts'];
+            $this->assertRestoreToken($expectedRestoreToken);
+            $scope=$this->scope()['playthrough_id'];
+            $presence=$this->payload($this->query('SELECT payload FROM plugins.correspondence_presence WHERE playthrough_id=$1',[$scope]));
+            $activity=$presence['activity']??null;
+            if ($this->validateNativeActivity($activity,$scope,false)!==null
+                && $this->compareNativeCounters($activity['native_ts'],$clock['ts'])>0
+                && $this->compareNativeCounters($activity['gamets'],$clock['gamets'])<0) {
+                throw new DomainException('gift_request_clock_rewound');
+            }
+            $confirmed=$service->confirmedPlayerGiftSource($eventId,$recipientId);
+            if (!$confirmed && $expectedRestoreToken!==null) throw new DomainException('gift_source_changed');
+            $this->assertRestoreToken($expectedRestoreToken);
+            return $confirmed?$token:null;
+        } finally {
+            $this->active=false;
+            $this->restoreStateReady=false;
+            $this->requestClock=$this->requestRestoreToken=$this->requestNativeTs=null;
+            $this->clearTransactionCache();
+        }
+    }
     private function readTransactionInternal(callable $work,bool $checkToken):mixed
     {
         if($this->active){if($checkToken)$this->assertRestoreToken();return $work();}
@@ -517,7 +564,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
     public function loadOperation(string $id):?array{return $this->payload($this->query('SELECT payload FROM plugins.correspondence_operations WHERE operation_id=$1',[$id]));}
     public function saveOperation(array $operation):void
     {
-        $rows=$this->query("INSERT INTO plugins.correspondence_operations(operation_id,document_id,payload) VALUES($1,$2,$3::jsonb) ON CONFLICT(operation_id) DO UPDATE SET payload=EXCLUDED.payload WHERE plugins.correspondence_operations.payload-ARRAY['receipt','receipt_anchor','source']=EXCLUDED.payload-ARRAY['receipt','receipt_anchor','source'] RETURNING operation_id",[$operation['operation_id'],$operation['document_id'],correspondenceJson($operation)]);
+        $rows=$this->query("INSERT INTO plugins.correspondence_operations(operation_id,document_id,payload) VALUES($1,$2,$3::jsonb) ON CONFLICT(operation_id) DO UPDATE SET payload=EXCLUDED.payload WHERE plugins.correspondence_operations.payload-ARRAY['receipt','receipt_anchor','source','gift_proof']=EXCLUDED.payload-ARRAY['receipt','receipt_anchor','source','gift_proof'] AND (plugins.correspondence_operations.payload->'gift_proof' IS NOT DISTINCT FROM EXCLUDED.payload->'gift_proof' OR (NOT (plugins.correspondence_operations.payload ? 'gift_proof') AND (plugins.correspondence_operations.payload->'receipt'->>'status') IS DISTINCT FROM 'delivered' AND EXCLUDED.payload->'receipt'->>'status'='delivered' AND (EXCLUDED.payload->'gift_proof'='null'::jsonb OR (EXCLUDED.payload->'receipt'->>'reason'='physical_only' AND EXCLUDED.payload->>'gift_proof' ~ '^[a-f0-9]{64}$')))) RETURNING operation_id",[$operation['operation_id'],$operation['document_id'],correspondenceJson($operation)]);
         if(count($rows)!==1)throw new DomainException('immutable_operation_conflict');
     }
     public function appendEvent(string $type,string $data,string $people,string $sess):array
@@ -702,7 +749,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
             return true;
         });
     }
-    private function validateNativeActivity(mixed $activity,string $scope):?bool
+    private function validateNativeActivity(mixed $activity,string $scope,bool $requireCurrentActivity=true):?bool
     {
         if(!is_array($activity))return null;
         try{correspondenceKeys($activity,['playthrough_id','native_type','native_ts','gamets','request_sha256','interaction_generation','restore_generation','received_at','active','anchor']);}
@@ -711,7 +758,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
             ||filter_var($activity['native_ts'],FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])===false||!is_string($activity['gamets'])||preg_match('/\A[1-9][0-9]{0,18}\z/D',$activity['gamets'])!==1
             ||filter_var($activity['gamets'],FILTER_VALIDATE_INT,['options'=>['min_range'=>1]])===false||!is_string($activity['request_sha256'])||preg_match('/\A[0-9a-f]{64}\z/D',$activity['request_sha256'])!==1
             ||($activity['interaction_generation']!==null&&(!is_int($activity['interaction_generation'])||$activity['interaction_generation']<0))||!is_string($activity['restore_generation'])||$activity['restore_generation']===''
-            ||!is_int($activity['received_at'])||$activity['received_at']>time()||time()-$activity['received_at']>45||!is_bool($activity['active']))return null;
+            ||!is_int($activity['received_at'])||$activity['received_at']>time()||($requireCurrentActivity&&time()-$activity['received_at']>45)||!is_bool($activity['active']))return null;
         $restore=$this->restoreGeneration();if(!is_string($restore)||!hash_equals($restore,$activity['restore_generation']))return null;
         $floor=$this->query('SELECT native_ts_floor::text AS native_ts_floor FROM plugins.correspondence_restore_state WHERE singleton IS TRUE')[0]['native_ts_floor']??null;
         if(!is_string($floor)||$this->compareNativeCounters($activity['native_ts'],$floor)<=0)return null;
@@ -728,7 +775,7 @@ final class CorrespondencePgStore implements CorrespondenceStore
         try{$anchoredData=json_decode($anchor['data'],true,16,JSON_THROW_ON_ERROR);if(!is_array($anchoredData))return null;correspondenceKeys($anchoredData,['kind','playthrough_id','native_type','native_ts','gamets','request_sha256','interaction_generation','restore_generation','received_at','active']);}
         catch(JsonException|InvalidArgumentException){return null;}
         if(!hash_equals(correspondenceCanonicalJson($anchorData),correspondenceCanonicalJson($anchoredData)))return null;
-        if(!$activity['active'])return false;
+        if(!$requireCurrentActivity||!$activity['active'])return $activity['active'];
         if(($_SERVER['HTTP_X_CHIM_PASSIVE']??'')==='1')return false;
         if(function_exists('chimInteractionAllowed')){
             try{if(chimInteractionAllowed()!==true)return false;}catch(Throwable){return false;}

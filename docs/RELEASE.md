@@ -1,5 +1,15 @@
 # Sealed Fates — PRE-ALPHA
 
+## Dev.34 — a gift receipt, and a search box for the post office
+
+Install [CHIM-Sealed-Fates-0.1.0-dev.34.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.34/CHIM-Sealed-Fates-0.1.0-dev.34.zip) as the replacement for your current Sealed Fates MO2 mod with Skyrim closed. It includes the matching delivery scripts and CHIM server package.
+
+**The personal-gift checkbox is web-only.** Open CHIM → Server Plugins → Sealed Fates → Plugin Page. In Compose, search actors and attachments, choose an NPC, and mark **These attachments are a personal gift**. The player must be the writer, signer and payer. Mind Poisoning can apply a single point of affinity once the transfer is confirmed and the letter reaches the recipient's CHIM context. Unwelcome gifts can still lower affinity. Unverified attachment attribution cannot earn positive affinity or a relationship-type change for the claimed sender.
+
+The optional [Department prealpha.38](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.38) update adds paged recipient search and inventory filtering in Skyrim. Its mailbox can show confirmed gift letters. The web page works independently of Department. The courier has acquired a search box. I am told this is cheaper than hiring a second courier.
+
+Offline browser and adapter tests covered search, exact package compatibility and existing letters. An isolated PostgreSQL fixture with deterministic judgments covered +1 for one receipt carrying 500 septims and wine, forged attribution, replay, restore rollback and retry. Dev.34 reuses the tested dev.33 native scripts. This release has no new in-game transfer, save/co-save, or real-model verification. Existing letters and receipts have no retroactive gift bonus.
+
 ## Dev.33 — the courier gets through the dependency check
 
 Both Papyrus entry points incorrectly required JContainers API3/feature3. Skyrim SE JContainers 4.1.13 returns API4/feature1. The corrected guards accept those supported values and continue refusing unsupported APIs. Both standard scripts were recompiled with Caprica and checked against their source and build receipts.

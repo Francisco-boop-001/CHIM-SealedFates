@@ -1,3 +1,9 @@
+# Sealed Fates dev.34 / Department prealpha.38
+
+Use [CHIM-Sealed-Fates-0.1.0-dev.34.zip](https://github.com/Francisco-boop-001/CHIM-SealedFates/releases/download/correspondence-v0.1.0-dev.34/CHIM-Sealed-Fates-0.1.0-dev.34.zip) with the separate optional [Department prealpha.38](https://github.com/Francisco-boop-001/CHIM-DepartmentOfQuestionableDecisions/releases/tag/v0.1.0-prealpha.38) installer. Department searches authorized recipients across catalog pages and filters inventory while retaining selected items and quantities. Its mailbox can show confirmed dev.34 gift letters. **Mark personal gifts in the Sealed Fates web composer.**
+
+The exact adapter pins, legacy and gift receipt fixtures, and browser search checks passed offline. The new pairing still needs installed Skyrim verification.
+
 # Sealed Fates dev.33 / Department prealpha.36
 
 Use the single Sealed Fates dev.33 ZIP and Department's separate prealpha.36 ZIP. The corrected Department mailbox path must display populated and empty results and retain request errors. The existing Sealed Fates web page works independently of Department.

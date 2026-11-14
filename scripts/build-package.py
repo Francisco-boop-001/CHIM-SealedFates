@@ -15,12 +15,12 @@ SERVER_FILES = (
     'lib/autonomy_host.php', 'migrations/002_autonomy.sql',
     'offscreen-worker.php', 'offscreen-service.php', 'lib/offscreen_host.php',
     'lib/offscreen.php', 'lib/offscreen_policy.php', 'migrations/003_offscreen.sql',
-    'dashboard-art.webp', 'assets/style.css',
+    'dashboard-art.webp', 'assets/style.css', 'assets/compose-search.js',
     'lib/companion.php', 'lib/companion_policy.php', 'lib/companion_host.php',
     'migrations/005_companion.sql', 'migrations/006_history_indexes.sql',
 )
 DISTRIBUTION_FILES = ('LICENSE', 'ARTWORK-LICENSE.txt', 'NOTICE.md')
-RELEASE_TIMESTAMPS = {'0.1.0-dev.29': (2026, 10, 28, 0, 0, 0), '0.1.0-dev.30': (2026, 10, 28, 1, 0, 0), '0.1.0-dev.31': (2026, 10, 30, 0, 0, 0), '0.1.0-dev.32': (2026, 11, 6, 0, 0, 0), '0.1.0-dev.33': (2026, 11, 7, 0, 0, 0)}
+RELEASE_TIMESTAMPS = {'0.1.0-dev.29': (2026, 10, 28, 0, 0, 0), '0.1.0-dev.30': (2026, 10, 28, 1, 0, 0), '0.1.0-dev.31': (2026, 10, 30, 0, 0, 0), '0.1.0-dev.32': (2026, 11, 6, 0, 0, 0), '0.1.0-dev.33': (2026, 11, 7, 0, 0, 0), '0.1.0-dev.34': (2026, 11, 13, 0, 0, 0)}
 LEGACY_TIMESTAMP = (1980, 1, 1, 0, 0, 0)
 
 def release_timestamp(version):
